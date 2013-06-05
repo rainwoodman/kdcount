@@ -15,7 +15,7 @@ typedef struct KDEnumData {
 
 typedef int (*kd_enum_callback)(void * data, KDEnumData * enumdata);
 
-typedef struct KDarray {
+typedef struct KD2Darray {
     /* the buffer holding array elements required */
     char * buffer; 
     /* number of points. required*/
@@ -30,12 +30,14 @@ typedef struct KDarray {
     /* the byte size of each scalar, required */
     ptrdiff_t elsize;
 
-} KDarray;
+} KD2Darray;
 
 typedef struct KDStore {
 
 /* defining the input positions */
-    KDarray input;
+    KD2Darray input;
+/* defining the input weights */
+    KD2Darray weight;
 
 /* the following defines how the tree is constructed */
 
@@ -94,16 +96,24 @@ static inline double * kd_node_max(KDNode * node) {
 static inline double * kd_node_min(KDNode * node) {
     return kd_node_max(node) + node->store->input.dims[1];
 }
+static inline double kd_array_get(KD2Darray * array, ptrdiff_t i, ptrdiff_t d) {
+    char * ptr = & array->buffer[
+                        i * array->strides[0] + 
+                        d * array->strides[1]];
+    if(array->cast) {
+        return array->cast(ptr);
+    } else {
+        return * (double*) ptr;
+    }
+}
 
-static inline double kd_input_cast(KDStore * store, void * p1) {
-    return store->input.cast(p1);
+static inline double kd_weight(KDStore * store, ptrdiff_t i, ptrdiff_t d) {
+    i = store->ind[i];
+    return kd_array_get(&store->weight, i, d);
 }
 static inline double kd_input(KDStore * store, ptrdiff_t i, ptrdiff_t d) {
     i = store->ind[i];
-    char * ptr = & store->input.buffer[
-                        i * store->input.strides[0] + 
-                        d * store->input.strides[1]];
-    return kd_input_cast(store, ptr);
+    return kd_array_get(&store->input, i, d);
 }
 static inline void kd_swap(KDStore * store, ptrdiff_t i, ptrdiff_t j) {
     ptrdiff_t t = store->ind[i];
@@ -344,14 +354,24 @@ static inline void kd_collect(KDNode * node, double * ptr) {
     KDStore * t = node->store;
     int d;
     ptrdiff_t j;
-    int Nd = t->input.dims[1];
-    char * base = t->input.buffer;
+    KD2Darray * array = &t->input;
+    int Nd = array->dims[1];
+    char * base = array->buffer;
     for (j = 0; j < node->size; j++) {
-        char * item = base + t->ind[j + node->start] * t->input.strides[0];
-        for(d = 0; d < Nd; d++) {
-            *ptr = kd_input_cast(t, item);
-            ptr++;
-            item += t->input.strides[1];
+        char * item = base + t->ind[j + node->start] * array->strides[0];
+        if(array->cast) {
+            for(d = 0; d < Nd; d++) {
+                *ptr = array->cast(item);
+                ptr++;
+                item += array->strides[1];
+            }
+        } else {
+            for(d = 0; d < Nd; d++) {
+                memcpy(ptr, item, array->elsize);
+                ptr++;
+                item += array->strides[1];
+            }
+        
         }
     }
 }
