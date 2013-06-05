@@ -16,7 +16,7 @@ typedef struct KDEnumData {
 typedef int (*kd_enum_callback)(void * data, KDEnumData * enumdata);
 
 
-typedef struct KDType {
+typedef struct KDStore {
 
 /* defining the input positions */
 
@@ -58,10 +58,10 @@ typedef struct KDType {
     void (* free)(size_t size, void * ptr);
     void * userdata;
     ptrdiff_t total_nodes;
-} KDType;
+} KDStore;
 
 typedef struct KDNode {
-    KDType * type;
+    KDStore * store;
     struct KDNode * link[2];
     ptrdiff_t start;
     ptrdiff_t size;
@@ -70,20 +70,20 @@ typedef struct KDNode {
     char ext[];
 } KDNode;
 
-static void * kd_malloc(KDType * type, size_t size) {
-    if(type->malloc != NULL) {
-        return type->malloc(size);
+static void * kd_malloc(KDStore * store, size_t size) {
+    if(store->malloc != NULL) {
+        return store->malloc(size);
     } else {
         return malloc(size);
     }
 }
 
-static KDNode * kd_alloc(KDType * type) {
-    KDNode * ptr = kd_malloc(type, sizeof(KDType) + sizeof(double) * 2 * type->Nd);
+static KDNode * kd_alloc(KDStore * store) {
+    KDNode * ptr = kd_malloc(store, sizeof(KDStore) + sizeof(double) * 2 * store->Nd);
     ptr->link[0] = NULL;
     ptr->link[1] = NULL;
-    ptr->type = type;
-    type->total_nodes ++;
+    ptr->store = store;
+    store->total_nodes ++;
     return ptr;
 }
 
@@ -91,47 +91,47 @@ static inline double * kd_node_max(KDNode * node) {
     return (double*) (node->ext);
 }
 static inline double * kd_node_min(KDNode * node) {
-    return kd_node_max(node) + node->type->Nd;
+    return kd_node_max(node) + node->store->Nd;
 }
 
-static inline void * kd_ptr(KDType * type, ptrdiff_t i, ptrdiff_t d) {
-    i = type->ind[i];
-    return & type->buffer[i * type->strides[0] + d * type->strides[1]];
+static inline void * kd_ptr(KDStore * store, ptrdiff_t i, ptrdiff_t d) {
+    i = store->ind[i];
+    return & store->buffer[i * store->strides[0] + d * store->strides[1]];
 }
-static inline double kd_cast(KDType * type, void * p1) {
-    return type->cast(p1);
+static inline double kd_cast(KDStore * store, void * p1) {
+    return store->cast(p1);
 }
-static inline double kd_data(KDType * type, ptrdiff_t i, ptrdiff_t d) {
-    i = type->ind[i];
-    char * ptr = & type->buffer[i * type->strides[0] + d * type->strides[1]];
-    return kd_cast(type, ptr);
+static inline double kd_data(KDStore * store, ptrdiff_t i, ptrdiff_t d) {
+    i = store->ind[i];
+    char * ptr = & store->buffer[i * store->strides[0] + d * store->strides[1]];
+    return kd_cast(store, ptr);
 }
-static inline void kd_swap(KDType * type, ptrdiff_t i, ptrdiff_t j) {
-    ptrdiff_t t = type->ind[i];
-    type->ind[i] = type->ind[j];
-    type->ind[j] = t;
+static inline void kd_swap(KDStore * store, ptrdiff_t i, ptrdiff_t j) {
+    ptrdiff_t t = store->ind[i];
+    store->ind[i] = store->ind[j];
+    store->ind[j] = t;
 }
 
 static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
-    KDType * type = node->type;
+    KDStore * store = node->store;
     ptrdiff_t p, q, j;
     int d;
 
     double * max = kd_node_max(node);
     double * min = kd_node_min(node);
-    for(d = 0; d < type->Nd; d++) {
+    for(d = 0; d < store->Nd; d++) {
         max[d] = maxhint[d];
         min[d] = minhint[d];
     }
 
-    if(node->size <= type->thresh) {
+    if(node->size <= store->thresh) {
         node->dim = -1;
         return;
     }
 
     node->dim = 0;
     double longest = maxhint[0] - minhint[0];
-    for(d = 1; d < type->Nd; d++) {
+    for(d = 1; d < store->Nd; d++) {
         double tmp = maxhint[d] - minhint[d];
         if(tmp > longest) {
             node->dim = d;
@@ -155,12 +155,12 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     p = node->start;
     q = node->start + node->size - 1;
     while(p <= q) {
-        if(kd_data(type, p, node->dim) < node->split) {
+        if(kd_data(store, p, node->dim) < node->split) {
             p ++;
-        } else if(kd_data(type, q, node->dim) >= node->split) {
+        } else if(kd_data(store, q, node->dim) >= node->split) {
             q --;
         } else {
-            kd_swap(type, p, q); 
+            kd_swap(store, p, q); 
             p ++;
             q --;
         }
@@ -186,30 +186,30 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     if(p == node->start) {
         q = node->start;
         for(j = node->start + 1; j < node->start + node->size; j++) {
-            if (kd_data(type, j, node->dim) <
-                kd_data(type, node->start, node->dim)) {
-                kd_swap(type, j, node->start);
+            if (kd_data(store, j, node->dim) <
+                kd_data(store, node->start, node->dim)) {
+                kd_swap(store, j, node->start);
             }
         }
-        node->split = kd_data(type, node->start, node->dim);
+        node->split = kd_data(store, node->start, node->dim);
         p = q + 1;
     }
     if(p == node->start + node->size) {
         p = node->start + node->size - 1;
         for(j = node->start; j < node->start + node->size- 1; j++) {
-            if (kd_data(type, j, node->dim) > 
-                kd_data(type, node->start + node->size - 1, node->dim)) {
-                kd_swap(type, j, node->start + node->size - 1);
+            if (kd_data(store, j, node->dim) > 
+                kd_data(store, node->start + node->size - 1, node->dim)) {
+                kd_swap(store, j, node->start + node->size - 1);
             }
         }
-        node->split = kd_data(type, node->start + node->size - 1, node->dim);
+        node->split = kd_data(store, node->start + node->size - 1, node->dim);
         q = p - 1;
     }
 
-    node->link[0] = kd_alloc(type);
+    node->link[0] = kd_alloc(store);
     node->link[0]->start = node->start;
     node->link[0]->size = p - node->start;
-    node->link[1] = kd_alloc(type);
+    node->link[1] = kd_alloc(store);
     node->link[1]->start = p;
     node->link[1]->size = node->size - (p - node->start);
 /*
@@ -218,13 +218,13 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
             node->link[0]->start, node->link[0]->size,
             node->link[1]->start, node->link[1]->size);
 */
-    double midhint[type->Nd];
-    for(d = 0; d < type->Nd; d++) {
+    double midhint[store->Nd];
+    for(d = 0; d < store->Nd; d++) {
         midhint[d] = maxhint[d];
     }
     midhint[node->dim] = node->split;
     kd_build_split(node->link[0], minhint, midhint);
-    for(d = 0; d < type->Nd; d++) {
+    for(d = 0; d < store->Nd; d++) {
         midhint[d] = minhint[d];
     }
     midhint[node->dim] = node->split;
@@ -232,31 +232,31 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
 }
 
 /* 
- * create a KD tree based on input data specified in KDType 
+ * create a KD tree based on input data specified in KDStore 
  * free it with kd_free
  * */
-KDNode * kd_build(KDType * type) {
+KDNode * kd_build(KDStore * store) {
     ptrdiff_t i;
-    double min[type->Nd];
-    double max[type->Nd];    
+    double min[store->Nd];
+    double max[store->Nd];    
     int d;
-    type->total_nodes = 0;
-    type->ind[0] = 0;
-    for(d = 0; d < type->Nd; d++) {
-        min[d] = kd_data(type, 0, d);
-        max[d] = kd_data(type, 0, d);
+    store->total_nodes = 0;
+    store->ind[0] = 0;
+    for(d = 0; d < store->Nd; d++) {
+        min[d] = kd_data(store, 0, d);
+        max[d] = kd_data(store, 0, d);
     }
-    for(i = 0; i < type->size; i++) {
-        type->ind[i] = i;
-        for(d = 0; d < type->Nd; d++) {
-            double data = kd_data(type, i, d);
+    for(i = 0; i < store->size; i++) {
+        store->ind[i] = i;
+        for(d = 0; d < store->Nd; d++) {
+            double data = kd_data(store, i, d);
             if(min[d] > data) { min[d] = data; }
             if(max[d] < data) { max[d] = data; }
         }
     }
-    KDNode * tree = kd_alloc(type);
+    KDNode * tree = kd_alloc(store);
     tree->start = 0;
-    tree->size = type->size;
+    tree->size = store->size;
     kd_build_split(tree, min, max);
     return tree;
 }
@@ -264,23 +264,23 @@ KDNode * kd_build(KDType * type) {
  * free a tree
  * this is recursive
  * */
-void kd_free0(KDType * type, size_t size, void * ptr) {
-    if(type->free == NULL) {
+void kd_free0(KDStore * store, size_t size, void * ptr) {
+    if(store->free == NULL) {
         free(ptr);
     } else {
-        type->free(size, ptr);
+        store->free(size, ptr);
     }
 }
 void kd_free(KDNode * node) {
     if(node->link[0]) kd_free(node->link[0]);
     if(node->link[1]) kd_free(node->link[1]);
-    node->type->total_nodes --;
-    kd_free0(node->type, sizeof(KDNode) + node->type->elsize, node);
+    node->store->total_nodes --;
+    kd_free0(node->store, sizeof(KDNode) + node->store->elsize, node);
 }
 
-static void kd_realdiff(KDType * type, double min, double max, double * realmin, double * realmax, int d) {
-    if(type->boxsize) {
-        double full = type->boxsize[d];
+static void kd_realdiff(KDStore * store, double min, double max, double * realmin, double * realmax, int d) {
+    if(store->boxsize) {
+        double full = store->boxsize[d];
         double half = full * 0.5;
         /* periodic */
         /* /\/\ */
@@ -340,7 +340,7 @@ static void kd_realdiff(KDType * type, double min, double max, double * realmin,
 static inline void kd_collect(KDNode * node, double * ptr) {
     /* collect all positions into a double array, 
      * so that they can be paired quickly (cache locality!)*/
-    KDType * t = node->type;
+    KDStore * t = node->store;
     int d;
     ptrdiff_t j;
 
@@ -359,8 +359,8 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
         kd_enum_callback callback, void * data) {
     ptrdiff_t i, j;
     int d;
-    KDType * t0 = node[0]->type;
-    KDType * t1 = node[1]->type;
+    KDStore * t0 = node[0]->store;
+    KDStore * t1 = node[1]->store;
     int Nd = t0->Nd;
 
     double * p0base = alloca(node[0]->size * sizeof(double) * Nd);
@@ -421,7 +421,7 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
  * */
 int kd_enum(KDNode * node[2], double maxr,
         kd_enum_callback callback, void * data) {
-    int Nd = node[0]->type->Nd;
+    int Nd = node[0]->store->Nd;
     double distmax = 0, distmin = 0;
     double rmax2 = maxr * maxr;
     int d;
@@ -434,7 +434,7 @@ int kd_enum(KDNode * node[2], double maxr,
         double realmin, realmax;
         min = min0[d] - max1[d];
         max = max0[d] - min1[d];
-        kd_realdiff(node[0]->type, min, max, &realmin, &realmax, d);
+        kd_realdiff(node[0]->store, min, max, &realmin, &realmax, d);
         distmin += realmin * realmin;
         distmax += realmax * realmax;
     }
@@ -484,12 +484,12 @@ static void kd_split_r(KDNode * node, ptrdiff_t thresh, KDNode *** out, ptrdiff_
     if(node->size <= thresh || node->dim == -1) {
         if (*length >= *size) {
             KDNode ** old = out[0];
-            out[0] = kd_malloc(node->type, sizeof(void*) * *size * 2);
+            out[0] = kd_malloc(node->store, sizeof(void*) * *size * 2);
             ptrdiff_t i;
             for(i = 0; i < *length; i++) {
                 out[0][i] = old[i]; 
             }
-            kd_free0(node->type, *size * sizeof(void*), old);
+            kd_free0(node->store, *size * sizeof(void*), old);
             *size *= 2;
         }
         out[0][*length] = node;
@@ -501,14 +501,14 @@ static void kd_split_r(KDNode * node, ptrdiff_t thresh, KDNode *** out, ptrdiff_
 }
 KDNode ** kd_split(KDNode * node, ptrdiff_t thresh, ptrdiff_t * length) {
     ptrdiff_t size = 128;
-    KDNode ** out = kd_malloc(node->type, sizeof(void*) * size);
+    KDNode ** out = kd_malloc(node->store, sizeof(void*) * size);
     * length = 0;
     kd_split_r(node, thresh, &out, length, &size);
-    KDNode ** ret = kd_malloc(node->type, sizeof(void*) * *length);
+    KDNode ** ret = kd_malloc(node->store, sizeof(void*) * *length);
     ptrdiff_t i;
     for(i = 0; i < * length; i++) {
         ret[i] = out[i]; 
     }
-    kd_free0(node->type, sizeof(void*) * size, out);
+    kd_free0(node->store, sizeof(void*) * size, out);
     return ret;
 }

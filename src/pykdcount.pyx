@@ -14,7 +14,7 @@ cdef extern from "kdcount.h":
 
     ctypedef double (*kd_castfunc)(void * p)
     ctypedef int (*kd_enum_callback)(void * data, KDEnumData * endata)
-    struct cKDType "KDType":
+    struct cKDStore "KDStore":
         char * buffer
         npy_intp size
         int Nd
@@ -31,34 +31,34 @@ cdef extern from "kdcount.h":
         npy_intp total_nodes
 
     struct cKDNode "KDNode":
-        cKDType * type
+        cKDStore * store
         cKDNode * link[2]
         npy_intp start
         npy_intp size
         int dim
         double split
 
-    cKDNode * kd_build(cKDType * type)
+    cKDNode * kd_build(cKDStore * store)
     double * kd_node_max(cKDNode * node)
     double * kd_node_min(cKDNode * node)
     void kd_free(cKDNode * node)
-    void kd_free0(cKDType * type, npy_intp size, void * ptr)
+    void kd_free0(cKDStore * store, npy_intp size, void * ptr)
     cKDNode ** kd_split(cKDNode * node, npy_intp thresh, npy_intp * length)
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
 
 cdef class KDNode:
     cdef cKDNode * ref
-    cdef readonly KDType type
-    def __init__(self, type):
-        self.type = type
+    cdef readonly KDStore store 
+    def __init__(self, store):
+        self.store = store
 
     cdef void bind(self, cKDNode * ref) nogil:
         self.ref = ref
 
     property less:
         def __get__(self):
-            cdef KDNode rt = KDNode(self.type)
+            cdef KDNode rt = KDNode(self.store)
             if self.ref.link[0]:
                 rt.bind(self.ref.link[0])
                 return rt
@@ -67,7 +67,7 @@ cdef class KDNode:
 
     property greater:
         def __get__(self):
-            cdef KDNode rt = KDNode(self.type)
+            cdef KDNode rt = KDNode(self.store)
             if self.ref.link[1]:
                 rt.bind(self.ref.link[1])
                 return rt
@@ -93,12 +93,12 @@ cdef class KDNode:
     property max:
         def __get__(self):
             cdef double * max = kd_node_max(self.ref)
-            return [max[d] for d in range(self.ref.type.Nd)]
+            return [max[d] for d in range(self.ref.store.Nd)]
 
     property min:
         def __get__(self):
             cdef double * min = kd_node_min(self.ref)
-            return [min[d] for d in range(self.ref.type.Nd)]
+            return [min[d] for d in range(self.ref.store.Nd)]
 
     def __repr__(self):
         return str((self.dim, self.split, self.size))
@@ -108,10 +108,10 @@ cdef class KDNode:
         cdef npy_intp len
         list = kd_split(self.ref, thresh, &len)
         cdef npy_intp i
-        ret = [KDNode(self.type) for i in range(len)]
+        ret = [KDNode(self.store) for i in range(len)]
         for i in range(len):
             (<KDNode>(ret[i])).bind(list[i])
-        kd_free0(self.type.ref, len * sizeof(cKDNode*), list)
+        kd_free0(self.store.ref, len * sizeof(cKDNode*), list)
         return ret
 
     def enum(self, KDNode other, rmax, bunch=100000):
@@ -121,7 +121,7 @@ cdef class KDNode:
             yield r, i, j
 
     def realenum(self, KDNode other, rmax, process=None, bunch=10000, **kwargs):
-        cdef int Nd = self.ref.type.Nd
+        cdef int Nd = self.ref.store.Nd
         cdef numpy.ndarray r = numpy.empty(bunch, 'f8')
         cdef numpy.ndarray i = numpy.empty(bunch, 'intp')
         cdef numpy.ndarray j = numpy.empty(bunch, 'intp')
@@ -190,8 +190,8 @@ cdef int callback(CBData * data, KDEnumData * endata) except -1:
     data.length = data.length + 1
     return 0
 
-cdef class KDType:
-    cdef cKDType * ref
+cdef class KDStore:
+    cdef cKDStore * ref
     cdef cKDNode * tree
     cdef readonly numpy.ndarray input
     cdef readonly numpy.ndarray ind
@@ -210,7 +210,7 @@ cdef class KDType:
 
     def __init__(self, numpy.ndarray input, boxsize=None):
         self.input = input
-        self.ref = <cKDType*>PyMem_Malloc(sizeof(cKDType))
+        self.ref = <cKDStore*>PyMem_Malloc(sizeof(cKDStore))
         self.ref.buffer = input.data
         self.ref.size = input.shape[0]
         self.ref.Nd = input.shape[1]
@@ -241,8 +241,8 @@ cdef class KDType:
         PyMem_Free(self.ref)
 
 def build(numpy.ndarray data, boxsize=None):
-    type = KDType(data, boxsize)
-    return type.root
+    store = KDStore(data, boxsize)
+    return store.root
 
 import threading
 import Queue
