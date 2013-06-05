@@ -15,17 +15,19 @@ cdef extern from "kdcount.h":
 
     ctypedef double (*kd_castfunc)(void * p)
     ctypedef int (*kd_enum_callback)(void * data, KDEnumData * endata)
-    struct cKDStore "KDStore":
+    struct cKDArray "KDArray":
         char * buffer
-        npy_intp size
-        int Nd
+        npy_intp dims[2]
         npy_intp strides[2]
+        npy_intp elsize
+        double (* cast)(void * p1)
+    
+    struct cKDStore "KDStore":
+        cKDArray input
         int thresh
         npy_intp * ind
         double * boxsize
         double p
-        npy_intp elsize
-        double (* cast)(void * p1)
         void * (*malloc)(npy_intp size)
         void * (*free)(npy_intp size, void * ptr)
         void * userdata
@@ -96,12 +98,12 @@ cdef class KDNode:
     property max:
         def __get__(self):
             cdef double * max = kd_node_max(self.ref)
-            return [max[d] for d in range(self.ref.store.Nd)]
+            return [max[d] for d in range(self.ref.store.input.dims[1])]
 
     property min:
         def __get__(self):
             cdef double * min = kd_node_min(self.ref)
-            return [min[d] for d in range(self.ref.store.Nd)]
+            return [min[d] for d in range(self.ref.store.input.dims[1])]
 
     def __repr__(self):
         return str((self.dim, self.split, self.size))
@@ -163,7 +165,7 @@ cdef class KDNode:
             input array index of the data. arbitrary args can be passed
             to process via kwargs.
         """
-        cdef int Nd = self.ref.store.Nd
+        cdef int Nd = self.ref.store.input.dims[1]
         cdef numpy.ndarray r = numpy.empty(bunch, 'f8')
         cdef numpy.ndarray i = numpy.empty(bunch, 'intp')
         cdef numpy.ndarray j = numpy.empty(bunch, 'intp')
@@ -240,7 +242,7 @@ cdef class KDStore:
     cdef readonly numpy.ndarray boxsize
     property strides:
         def __get__(self):
-            return [self.ref.strides[i] for i in range(2)]
+            return [self.ref.input.strides[i] for i in range(2)]
     property root:
         def __get__(self):
             cdef KDNode rt = KDNode(self)
@@ -255,26 +257,26 @@ cdef class KDStore:
             raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
         self.ref = <cKDStore*>PyMem_Malloc(sizeof(cKDStore))
-        self.ref.buffer = input.data
-        self.ref.size = input.shape[0]
-        self.ref.Nd = input.shape[1]
-        self.ref.strides[0] = input.strides[0]
-        self.ref.strides[1] = input.strides[1]
+        self.ref.input.buffer = input.data
+        self.ref.input.dims[0] = input.shape[0]
+        self.ref.input.dims[1] = input.shape[1]
+        self.ref.input.strides[0] = input.strides[0]
+        self.ref.input.strides[1] = input.strides[1]
         self.ref.thresh = 10
-        self.ind = numpy.empty(self.ref.size, dtype='intp')
+        self.ind = numpy.empty(self.ref.input.dims[0], dtype='intp')
         self.ref.ind = <npy_intp*> self.ind.data
         if boxsize != None:
-            self.boxsize = numpy.empty(self.ref.Nd, dtype='f8')
+            self.boxsize = numpy.empty(self.ref.input.dims[1], dtype='f8')
             self.boxsize[:] = boxsize
             self.ref.boxsize = <double*>self.boxsize.data
         else:
             self.boxsize = None
             self.ref.boxsize = NULL
-        self.ref.elsize = input.dtype.itemsize
+        self.ref.input.elsize = input.dtype.itemsize
         if input.dtype.char == 'f':
-            self.ref.cast = <kd_castfunc>fcast
+            self.ref.input.cast = <kd_castfunc>fcast
         if input.dtype.char == 'd':
-            self.ref.cast = <kd_castfunc>dcast
+            self.ref.input.cast = <kd_castfunc>dcast
         self.ref.malloc = NULL
         self.ref.free = NULL
         self.tree = kd_build(self.ref)

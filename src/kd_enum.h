@@ -10,7 +10,7 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
  * */
 int kd_enum(KDNode * node[2], double maxr,
         kd_enum_callback callback, void * data) {
-    int Nd = node[0]->store->Nd;
+    int Nd = node[0]->store->input.dims[1];
     double distmax = 0, distmin = 0;
     double rmax2 = maxr * maxr;
     int d;
@@ -72,7 +72,7 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
     int d;
     KDStore * t0 = node[0]->store;
     KDStore * t1 = node[1]->store;
-    int Nd = t0->Nd;
+    int Nd = t0->input.dims[1];
 
     double * p0base = alloca(node[0]->size * sizeof(double) * Nd);
     double * p1base = alloca(node[1]->size * sizeof(double) * Nd);
