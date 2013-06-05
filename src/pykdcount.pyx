@@ -4,6 +4,7 @@ cimport numpy
 import numpy
 from cpython.mem cimport PyMem_Malloc, PyMem_Free, PyMem_Realloc
 from libc.stdint cimport intptr_t as npy_intp
+from libc.stdint cimport uint64_t as npy_uint64
 numpy.import_array()
 
 cdef extern from "kdcount.h":
@@ -43,9 +44,11 @@ cdef extern from "kdcount.h":
     double * kd_node_min(cKDNode * node)
     void kd_free(cKDNode * node)
     void kd_free0(cKDStore * store, npy_intp size, void * ptr)
-    cKDNode ** kd_split(cKDNode * node, npy_intp thresh, npy_intp * length)
+    cKDNode ** kd_tearoff(cKDNode * node, npy_intp thresh, npy_intp * length)
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
+    int kd_count(cKDNode * node[2], double * r2,
+            npy_uint64 * count, npy_intp Nbins) except -1
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -103,10 +106,14 @@ cdef class KDNode:
     def __repr__(self):
         return str((self.dim, self.split, self.size))
 
-    def subtrees(self, thresh):
+    def tearoff(self, thresh):
+        """
+            tearoff a tree so that each returned 
+            subtree is no bigger than thresh.
+        """
         cdef cKDNode ** list
         cdef npy_intp len
-        list = kd_split(self.ref, thresh, &len)
+        list = kd_tearoff(self.ref, thresh, &len)
         cdef npy_intp i
         ret = [KDNode(self.store) for i in range(len)]
         for i in range(len):
@@ -114,13 +121,48 @@ cdef class KDNode:
         kd_free0(self.store.ref, len * sizeof(cKDNode*), list)
         return ret
 
-    def enum(self, KDNode other, rmax, bunch=100000):
+    def count(self, KDNode other, r):
+        r = numpy.atleast_1d(r).ravel()
+        cdef numpy.ndarray r2 = numpy.empty(r.shape, dtype='f8')
+        cdef numpy.ndarray count = numpy.zeros(r.shape, dtype='u8')
+        cdef cKDNode * node[2]
+        node[0] = self.ref
+        node[1] = other.ref
+        r2[:] = r * r
+        kd_count(node, <double*>r2.data, <npy_uint64*>count.data, len(r))
+        return count
+
+    def enumiter(self, KDNode other, rmax, bunch=100000):
+        """ cross correlate with other, for all pairs
+            closer than rmax, iterate.
+
+            for r, i, j in A.enumiter(...):
+                ...
+            where r is the distance, i and j are the original
+            input array index of the data.
+
+            This uses a thread to convert from KDNode.enum.
+        """
+
         def feeder(process):
-            self.realenum(other, rmax, process, bunch)
+            self.enum(other, rmax, process, bunch)
         for r, i, j in makeiter(feeder):
             yield r, i, j
 
-    def realenum(self, KDNode other, rmax, process=None, bunch=10000, **kwargs):
+    def enum(self, KDNode other, rmax, process=None, bunch=10000, **kwargs):
+        """ cross correlate with other, for all pairs
+            closer than rmax, iterate.
+
+            def process(r, i, j, **kwargs):
+                ...
+
+            A.enum(... process, **kwargs):
+                ...
+
+            where r is the distance, i and j are the original
+            input array index of the data. arbitrary args can be passed
+            to process via kwargs.
+        """
         cdef int Nd = self.ref.store.Nd
         cdef numpy.ndarray r = numpy.empty(bunch, 'f8')
         cdef numpy.ndarray i = numpy.empty(bunch, 'intp')
@@ -139,9 +181,9 @@ cdef class KDNode:
                 jall[0] = numpy.append(jall[0], j1)
 
         def func():
-            process(r[:cbdata.length], 
-                    i[:cbdata.length], 
-                    j[:cbdata.length],
+            process(r[:cbdata.length].copy(), 
+                    i[:cbdata.length].copy(), 
+                    j[:cbdata.length].copy(),
                     **kwargs)
         node[0] = self.ref
         node[1] = other.ref
@@ -209,6 +251,8 @@ cdef class KDStore:
             return self.ref.total_nodes
 
     def __init__(self, numpy.ndarray input, boxsize=None):
+        if input.ndim != 2:
+            raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
         self.ref = <cKDStore*>PyMem_Malloc(sizeof(cKDStore))
         self.ref.buffer = input.data
