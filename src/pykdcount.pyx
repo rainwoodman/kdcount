@@ -24,6 +24,7 @@ cdef extern from "kdcount.h":
     
     struct cKDStore "KDStore":
         cKDArray input
+        cKDArray weight
         int thresh
         npy_intp * ind
         double * boxsize
@@ -43,6 +44,7 @@ cdef extern from "kdcount.h":
 
     cKDNode * kd_build(cKDStore * store)
     double * kd_node_max(cKDNode * node)
+    double * kd_node_weight(cKDNode * node)
     double * kd_node_min(cKDNode * node)
     void kd_free(cKDNode * node)
     void kd_free0(cKDStore * store, npy_intp size, void * ptr)
@@ -50,7 +52,7 @@ cdef extern from "kdcount.h":
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
     int kd_count(cKDNode * node[2], double * r2,
-            npy_uint64 * count, npy_intp Nbins) except -1
+            npy_uint64 * count, double * weight, npy_intp Nbins) except -1
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -98,15 +100,23 @@ cdef class KDNode:
     property max:
         def __get__(self):
             cdef double * max = kd_node_max(self.ref)
-            return [max[d] for d in range(self.ref.store.input.dims[1])]
+            return numpy.array([max[d] for d in
+                range(self.ref.store.input.dims[1])])
+
+    property weight:
+        def __get__(self):
+            cdef double * weight = kd_node_weight(self.ref)
+            return numpy.array([weight[d] for d in
+                range(self.ref.store.weight.dims[1])])
 
     property min:
         def __get__(self):
             cdef double * min = kd_node_min(self.ref)
-            return [min[d] for d in range(self.ref.store.input.dims[1])]
+            return numpy.array([min[d] for d in
+                range(self.ref.store.input.dims[1])])
 
     def __repr__(self):
-        return str((self.dim, self.split, self.size))
+        return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
 
     def tearoff(self, thresh):
         """
@@ -125,14 +135,19 @@ cdef class KDNode:
 
     def count(self, KDNode other, r):
         r = numpy.atleast_1d(r).ravel()
+        cdef int Nw = self.ref.store.weight.dims[1]
         cdef numpy.ndarray r2 = numpy.empty(r.shape, dtype='f8')
         cdef numpy.ndarray count = numpy.zeros(r.shape, dtype='u8')
+        cdef numpy.ndarray weight = numpy.zeros((r.size, Nw), dtype='f8')
         cdef cKDNode * node[2]
         node[0] = self.ref
         node[1] = other.ref
         r2[:] = r * r
-        kd_count(node, <double*>r2.data, <npy_uint64*>count.data, len(r))
-        return count
+
+        kd_count(node, <double*>r2.data, 
+                <npy_uint64*>count.data,
+                <double*>weight.data, len(r))
+        return count, weight
 
     def enumiter(self, KDNode other, rmax, bunch=100000):
         """ cross correlate with other, for all pairs
@@ -238,6 +253,7 @@ cdef class KDStore:
     cdef cKDStore * ref
     cdef cKDNode * tree
     cdef readonly numpy.ndarray input
+    cdef readonly numpy.ndarray weight
     cdef readonly numpy.ndarray ind
     cdef readonly numpy.ndarray boxsize
     property strides:
@@ -252,16 +268,52 @@ cdef class KDStore:
         def __get__(self):
             return self.ref.total_nodes
 
-    def __init__(self, numpy.ndarray input, boxsize=None):
+    property Nd:
+        def __get__(self):
+            return self.input.shape[1]
+
+    property Nw:
+        def __get__(self):
+            return self.weight.shape[1]
+
+    def __init__(self, numpy.ndarray input, numpy.ndarray weight=None, boxsize=None):
         if input.ndim != 2:
             raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
+        if weight is not None:
+            if weight.ndim == 1:
+                weight = weight.reshape(-1, 1)
+            if weight.ndim != 2:
+                raise ValueError("weigth needs to be a 1D/2D array of (N, Nw)")
+            self.weight = weight
+            if weight.shape[0] != input.shape[0]:
+                raise ValueError("input and weight shape mismatch")
+        else:
+            self.weight = numpy.empty((self.input.shape[0], 0), dtype='f8')
+
         self.ref = <cKDStore*>PyMem_Malloc(sizeof(cKDStore))
         self.ref.input.buffer = input.data
         self.ref.input.dims[0] = input.shape[0]
         self.ref.input.dims[1] = input.shape[1]
         self.ref.input.strides[0] = input.strides[0]
         self.ref.input.strides[1] = input.strides[1]
+        self.ref.input.elsize = input.dtype.itemsize
+        if input.dtype.char == 'f':
+            self.ref.input.cast = <kd_castfunc>fcast
+        if input.dtype.char == 'd':
+            self.ref.input.cast = <kd_castfunc>dcast
+
+        self.ref.weight.buffer = self.weight.data
+        self.ref.weight.dims[0] = self.weight.shape[0]
+        self.ref.weight.dims[1] = self.weight.shape[1]
+        self.ref.weight.strides[0] = self.weight.strides[0]
+        self.ref.weight.strides[1] = self.weight.strides[1]
+        self.ref.weight.elsize = self.weight.dtype.itemsize
+        if self.weight.dtype.char == 'f':
+            self.ref.weight.cast = <kd_castfunc>fcast
+        if self.weight.dtype.char == 'd':
+            self.ref.weight.cast = <kd_castfunc>dcast
+
         self.ref.thresh = 10
         self.ind = numpy.empty(self.ref.input.dims[0], dtype='intp')
         self.ref.ind = <npy_intp*> self.ind.data
@@ -272,11 +324,6 @@ cdef class KDStore:
         else:
             self.boxsize = None
             self.ref.boxsize = NULL
-        self.ref.input.elsize = input.dtype.itemsize
-        if input.dtype.char == 'f':
-            self.ref.input.cast = <kd_castfunc>fcast
-        if input.dtype.char == 'd':
-            self.ref.input.cast = <kd_castfunc>dcast
         self.ref.malloc = NULL
         self.ref.free = NULL
         self.tree = kd_build(self.ref)
@@ -286,8 +333,8 @@ cdef class KDStore:
             kd_free(self.tree)
         PyMem_Free(self.ref)
 
-def build(numpy.ndarray data, boxsize=None):
-    store = KDStore(data, boxsize)
+def build(numpy.ndarray data, numpy.ndarray weights=None, boxsize=None):
+    store = KDStore(data, weight=weights, boxsize=boxsize)
     return store.root
 
 import threading
@@ -312,13 +359,15 @@ def makeiter(feeder):
         item = q.get()
         if item is StopIteration:
             q.task_done()
+            q.join()
+            t.join()
             break
         elif isinstance(item, Exception):
             q.task_done()
+            q.join()
+            t.join()
             raise item
         else:
             if len(item) == 1: item = item[0]
             yield item
             q.task_done()
-    q.join()
-

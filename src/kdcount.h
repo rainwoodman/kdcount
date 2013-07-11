@@ -82,7 +82,10 @@ static void * kd_malloc(KDStore * store, size_t size) {
 }
 
 static KDNode * kd_alloc(KDStore * store) {
-    KDNode * ptr = kd_malloc(store, sizeof(KDStore) + sizeof(double) * 2 * store->input.dims[1]);
+    KDNode * ptr = kd_malloc(store, sizeof(KDNode) + 
+            sizeof(double) * 2 * store->input.dims[1] +
+            sizeof(double) * store->weight.dims[1]
+            );
     ptr->link[0] = NULL;
     ptr->link[1] = NULL;
     ptr->store = store;
@@ -95,6 +98,9 @@ static inline double * kd_node_max(KDNode * node) {
 }
 static inline double * kd_node_min(KDNode * node) {
     return kd_node_max(node) + node->store->input.dims[1];
+}
+static inline double * kd_node_weight(KDNode * node) {
+    return kd_node_min(node) + node->store->input.dims[1];
 }
 static inline double kd_array_get(KD2Darray * array, ptrdiff_t i, ptrdiff_t d) {
     char * ptr = & array->buffer[
@@ -125,17 +131,27 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     KDStore * store = node->store;
     ptrdiff_t p, q, j;
     int d;
-
     int Nd = store->input.dims[1];
+    int Nw = store->weight.dims[1];
     double * max = kd_node_max(node);
     double * min = kd_node_min(node);
+    double * weight = kd_node_weight(node);
+    for(d = 0; d < Nw; d++) {
+        weight[d] = 0;
+    }
     for(d = 0; d < Nd; d++) {
         max[d] = maxhint[d];
         min[d] = minhint[d];
     }
 
     if(node->size <= store->thresh) {
+        int i;
         node->dim = -1;
+        for(i = 0; i < node->size; i++) {
+            for (d = 0; d < Nw; d++) {
+                weight[d] += kd_weight(node->store, node->start + i, d);
+            }
+        }
         return;
     }
 
@@ -234,11 +250,20 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     }
     midhint[node->dim] = node->split;
     kd_build_split(node->link[0], minhint, midhint);
+
     for(d = 0; d < Nd; d++) {
         midhint[d] = minhint[d];
     }
     midhint[node->dim] = node->split;
     kd_build_split(node->link[1], midhint, maxhint);
+
+    int i;
+    for(i = 0; i < 2; i++) {
+        double * weight1 = kd_node_weight(node->link[i]);
+        for(d = 0; d < Nw; d++) {
+            weight[d] += weight1[d];
+        }
+    }
 }
 
 /* 
@@ -286,7 +311,11 @@ void kd_free(KDNode * node) {
     if(node->link[0]) kd_free(node->link[0]);
     if(node->link[1]) kd_free(node->link[1]);
     node->store->total_nodes --;
-    kd_free0(node->store, sizeof(KDNode) + node->store->input.elsize, node);
+    kd_free0(node->store, 
+            sizeof(KDNode) +
+            sizeof(double) * 2 * node->store->input.dims[1] +
+            sizeof(double) * node->store->weight.dims[1],
+            node);
 }
 
 static void kd_realdiff(KDStore * store, double min, double max, double * realmin, double * realmax, int d) {
@@ -348,30 +377,36 @@ static void kd_realdiff(KDStore * store, double min, double max, double * realmi
     }
 
 }
-static inline void kd_collect(KDNode * node, double * ptr) {
-    /* collect all positions into a double array, 
+static inline void kd_collect(KDNode * node, double * input, double * weight) {
+    /* collect all positions and weight into a double array, 
      * so that they can be paired quickly (cache locality!)*/
     KDStore * t = node->store;
     int d;
     ptrdiff_t j;
-    KD2Darray * array = &t->input;
-    int Nd = array->dims[1];
-    char * base = array->buffer;
-    for (j = 0; j < node->size; j++) {
-        char * item = base + t->ind[j + node->start] * array->strides[0];
-        if(array->cast) {
-            for(d = 0; d < Nd; d++) {
-                *ptr = array->cast(item);
-                ptr++;
-                item += array->strides[1];
+    KD2Darray * arrays[] = {&t->input, &t->weight};
+    double * buffers[] = {input, weight};
+    int type;
+    for(type = 0; type < 2; type++) {
+        KD2Darray * array = arrays[type];
+        double * ptr = buffers[type];
+        if(ptr == NULL) continue;
+        int Nd = array->dims[1];
+        char * base = array->buffer;
+        for (j = 0; j < node->size; j++) {
+            char * item = base + t->ind[j + node->start] * array->strides[0];
+            if(array->cast) {
+                for(d = 0; d < Nd; d++) {
+                    *ptr = array->cast(item);
+                    ptr++;
+                    item += array->strides[1];
+                }
+            } else {
+                for(d = 0; d < Nd; d++) {
+                    memcpy(ptr, item, array->elsize);
+                    ptr++;
+                    item += array->strides[1];
+                }
             }
-        } else {
-            for(d = 0; d < Nd; d++) {
-                memcpy(ptr, item, array->elsize);
-                ptr++;
-                item += array->strides[1];
-            }
-        
         }
     }
 }

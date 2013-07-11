@@ -89,8 +89,9 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
         }
     }
 
-    kd_collect(node[0], p0base);
-    kd_collect(node[1], p1base);
+    /* no need to collect weight */
+    kd_collect(node[0], p0base, NULL);
+    kd_collect(node[1], p1base, NULL);
 
     double bad = rmax2 * 2 + 1;
     for (p0 = p0base, i = 0; i < node[0]->size; i++) {
