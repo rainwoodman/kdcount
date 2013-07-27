@@ -29,9 +29,12 @@ class points(dataset):
         dataset.__init__(self, pos)
         self._weight = weight
         if weight is not None:
-            self.norm = weight.sum()
+            self.norm = weight.sum(axis=0)
+            self.subshape = weight.shape[1:]
         else:
             self.norm = len(pos) * 1.0
+            self.subshape = ()
+
     def num(self, index):
         if self._weight is None:
             return numpy.ones(len(index))
@@ -48,82 +51,108 @@ class field(dataset):
             self._value = value * weight
         else:
             self._value = value
+        self.subshape = value.shape[1:]
         self.norm = 1.0
     def num(self, index):
         return self._value[index]
     def denom(self, index):
         if self._weight is None:
-            return numpy.ones(len(index))
+            return numpy.ones([len(index)] + list(self.subshape))
         else:
             return self._weight[index]
 
-class digitize(object):
-    def __init__(self):
+class Bins(object):
+    def __init__(self, Rmax, edges):
         self.minlength = -1
+        self.Rmax = Rmax
+        self.edges = edges
+        if isinstance(edges, tuple):
+            self.shape = tuple([e.shape[0] for e in edges])
+        else:
+            self.shape = edges.shape
+
     def __call__(self, r, i, j):
         raise UnimplementedError()
 
-class digitizeRmu2(digitize):
-    def __init__(self, Rmax, Nbins, Nmu2bins, observer):
-        digitize.__init__(self)
-        self.invdR = Nbins / (1.0 * Rmax)
-        self.invdmu2 = Nmu2bins / 1.0
-        self.bins = (
-                numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
-                numpy.arange(Nmu2bins + 1) * (1.0) / Nmu2bins)
-        self.shape = (Nbins + 1, Nmu2bins + 1)
+class RmuBins(Bins):
+    def __init__(self, Rmax, Nbins, Nmubins, observer):
         self.Rmax = Rmax
-        self.observer = observer
+        Bins.__init__(self, Rmax, 
+            (
+            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
+            numpy.arange(Nmubins + 1) * (1.0) / Nmubins
+            )
+            )
+        self.invdR = Nbins / (1.0 * Rmax)
+        self.invdmu = Nmubins / 1.0
+        self.observer = numpy.array(observer)
 
     def __call__(self, r, i, j, data1, data2):
         Nbins = self.shape[0] - 1
-        Nmu2bins = self.shape[1] - 1
+        x = numpy.int32(r * self.invdR).clip(0, Nbins)
+
+        Nmubins = self.shape[1] - 1
         r1 = data1.pos[i]
         r2 = data2.pos[j]
         center = 0.5 * (r1 + r2) - self.observer
         dr = r1 - r2
-        dot = numpy.einsum('ij, ij-> i', dr, center) 
+        dot = numpy.einsum('ij, ij->i', dr, center) 
         center = numpy.einsum('ij, ij->i', center, center) ** 0.5
-        mask = (r != 0) & (center != 0)
-        dot[mask] /= (r[mask] * center[mask])
-        dot[~mask] = 10
-        mu2 = dot * dot
-        x = numpy.int32(r * self.invdR).clip(0, Nbins)
-        y = numpy.int32(mu2 * self.invdmu2).clip(0, Nmu2bins)
+        mu = dot / (center * r)
+        mu[r == 0] = 10.0
+        y = numpy.int32(numpy.abs(mu) * self.invdmu).clip(0, Nmubins)
+
         return numpy.ravel_multi_index((x, y), self.shape)
 
-class digitizeR(digitize):
-    def __init__(self, Rmax, Nbins):
-        digitize.__init__(self)
-        self.invdR = Nbins / (1.0 * Rmax)
-        self.bins = numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins
-        self.shape = Nbins + 1
+class XYBins(Bins):
+    def __init__(self, Rmax, Nbins, observer):
         self.Rmax = Rmax
+        Bins.__init__(self, Rmax, 
+            (
+            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
+            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
+            )
+            )
+        self.invdR = Nbins / (1.0 * Rmax)
+        self.observer = observer
+
     def __call__(self, r, i, j, data1, data2):
-        bins = self.shape - 1
+        Nbins = self.shape[0] - 1
+        r1 = data1.pos[i]
+        r2 = data2.pos[j]
+        center = 0.5 * (r1 + r2) - self.observer
+        dr = r1 - r2
+        dot = numpy.einsum('ij, ij->i', dr, center) 
+        dot2 = dot ** 2
+        center2 = numpy.einsum('ij, ij->i', center, center)
+        y2 = dot2 / center2
+        dr2 = numpy.einsum('ij, ij->i', dr, dr)
+        x2 = numpy.abs(dr2 - y2)
+        x = numpy.int32(x2 ** 0.5 * self.invdR).clip(0, Nbins)
+        y = numpy.int32(y2 ** 0.5 * self.invdR).clip(0, Nbins)
+        return numpy.ravel_multi_index((x, y), self.shape)
+
+class RBins(Bins):
+    def __init__(self, Rmax, Nbins):
+        self.Rmax = Rmax
+        Bins.__init__(self, Rmax, 
+            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins
+        )
+        self.invdR = Nbins / (1.0 * Rmax)
+    def __call__(self, r, i, j, data1, data2):
+        bins = self.shape[0] - 1
         return numpy.int16(r * self.invdR).clip(0, bins)
 
-def paircount(data1, data2, d):
+def paircount(data1, data2, bins):
     """ 
-        d is instance of digitize, ( digitizeR)
+        returns bincenter, counts
+        bins is instance of Bins, (RBins, RmuBins)
+
+        if the weight/value has multiple components,
+        the counts of each component is returned as columns
 
         example 1:
 
-    martin = points(numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3])
-    random = points(numpy.random.uniform(size=(1000000, 3)))
-    DR = paircount(martin, random, digitizeR(0.1, 40))
-    DD = paircount(martin, martin, digitizeR(0.1, 40))
-    RR = paircount(random, random, digitizeR(0.1, 40))
-
-    example 2
-    sim = numpy.fromfile('grid-128.raw', dtype='f4')
-    pos = numpy.array(numpy.unravel_index(numpy.arange(sim.size),
-        (128, 128, 128))).T / 128.0
-    numpy.random.seed(1000)
-    sample = numpy.random.uniform(size=len(pos)) < 0.4
-    data = field(pos[sample], value=sim[sample])
-    print 'data ready'
-    DD = paircount(data, data, digitizeR(0.1, 40))
         three cases:
 
         points x points
@@ -147,23 +176,32 @@ def paircount(data1, data2, d):
     tree2 = data2.tree
     p = list(kdcount.divide_and_conquer(tree1, tree2, 50000))
 
-    denomsum = numpy.zeros(d.shape, dtype='f8')
-    numsum = numpy.zeros(d.shape, dtype='f8')
+    fullshape = list(data1.subshape) + list(bins.shape)
+    linearshape = [-1] + list(bins.shape)
+
+    denomsum = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
+    numsum = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
 
     def work(i):
         n1, n2 = p[i]
-        num = numpy.zeros(d.shape, dtype='f8')
-        denom = numpy.zeros(d.shape, dtype='f8')
-        for r, i, j in n1.enumiter(n2, d.Rmax):
-            dig = d(r, i, j, data1, data2)
-            num.flat [:] += numpy.bincount(dig, 
-                    data1.num(i) * data2.num(j), 
-                    minlength=num.size)
+        num = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
+        denom = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
+        for r, i, j in n1.enumiter(n2, bins.Rmax):
+            dig = bins(r, i, j, data1, data2)
+            numij = data1.num(i) * data2.num(j)
+            numij = numij.reshape(dig.size, -1)
+            for d in range(num.shape[0]):
+                num[d].flat [:] += numpy.bincount(dig, 
+                        numij[:, d],
+                        minlength=num[d].size)
             if isinstance(data1, field) \
             or isinstance(data2, field):
-                denom.flat [:] += numpy.bincount(dig,
-                    data1.denom(i) * data2.denom(j),
-                    minlength=denom.size)
+                denomij = data1.denom(i) * data2.denom(j)
+                denomij = denomij.reshape(dig.size, -1)
+                for d in range(num.shape[0]):
+                    denom[d].flat [:] += numpy.bincount(dig,
+                            denomij[:, d],
+                        minlength=denom[d].size)
         return num, denom
     def reduce(num, denom):
         numsum[...] += num
@@ -176,15 +214,20 @@ def paircount(data1, data2, d):
         # special handling for two point sets where
         # the denominator is always 1
         denomsum[...] = 1.0
-    corr = numsum / denomsum / (data1.norm * data2.norm)
-    return d.bins, corr
+    corr = (numsum / denomsum).T / (data1.norm * data2.norm)
+    corr = corr.T.reshape(fullshape).T
+    return bins.edges, corr
 
 def main():
-    martin = points(numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3])
-    random = points(numpy.random.uniform(size=(1000000, 3)))
-    DR = paircount(martin, random, digitizeR(0.1, 40))
-    DD = paircount(martin, martin, digitizeR(0.1, 40))
-    RR = paircount(random, random, digitizeR(0.1, 40))
+    pm = numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3]
+    wm = numpy.ones((len(pm), 2))
+    martin = points(pm, wm)
+    pr = numpy.random.uniform(size=(1000000, 3))
+    wr = numpy.ones((len(pr), 2))
+    random = points(pr, wr)
+    DR = paircount(martin, random, RBins(0.1, 40))
+    DD = paircount(martin, martin, RBins(0.1, 40))
+    RR = paircount(random, random, RBins(0.1, 40))
     return DR[0], DD[1], DR[1], RR[1]
 
 def main2():
@@ -196,9 +239,11 @@ def main2():
         (128, 128, 128))).T / 128.0
     numpy.random.seed(1000)
     sample = numpy.random.uniform(size=len(pos)) < 0.4
-    data = field(pos[sample], value=sim[sample])
+    value = numpy.tile(sim[sample], (2, 1)).T
+#    value = sim[sample]
+    data = field(pos[sample], value=value)
     print 'data ready'
-    DD = paircount(data, data, digitizeR(0.1, 40))
+    DD = paircount(data, data, RBins(0.1, 40))
     return DD
 
 def main3():
@@ -208,7 +253,8 @@ def main3():
         (128, 128, 128))).T / 128.0
     numpy.random.seed(1000)
     sample = numpy.random.uniform(size=len(pos)) < 0.2
-    data = field(pos[sample], value=sim[sample])
+    value = numpy.tile(sim[sample], (2, 1)).T
+    data = field(pos[sample], value=value)
     print 'data ready'
-    DD = paircount(data, data, digitizeRmu2(0.10, 8, 20, 0.5))
+    DD = paircount(data, data, RmuBins(0.10, 8, 20, 0.5))
     return DD
