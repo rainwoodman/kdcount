@@ -20,13 +20,13 @@ except ImportError:
             return [callreduce(work(i)) for i in items]
 
 class dataset(object):
-    def __init__(self, pos):
+    def __init__(self, pos, boxsize):
         self.pos = pos
-        self.tree = kdcount.build(self.pos)
+        self.tree = kdcount.build(self.pos, boxsize=boxsize)
 
 class points(dataset):
-    def __init__(self, pos, weight=None):
-        dataset.__init__(self, pos)
+    def __init__(self, pos, weight=None, boxsize=None):
+        dataset.__init__(self, pos, boxsize)
         self._weight = weight
         if weight is not None:
             self.norm = weight.sum(axis=0)
@@ -44,8 +44,8 @@ class points(dataset):
         return 1.0
 
 class field(dataset):
-    def __init__(self, pos, value, weight=None):
-        dataset.__init__(self, pos)
+    def __init__(self, pos, value, weight=None, boxsize=None):
+        dataset.__init__(self, pos, boxsize)
         self._weight = weight
         if weight is not None:
             self._value = value * weight
@@ -62,36 +62,81 @@ class field(dataset):
             return self._weight[index]
 
 class Bins(object):
-    def __init__(self, Rmax, edges):
-        self.minlength = -1
-        self.Rmax = Rmax
-        self.edges = edges
-        if isinstance(edges, tuple):
-            self.shape = tuple([e.shape[0] for e in edges])
-        else:
-            self.shape = edges.shape
+    def __init__(self, *args):
+        """ the shape has one extra per edge
+            0 is .le. min
+            -1 is .g. max
+            args are (min, max, Nbins)
+            the first is for R
+        """
+        self.dims = numpy.empty(len(args),
+                dtype=[
+                    ('inv', 'f8'),
+                    ('min', 'f8'),
+                    ('max', 'f8'),
+                    ('N', 'i4'),
+                    ('logscale', '?')
+                    ])
+        self.min = self.dims['min']
+        self.max = self.dims['max']
+        self.N = self.dims['N']
+        self.inv = self.dims['inv']
+        self.logscale = self.dims['logscale']
+        self.edges = []
+        self.centers = []
+        for i, dim in enumerate(args):
+            if len(dim) == 3:
+                min, max, Nbins = dim
+                log = False
+            else:
+                min, max, Nbins, log = dim
+            self.N[i] = Nbins
+            self.min[i] = min
+            self.max[i] = max
+            self.logscale[i] = log
+            if log:
+                self.inv[i] = Nbins * 1.0 / numpy.log10(max / min)
+            else:
+                self.inv[i] = Nbins * 1.0 / (max - min)
+            edge = numpy.arange(Nbins + 1) * 1.0 / self.inv[i]
+            if log:
+                edge = 10 ** edge * min
+                center = (edge[1:] * edge[:-1]) ** 0.5
+            else:
+                edge = edge + min
+                center = (edge[1:] + edge[:-1]) * 0.5
+            self.edges.append(edge)
+            self.centers.append(center)
+
+        self.Rmax = self.max[0]
+        self.Ndim = len(args)
+        self.shape = self.N + 2
+        if self.Ndim == 1:
+            self.edges = self.edges[0]
+            self.centers = self.centers[0]
+
+    def linear(self, *args):
+        integer = numpy.empty(len(args[0]), ('i8', (self.Ndim,))).T
+        for d in range(self.Ndim):
+            if self.logscale[d]:
+                x = numpy.log10(args[d] / self.min[d])
+            else:
+                x = args[d] - self.min[d]
+            integer[d] = numpy.ceil(args[d] * self.inv[d])
+        return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
     def __call__(self, r, i, j):
         raise UnimplementedError()
 
 class RmuBins(Bins):
     def __init__(self, Rmax, Nbins, Nmubins, observer):
-        self.Rmax = Rmax
-        Bins.__init__(self, Rmax, 
-            (
-            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
-            numpy.arange(Nmubins + 1) * (1.0) / Nmubins
+        Bins.__init__(self, 
+                (0, Rmax, Nbins),
+                (0, 1, Nmubins)
             )
-            )
-        self.invdR = Nbins / (1.0 * Rmax)
-        self.invdmu = Nmubins / 1.0
         self.observer = numpy.array(observer)
 
     def __call__(self, r, i, j, data1, data2):
-        Nbins = self.shape[0] - 1
-        x = numpy.int32(r * self.invdR).clip(0, Nbins)
-
-        Nmubins = self.shape[1] - 1
         r1 = data1.pos[i]
         r2 = data2.pos[j]
         center = 0.5 * (r1 + r2) - self.observer
@@ -100,56 +145,52 @@ class RmuBins(Bins):
         center = numpy.einsum('ij, ij->i', center, center) ** 0.5
         mu = dot / (center * r)
         mu[r == 0] = 10.0
-        y = numpy.int32(numpy.abs(mu) * self.invdmu).clip(0, Nmubins)
-
-        return numpy.ravel_multi_index((x, y), self.shape)
+        return self.linear(r, numpy.abs(mu))
 
 class XYBins(Bins):
+    """ the bins will be 
+        [sky, los]
+        with numpy imshow , the second axis los, will be vertical
+                with imshow( ..T,) the sky will be vertical.
+        """
+
     def __init__(self, Rmax, Nbins, observer):
         self.Rmax = Rmax
-        Bins.__init__(self, Rmax, 
-            (
-            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
-            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins,
+        Bins.__init__(self,
+            (0, Rmax, Nbins),
+            (-Rmax, Rmax, 2 * Nbins)
             )
-            )
-        self.invdR = Nbins / (1.0 * Rmax)
         self.observer = observer
 
     def __call__(self, r, i, j, data1, data2):
-        Nbins = self.shape[0] - 1
         r1 = data1.pos[i]
         r2 = data2.pos[j]
         center = 0.5 * (r1 + r2) - self.observer
         dr = r1 - r2
         dot = numpy.einsum('ij, ij->i', dr, center) 
-        dot2 = dot ** 2
         center2 = numpy.einsum('ij, ij->i', center, center)
-        y2 = dot2 / center2
+        los = dot / center2 ** 0.5
         dr2 = numpy.einsum('ij, ij->i', dr, dr)
-        x2 = numpy.abs(dr2 - y2)
-        x = numpy.int32(x2 ** 0.5 * self.invdR).clip(0, Nbins)
-        y = numpy.int32(y2 ** 0.5 * self.invdR).clip(0, Nbins)
-        return numpy.ravel_multi_index((x, y), self.shape)
+        x2 = numpy.abs(dr2 - los ** 2)
+        sky = x2 ** 0.5
+        return self.linear(sky, los)
 
 class RBins(Bins):
-    def __init__(self, Rmax, Nbins):
-        self.Rmax = Rmax
-        Bins.__init__(self, Rmax, 
-            numpy.arange(Nbins + 1) * (1.0 * Rmax) / Nbins
-        )
-        self.invdR = Nbins / (1.0 * Rmax)
+    def __init__(self, Rmax, Nbins, logscale=False, Rmin=0):
+        Bins.__init__(self, 
+                (Rmin, Rmax, Nbins, logscale))
     def __call__(self, r, i, j, data1, data2):
-        bins = self.shape[0] - 1
-        return numpy.int16(r * self.invdR).clip(0, bins)
+        return self.linear(r)
 
-def paircount(data1, data2, bins):
+def paircount(data1, data2, bins, np=None):
     """ 
         returns bincenter, counts
-        bins is instance of Bins, (RBins, RmuBins)
+        bins is instance of Bins, (eg, RBins, RmuBins)
 
         if the weight/value has multiple components,
-        the counts of each component is returned as columns
+        return counts with be 'tuple', one item for each component
+
+        each count item has 2 more items than Nbins. 
 
         example 1:
 
@@ -206,7 +247,7 @@ def paircount(data1, data2, bins):
     def reduce(num, denom):
         numsum[...] += num
         denomsum[...] += denom
-    with Pool(use_threads=False) as pool:
+    with Pool(use_threads=False, np=np) as pool:
         pool.map(work, range(len(p)), reduce=reduce)
 
     if isinstance(data1, points) \
@@ -214,9 +255,10 @@ def paircount(data1, data2, bins):
         # special handling for two point sets where
         # the denominator is always 1
         denomsum[...] = 1.0
+    # this works no matter data.norm is scalar or vector.
     corr = (numsum / denomsum).T / (data1.norm * data2.norm)
-    corr = corr.T.reshape(fullshape).T
-    return bins.edges, corr
+    corr = corr.T.reshape(fullshape)
+    return corr, bins
 
 def main():
     pm = numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3]
@@ -225,10 +267,10 @@ def main():
     pr = numpy.random.uniform(size=(1000000, 3))
     wr = numpy.ones((len(pr), 2))
     random = points(pr, wr)
-    DR = paircount(martin, random, RBins(0.1, 40))
-    DD = paircount(martin, martin, RBins(0.1, 40))
-    RR = paircount(random, random, RBins(0.1, 40))
-    return DR[0], DD[1], DR[1], RR[1]
+    DR, bins = paircount(martin, random, RBins(0.1, 40))
+    DD, junk = paircount(martin, martin, RBins(0.1, 40))
+    RR, junk = paircount(random, random, RBins(0.1, 40))
+    return bins.centers, DD[...,1:-1], DR[..., 1:-1], RR[..., 1:-1]
 
 def main2():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
