@@ -36,8 +36,8 @@ typedef struct KDStore {
 
 /* defining the input positions */
     KD2Darray input;
-/* defining the input weights */
-    KD2Darray weight;
+/* defining the input weights, if buffer is None, a uniform 1 weight is assumed */
+    KD2Darray weight; 
 
 /* the following defines how the tree is constructed */
 
@@ -84,7 +84,8 @@ static void * kd_malloc(KDStore * store, size_t size) {
 static KDNode * kd_alloc(KDStore * store) {
     KDNode * ptr = kd_malloc(store, sizeof(KDNode) + 
             sizeof(double) * 2 * store->input.dims[1] +
-            sizeof(double) * store->weight.dims[1]
+            sizeof(double) * store->weight.dims[1] +
+            sizeof(double) * 1 * store->input.dims[1]
             );
     ptr->link[0] = NULL;
     ptr->link[1] = NULL;
@@ -94,13 +95,20 @@ static KDNode * kd_alloc(KDStore * store) {
 }
 
 static inline double * kd_node_max(KDNode * node) {
+    /* upper limit of the node */
     return (double*) (node->ext);
 }
 static inline double * kd_node_min(KDNode * node) {
+    /* lower limit of the node */
     return kd_node_max(node) + node->store->input.dims[1];
 }
 static inline double * kd_node_weight(KDNode * node) {
+    /* weight on the node */
     return kd_node_min(node) + node->store->input.dims[1];
+}
+static inline double * kd_node_cm(KDNode * node) {
+    /* center of mass for weight[0] */
+    return kd_node_weight(node) + node->store->weight.dims[1];
 }
 static inline double kd_array_get(KD2Darray * array, ptrdiff_t i, ptrdiff_t d) {
     char * ptr = & array->buffer[
@@ -136,21 +144,38 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     double * max = kd_node_max(node);
     double * min = kd_node_min(node);
     double * weight = kd_node_weight(node);
+    double * cm = kd_node_cm(node);
     for(d = 0; d < Nw; d++) {
         weight[d] = 0;
     }
     for(d = 0; d < Nd; d++) {
         max[d] = maxhint[d];
         min[d] = minhint[d];
+        cm[d] = 0;
     }
 
     if(node->size <= store->thresh) {
         int i;
         node->dim = -1;
+        for(d = 0; d < Nd; d++) {
+            max[d] = kd_input(node->store, node->start + 0, d);
+            min[d] = max[d];
+        }
         for(i = 0; i < node->size; i++) {
             for (d = 0; d < Nw; d++) {
-                weight[d] += kd_weight(node->store, node->start + i, d);
+                double wt = kd_weight(node->store, node->start + i, d);
+                weight[d] += wt;
             }
+            for (d = 0; d < Nd; d++) {
+                double w0 = kd_weight(node->store, node->start + i , 0); 
+                double x = kd_input(node->store, node->start + i, d);
+                cm[d] += w0 * x;
+                if (max[d] < x) max[d] = x;
+                if (min[d] > x) min[d] = x;
+            }
+        }
+        for (d = 0; d < Nd; d++) {
+            cm[d] /= weight[0];
         }
         return;
     }
@@ -257,15 +282,35 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     midhint[node->dim] = node->split;
     kd_build_split(node->link[1], midhint, maxhint);
 
+    for(d = 0; d < Nd; d++) {
+        double * max1 = kd_node_max(node->link[1]);
+        double * min1 = kd_node_min(node->link[1]);
+        max[d] = kd_node_max(node->link[0])[d];
+        if(max[d] < max1[d]) max[d] = max1[d];
+        min[d] = kd_node_min(node->link[0])[d];
+        if(min[d] > min1[d]) min[d] = min1[d];
+    }
     int i;
     for(i = 0; i < 2; i++) {
         double * weight1 = kd_node_weight(node->link[i]);
+        double * cm1 = kd_node_cm(node->link[i]);
         for(d = 0; d < Nw; d++) {
             weight[d] += weight1[d];
         }
+        for(d = 0; d < Nd; d++) {
+            double w0 = weight1[0];
+            cm[d] += cm1[d] * w0;
+        }
     }
+    for(d = 0; d < Nd; d++) {
+        cm[d] /= weight[0];
+    }
+    return;
 }
 
+static double double_one(void * p1) {
+    return 1.0;
+}
 /* 
  * create a KD tree based on input data specified in KDStore 
  * free it with kd_free
@@ -289,6 +334,13 @@ KDNode * kd_build(KDStore * store) {
             if(min[d] > data) { min[d] = data; }
             if(max[d] < data) { max[d] = data; }
         }
+    }
+    if (store->weight.dims[1] == 0) {
+         store->weight.dims[1] = 1;
+         store->weight.strides[0] = 0;
+         store->weight.strides[1] = 0;
+         store->weight.cast = double_one;
+         store->weight.elsize = 8;
     }
     KDNode * tree = kd_alloc(store);
     tree->start = 0;
@@ -413,5 +465,6 @@ static inline void kd_collect(KDNode * node, double * input, double * weight) {
 
 #include "kd_count.h"
 #include "kd_enum.h"
+#include "kd_grav.h"
 #include "kd_tearoff.h"
 

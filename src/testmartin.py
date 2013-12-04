@@ -9,8 +9,8 @@ import pykdcount
 noise = numpy.random.random(size=(1000000, 3))
 martin = numpy.loadtxt('A00_hodfit.gal', usecols=(0, 1, 2))
 
-R = pykdcount.build(noise, 1.0)
-D = pykdcount.build(martin, 1.0)
+R = pykdcount.build(noise, boxsize=1.0)
+D = pykdcount.build(martin, boxsize=1.0)
 
 xbins = numpy.linspace(-0.125, 0.125, 128, endpoint=True)
 ybins = numpy.linspace(0, 0.125, 64, endpoint=True)

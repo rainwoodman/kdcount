@@ -23,25 +23,25 @@ class dataset(object):
     def __init__(self, pos, boxsize):
         self.pos = pos
         self.tree = kdcount.build(self.pos, boxsize=boxsize)
+    def __len__(self):
+        return len(self.pos)
 
 class points(dataset):
     def __init__(self, pos, weight=None, boxsize=None):
         dataset.__init__(self, pos, boxsize)
         self._weight = weight
+        assert len(weight.shape) == 1
         if weight is not None:
             self.norm = weight.sum(axis=0)
-            self.subshape = weight.shape[1:]
         else:
             self.norm = len(pos) * 1.0
-            self.subshape = ()
+        self.subshape = ()
 
-    def num(self, index):
+    def w(self, index):
         if self._weight is None:
-            return numpy.ones(len(index))
+            return 1.0
         else:
             return self._weight[index]
-    def denom(self, index):
-        return 1.0
 
 class field(dataset):
     def __init__(self, pos, value, weight=None, boxsize=None):
@@ -52,22 +52,22 @@ class field(dataset):
         else:
             self._value = value
         self.subshape = value.shape[1:]
-        self.norm = 1.0
-    def num(self, index):
+    def wv(self, index):
         return self._value[index]
-    def denom(self, index):
+    def w(self, index):
         if self._weight is None:
-            return numpy.ones([len(index)] + list(self.subshape))
+            return 1.0
         else:
             return self._weight[index]
 
-class Bins(object):
+class Binning(object):
     def __init__(self, *args):
         """ the shape has one extra per edge
             0 is .le. min
             -1 is .g. max
             args are (min, max, Nbins)
             the first is for R
+            centers is squezzed
         """
         self.dims = numpy.empty(len(args),
                 dtype=[
@@ -119,20 +119,22 @@ class Bins(object):
         integer = numpy.empty(len(args[0]), ('i8', (self.Ndim,))).T
         for d in range(self.Ndim):
             if self.logscale[d]:
-                x = numpy.log10(args[d] / self.min[d])
+                x = args[d].copy()
+                x[x == 0] = self.min[d] * 0.9
+                x = numpy.log10(x / self.min[d])
             else:
                 x = args[d] - self.min[d]
-            integer[d] = numpy.ceil(args[d] * self.inv[d])
+            integer[d] = numpy.ceil(x * self.inv[d])
         return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
     def __call__(self, r, i, j):
         raise UnimplementedError()
 
-class RmuBins(Bins):
+class RmuBinning(Binning):
     def __init__(self, Rmax, Nbins, Nmubins, observer):
-        Bins.__init__(self, 
+        Binning.__init__(self, 
                 (0, Rmax, Nbins),
-                (0, 1, Nmubins)
+                (-1, 1, Nmubins)
             )
         self.observer = numpy.array(observer)
 
@@ -147,7 +149,7 @@ class RmuBins(Bins):
         mu[r == 0] = 10.0
         return self.linear(r, numpy.abs(mu))
 
-class XYBins(Bins):
+class XYBinning(Binning):
     """ the bins will be 
         [sky, los]
         with numpy imshow , the second axis los, will be vertical
@@ -156,7 +158,7 @@ class XYBins(Bins):
 
     def __init__(self, Rmax, Nbins, observer):
         self.Rmax = Rmax
-        Bins.__init__(self,
+        Binning.__init__(self,
             (0, Rmax, Nbins),
             (-Rmax, Rmax, 2 * Nbins)
             )
@@ -175,102 +177,158 @@ class XYBins(Bins):
         sky = x2 ** 0.5
         return self.linear(sky, los)
 
-class RBins(Bins):
+class RBinning(Binning):
     def __init__(self, Rmax, Nbins, logscale=False, Rmin=0):
-        Bins.__init__(self, 
+        Binning.__init__(self, 
                 (Rmin, Rmax, Nbins, logscale))
     def __call__(self, r, i, j, data1, data2):
         return self.linear(r)
+def mybincount(dig, weight, minlength):
+    if numpy.isscalar(weight):
+        return numpy.bincount(dig, minlength=minlength) * weight
+    else:
+        return numpy.bincount(dig, weight, minlength)
 
-def paircount(data1, data2, bins, np=None):
+class paircount(object):
     """ 
-        returns bincenter, counts
-        bins is instance of Bins, (eg, RBins, RmuBins)
+        a paircount object has the following attributes:
+        sum1 :    the numerator in the correlator
+        sum2 :    the denominator in the correlator
+        corr :    sum1 / sum2
 
-        if the weight/value has multiple components,
-        return counts with be 'tuple', one item for each component
+        for points x points: 
+               sum1 = sum( w1 w2 )
+               sum2 = 1.0 
+        for field x points:
+               sum1 = sum( w1 w2 v1)
+               sum2 = sum( w1 w2)
+        for field x field:
+               sum1 = sum( w1 w2 v1 v2)
+               sum2 = sum( w1 w2)
 
-        each count item has 2 more items than Nbins. 
+        with this convention the usual form of landy-sarley
+        (DD -2r DR + r2 RR) / (r2 RR) (with r = sum(wD) / sum(wR))
+        reduces to
+        (DD - 2 DR + RR) / RR
 
-        example 1:
+        centers : the centers of the corresponding corr bin
+                  centers = (X, Y, ....)
+                  len(X) == corr.shape[0], len(Y) == corr.shape[1]
+        binning : the binning object to create this paircount 
+        edges :   the edges of the corr bins.
 
-        three cases:
-
-        points x points
-           returns weight1 * weight2 sum in bins
-           normalized by weight1.sum() * weight2.sum()
-        field x field
-           returns the weighted mean of value1 * value2 in bins
-             value1 * weight1 * value2 * weight2 / weight1 * weight2 
-        field x point
-           returns weighted mean of value1 * weight2 in bins:
-             value1 * weight1 * weight2 / weight1
-           normalized by weight2.sum()
-        build data with point(pos, weight) or field(pos, value, weight).
-        weight can be none.
-        returns Rbins and the pair counts.
-        For f-f, this is already the correlation function.
-        for p-p, need to use landy-salay (whatever (DD - DR + RR) / RR
-        for f-p, need to use O'Connell's estimator. haven't figure out yet.
+        fullcorr : the full correlation function with outliners 
+                    len(X) == corr.shape[0] + 2 
+        fullsum1 : full version of sum1
+        fullsum2 : full version of sum2
     """
-    tree1 = data1.tree
-    tree2 = data2.tree
-    p = list(kdcount.divide_and_conquer(tree1, tree2, 50000))
+    def __init__(self, data1, data2, binning, np=None):
+        """
+        binning is an instance of Binning, (eg, RBinning, RmuBinning)
 
-    fullshape = list(data1.subshape) + list(bins.shape)
-    linearshape = [-1] + list(bins.shape)
+        if the value has multiple components,
+        return counts with be 'tuple', one item for each component
+        """
 
-    denomsum = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
-    numsum = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
+        tree1 = data1.tree
+        tree2 = data2.tree
+        p = list(kdcount.divide_and_conquer(tree1, tree2, 50000))
 
-    def work(i):
-        n1, n2 = p[i]
-        num = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
-        denom = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
-        for r, i, j in n1.enumiter(n2, bins.Rmax):
-            dig = bins(r, i, j, data1, data2)
-            numij = data1.num(i) * data2.num(j)
-            numij = numij.reshape(dig.size, -1)
-            for d in range(num.shape[0]):
-                num[d].flat [:] += numpy.bincount(dig, 
-                        numij[:, d],
-                        minlength=num[d].size)
-            if isinstance(data1, field) \
-            or isinstance(data2, field):
-                denomij = data1.denom(i) * data2.denom(j)
-                denomij = denomij.reshape(dig.size, -1)
-                for d in range(num.shape[0]):
-                    denom[d].flat [:] += numpy.bincount(dig,
-                            denomij[:, d],
-                        minlength=denom[d].size)
-        return num, denom
-    def reduce(num, denom):
-        numsum[...] += num
-        denomsum[...] += denom
-    with Pool(use_threads=False, np=np) as pool:
-        pool.map(work, range(len(p)), reduce=reduce)
+        linearshape = [-1] + list(binning.shape)
 
-    if isinstance(data1, points) \
-        and isinstance(data2, points):
-        # special handling for two point sets where
-        # the denominator is always 1
-        denomsum[...] = 1.0
-    # this works no matter data.norm is scalar or vector.
-    corr = (numsum / denomsum).T / (data1.norm * data2.norm)
-    corr = corr.T.reshape(fullshape)
-    return corr, bins
+        if isinstance(data1, points) and isinstance(data2, points):
+            fullshape = list(data1.subshape) + list(binning.shape)
+        elif isinstance(data1, points) and isinstance(data2, field):
+            sum2g = numpy.zeros(binning.shape, dtype='f8').reshape(linearshape)
+            fullshape = list(data2.subshape) + list(binning.shape)
+        elif isinstance(data1, field) and isinstance(data2, points):
+            sum2g = numpy.zeros(binning.shape, dtype='f8').reshape(linearshape)
+            fullshape = list(data1.subshape) + list(binning.shape)
+        elif isinstance(data1, field) and isinstance(data2, field):
+            assert data1.subshape == data2.subshape
+            sum2g = numpy.zeros(binning.shape, dtype='f8').reshape(linearshape)
+            fullshape = list(data1.subshape) + list(binning.shape)
+
+        sum1g = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
+
+        def work(i):
+            n1, n2 = p[i]
+            sum1 = numpy.zeros_like(sum1g)
+            if isinstance(data1, points) and isinstance(data2, points):
+                sum2 = 1.0
+            else:
+                sum2 = numpy.zeros_like(sum2g)
+            for r, i, j in n1.enumiter(n2, binning.Rmax):
+                dig = binning(r, i, j, data1, data2)
+                if isinstance(data1, field) and isinstance(data2, field):
+                    sum1ij = data1.wv(i) * data2.wv(j)
+                    sum2ij = data1.w(i) * data2.w(j)
+                    sum1ij = sum1ij.reshape(dig.size, -1)
+                    for d in range(sum1.shape[0]):
+                        sum1[d].flat [:] += mybincount(dig, 
+                                sum1ij[:, d],
+                                minlength=sum1[d].size)
+                    sum2.flat [:] += mybincount(dig, 
+                            sum2ij,
+                            minlength=sum2.size)
+                elif isinstance(data1, field) and isinstance(data2, points):
+                    sum1ij = data1.wv(i) * data2.w(j)
+                    sum2ij = data1.w(i) * data2.w(j)
+                    for d in range(sum1.shape[0]):
+                        sum1[d].flat [:] += mybincount(dig, 
+                                sum1ij[:, d],
+                                minlength=sum1[d].size)
+                    sum2.flat [:] += mybincount(dig, 
+                                sum2ij,
+                                minlength=sum2.size)
+                elif isinstance(data1, points) and isinstance(data2, field):
+                    sum1ij = data1.wv(i) * data2.v(j)
+                    sum2ij = data1.w(i) * data2.w(j)
+                    for d in range(sum1.shape[0]):
+                        sum1[d].flat [:] += mybincount(dig, 
+                                sum1ij[:, d],
+                                minlength=sum1[d].size)
+                    sum2.flat [:] += mybincount(dig, 
+                                sum2ij,
+                                minlength=sum2.size)
+                elif isinstance(data1, points) and isinstance(data2, points):
+                    sum1ij = data1.w(i) * data2.w(j)
+                    sum1.flat [:] += mybincount(dig, 
+                            sum1ij[:],
+                            minlength=sum1.size)
+            return sum1, sum2
+        def reduce(sum1, sum2):
+            sum1g[...] += sum1
+            if not (isinstance(data1, points) and isinstance(data2, points)):
+                sum2g[...] += sum2
+        with Pool(np=np) as pool:
+            pool.map(work, range(len(p)), reduce=reduce)
+
+        self.fullsum1 = sum1g.reshape(fullshape).copy()
+        self.sum1 = self.fullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
+
+        if not (isinstance(data1, points) and isinstance(data2, points)):
+            self.fullsum2 = sum2g.reshape(binning.shape).copy()
+            self.sum2 = self.fullsum2[ [slice(1, -1)] * binning.Ndim]
+
+        self.binning = binning
+        self.edges = binning.edges
+        self.centers = binning.centers
 
 def main():
     pm = numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3]
-    wm = numpy.ones((len(pm), 2))
+    wm = numpy.ones(len(pm))
     martin = points(pm, wm)
     pr = numpy.random.uniform(size=(1000000, 3))
-    wr = numpy.ones((len(pr), 2))
+    wr = numpy.ones(len(pr))
     random = points(pr, wr)
-    DR, bins = paircount(martin, random, RBins(0.1, 40))
-    DD, junk = paircount(martin, martin, RBins(0.1, 40))
-    RR, junk = paircount(random, random, RBins(0.1, 40))
-    return bins.centers, DD[...,1:-1], DR[..., 1:-1], RR[..., 1:-1]
+    binning = RBinning(0.1, 40)
+    DR = paircount(martin, random, binning)
+    DD = paircount(martin, martin, binning)
+    RR = paircount(random, random, binning)
+    r = martin.norm / random.norm
+    return binning.centers, (DD.sum1 - 
+            2 * r * DR.sum1 + r ** 2 * RR.sum1) / (r ** 2 * RR.sum1)
 
 def main2():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
@@ -280,13 +338,15 @@ def main2():
     pos = numpy.array(numpy.unravel_index(numpy.arange(sim.size),
         (128, 128, 128))).T / 128.0
     numpy.random.seed(1000)
-    sample = numpy.random.uniform(size=len(pos)) < 0.4
+    sample = numpy.random.uniform(size=len(pos)) < 0.1
     value = numpy.tile(sim[sample], (2, 1)).T
 #    value = sim[sample]
     data = field(pos[sample], value=value)
     print 'data ready'
-    DD = paircount(data, data, RBins(0.1, 40))
-    return DD
+    binning = RBinning(0.1, 40)
+    DD = paircount(data, data, binning)
+
+    return DD.centers, DD.sum1 / DD.sum2
 
 def main3():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
@@ -298,5 +358,5 @@ def main3():
     value = numpy.tile(sim[sample], (2, 1)).T
     data = field(pos[sample], value=value)
     print 'data ready'
-    DD = paircount(data, data, RmuBins(0.10, 8, 20, 0.5))
+    DD = paircount(data, data, RmuBinning(0.10, 8, 20, 0.5))
     return DD

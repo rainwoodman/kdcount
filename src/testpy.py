@@ -11,14 +11,6 @@ def process(r, i, j, **kwargs):
     print r, i, j
 
 tree = pykdcount.build(pos)
-subtrees = tree.subtrees(0)
-print len(subtrees)
-N = 0
-for node in subtrees:
-    for r, i, j in node.enum(tree, 18000.0, bunch=128 * 1024):
-        N += r.size
-
-print N
 
 def allnodes(tree):
     queue = []
