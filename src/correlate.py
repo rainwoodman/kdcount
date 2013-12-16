@@ -1,10 +1,10 @@
 import kdcount
 import numpy
 try:
-    from sharedmem import Pool
+    from sharedmem import MapReduce
 except ImportError:
-    class Pool(object):
-        def __init__(self, use_threads):
+    class MapReduce(object):
+        def __init__(self, np=None):
             pass
         def __enter__(self):
             return self
@@ -20,18 +20,25 @@ except ImportError:
             return [callreduce(work(i)) for i in items]
 
 class dataset(object):
-    def __init__(self, pos, boxsize):
+    def __init__(self, pos, boxsize, extra):
+        """ create a dataset object for points located at pos in a boxsize.
+            points is of (Npoints, Ndim)
+            boxsize will be broadcasted to the dimension of points. 
+            extra can be accessed as dataset.extra.
+        """
         self.pos = pos
         self.tree = kdcount.build(self.pos, boxsize=boxsize)
+        self.extra = extra
+
     def __len__(self):
         return len(self.pos)
 
 class points(dataset):
-    def __init__(self, pos, weight=None, boxsize=None):
-        dataset.__init__(self, pos, boxsize)
+    def __init__(self, pos, weight=None, boxsize=None, extra={}):
+        dataset.__init__(self, pos, boxsize, extra)
         self._weight = weight
-        assert len(weight.shape) == 1
         if weight is not None:
+            assert len(weight.shape) == 1
             self.norm = weight.sum(axis=0)
         else:
             self.norm = len(pos) * 1.0
@@ -44,8 +51,8 @@ class points(dataset):
             return self._weight[index]
 
 class field(dataset):
-    def __init__(self, pos, value, weight=None, boxsize=None):
-        dataset.__init__(self, pos, boxsize)
+    def __init__(self, pos, value, weight=None, boxsize=None, extra={}):
+        dataset.__init__(self, pos, boxsize, extra)
         self._weight = weight
         if weight is not None:
             self._value = value * weight
@@ -147,7 +154,7 @@ class RmuBinning(Binning):
         center = numpy.einsum('ij, ij->i', center, center) ** 0.5
         mu = dot / (center * r)
         mu[r == 0] = 10.0
-        return self.linear(r, numpy.abs(mu))
+        return self.linear(r, mu)
 
 class XYBinning(Binning):
     """ the bins will be 
@@ -232,8 +239,10 @@ class paircount(object):
 
         tree1 = data1.tree
         tree2 = data2.tree
-        p = list(kdcount.divide_and_conquer(tree1, tree2, 50000))
-
+        if np != 0:
+            p = list(kdcount.divide_and_conquer(tree1, tree2, 10000))
+        else:
+            p = [(tree1, tree2)]
         linearshape = [-1] + list(binning.shape)
 
         if isinstance(data1, points) and isinstance(data2, points):
@@ -274,6 +283,7 @@ class paircount(object):
                 elif isinstance(data1, field) and isinstance(data2, points):
                     sum1ij = data1.wv(i) * data2.w(j)
                     sum2ij = data1.w(i) * data2.w(j)
+                    print sum1ij, sum2ij
                     for d in range(sum1.shape[0]):
                         sum1[d].flat [:] += mybincount(dig, 
                                 sum1ij[:, d],
@@ -282,7 +292,7 @@ class paircount(object):
                                 sum2ij,
                                 minlength=sum2.size)
                 elif isinstance(data1, points) and isinstance(data2, field):
-                    sum1ij = data1.wv(i) * data2.v(j)
+                    sum1ij = data1.w(i) * data2.wv(j)
                     sum2ij = data1.w(i) * data2.w(j)
                     for d in range(sum1.shape[0]):
                         sum1[d].flat [:] += mybincount(dig, 
@@ -294,14 +304,14 @@ class paircount(object):
                 elif isinstance(data1, points) and isinstance(data2, points):
                     sum1ij = data1.w(i) * data2.w(j)
                     sum1.flat [:] += mybincount(dig, 
-                            sum1ij[:],
+                            sum1ij,
                             minlength=sum1.size)
             return sum1, sum2
         def reduce(sum1, sum2):
             sum1g[...] += sum1
             if not (isinstance(data1, points) and isinstance(data2, points)):
                 sum2g[...] += sum2
-        with Pool(np=np) as pool:
+        with MapReduce(np=np) as pool:
             pool.map(work, range(len(p)), reduce=reduce)
 
         self.fullsum1 = sum1g.reshape(fullshape).copy()

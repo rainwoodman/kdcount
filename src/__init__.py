@@ -12,8 +12,9 @@ from pykdcount import *
 from heapq import heappush, heappop
 
 def divide_and_conquer(tree1, tree2, chunksize):
+    """ lets try to always divide the smaller tree """
     def e(tree1, tree2):
-        return -max(tree1.size, tree2.size), tree1, tree2
+        return -min(tree1.size, tree2.size), tree1, tree2
     heap = []
     heappush(heap, e(tree1, tree2))
     while True:
@@ -22,10 +23,10 @@ def divide_and_conquer(tree1, tree2, chunksize):
             heappush(heap, (0, x, y))
             break
         if x.less is None or y.less is None \
-        or (x.size < chunksize and y.size < chunksize):
+        or (x.size < chunksize or y.size < chunksize):
             heappush(heap, (0, x, y))
             continue
-        if x.size > y.size:
+        if x.size < y.size:
             heappush(heap, e(x.less, y))
             heappush(heap, e(x.greater, y))
         else:

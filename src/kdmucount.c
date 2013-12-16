@@ -64,13 +64,7 @@ KDNode * randomset(ptrdiff_t N) {
         }
     }
 
-    static KDType kdtype= {
-        .buffer = NULL,
-        .ind = NULL,
-        .size = 0,
-        .strides = {3 * sizeof(double), sizeof(double)},
-        .elsize = sizeof(double),
-        .Nd = 3,
+    static KDStore kdstore= {
         .thresh = 10,
         .cast = cast,
         .boxsize = boxsize,
@@ -78,10 +72,17 @@ KDNode * randomset(ptrdiff_t N) {
         .free = myfree,
         .userdata = NULL
     };
-    kdtype.buffer = data;
-    kdtype.ind = ind;
-    kdtype.size = N;
-    KDNode * tree = kd_build(&kdtype);
+    static 
+        .input = {.buffer = NULL,
+        .ind = NULL,
+        .size = 0,
+        .strides = {3 * sizeof(double), sizeof(double)},
+        .elsize = sizeof(double),
+        .Nd = 3,
+    kdstore.buffer = data;
+    kdstore.ind = ind;
+    kdstore.size = N;
+    KDNode * tree = kd_build(&kdstore);
     return tree;
 }
 
@@ -104,7 +105,7 @@ KDNode * martin() {
     }
     fclose(fp);
 
-    static KDType kdtype = {
+    static KDStore kdstore = {
         .buffer = NULL,
         .ind = NULL,
         .size = 0,
@@ -118,10 +119,10 @@ KDNode * martin() {
         .free = myfree,
         .userdata = NULL
     };
-    kdtype.buffer = data;
-    kdtype.ind = ind;
-    kdtype.size = N;
-    return kd_build(&kdtype);
+    kdstore.buffer = data;
+    kdstore.ind = ind;
+    kdstore.size = N;
+    return kd_build(&kdstore);
 }
 
 int main() {

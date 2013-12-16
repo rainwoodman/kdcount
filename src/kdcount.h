@@ -6,6 +6,9 @@
 #include <math.h>
 
 typedef double (*kd_castfunc)(void * p);
+typedef void (*kd_freefunc)(void* data, size_t size, void * ptr);
+typedef void * (*kd_mallocfunc)(void* data, size_t size);
+
 /* x and y points to the double position */
 typedef struct KDEnumData {
     double r;
@@ -55,10 +58,10 @@ typedef struct KDStore {
 
 /* memory allocation */
     /* allocate memory, NULL to use malloc() */
-    void * (* malloc)(size_t size);
+    kd_mallocfunc malloc;
     /* deallocate memory, size is passed in for a slab allocator,
      * NULL to use free() */
-    void (* free)(size_t size, void * ptr);
+    kd_freefunc free;
     void * userdata;
     ptrdiff_t total_nodes;
 } KDStore;
@@ -75,7 +78,7 @@ typedef struct KDNode {
 
 static void * kd_malloc(KDStore * store, size_t size) {
     if(store->malloc != NULL) {
-        return store->malloc(size);
+        return store->malloc(store->userdata, size);
     } else {
         return malloc(size);
     }
@@ -356,7 +359,7 @@ void kd_free0(KDStore * store, size_t size, void * ptr) {
     if(store->free == NULL) {
         free(ptr);
     } else {
-        store->free(size, ptr);
+        store->free(store->userdata, size, ptr);
     }
 }
 void kd_free(KDNode * node) {
@@ -468,3 +471,15 @@ static inline void kd_collect(KDNode * node, double * input, double * weight) {
 #include "kd_grav.h"
 #include "kd_tearoff.h"
 
+#include <signal.h>
+static void handler(int signo)
+{
+    int i = 1;
+    fprintf(stderr, "pid=%d, got signal=%d\n", getpid(), signo);
+     while (i) { }
+}
+
+static void register_handler() {
+    fprintf(stderr, "pid=%d, set up signal handler\n", getpid() );
+    signal(11, handler);
+}

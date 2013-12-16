@@ -16,7 +16,10 @@ cdef extern from "kdcount.h":
     ctypedef double (*kd_castfunc)(void * p)
     ctypedef int (*kd_enum_callback)(void * data, KDEnumData * endata)
     ctypedef int (*kd_gravity_func)(double distance, void * data)
+    ctypedef void (*kd_freefunc)(void* data, npy_intp size, void * ptr) nogil
+    ctypedef void * (*kd_mallocfunc)(void* data, npy_intp size) nogil
 
+    void register_handler() nogil
     struct cKDArray "KDArray":
         char * buffer
         npy_intp dims[2]
@@ -31,8 +34,8 @@ cdef extern from "kdcount.h":
         npy_intp * ind
         double * boxsize
         double p
-        void * (*malloc)(npy_intp size)
-        void * (*free)(npy_intp size, void * ptr)
+        kd_mallocfunc malloc
+        kd_freefunc  free
         void * userdata
         npy_intp total_nodes
 
@@ -44,14 +47,14 @@ cdef extern from "kdcount.h":
         int dim
         double split
 
-    cKDNode * kd_build(cKDStore * store)
-    double * kd_node_max(cKDNode * node)
-    double * kd_node_weight(cKDNode * node)
-    double * kd_node_min(cKDNode * node)
-    double * kd_node_cm(cKDNode * node)
-    void kd_free(cKDNode * node)
-    void kd_free0(cKDStore * store, npy_intp size, void * ptr)
-    cKDNode ** kd_tearoff(cKDNode * node, npy_intp thresh, npy_intp * length)
+    cKDNode * kd_build(cKDStore * store) nogil
+    double * kd_node_max(cKDNode * node) nogil
+    double * kd_node_weight(cKDNode * node) nogil
+    double * kd_node_min(cKDNode * node) nogil
+    double * kd_node_cm(cKDNode * node) nogil
+    void kd_free(cKDNode * node) nogil
+    void kd_free0(cKDStore * store, npy_intp size, void * ptr) nogil
+    cKDNode ** kd_tearoff(cKDNode * node, npy_intp thresh, npy_intp * length) nogil
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
     int kd_count(cKDNode * node[2], double * r2,
@@ -59,12 +62,15 @@ cdef extern from "kdcount.h":
 
     double kd_grav(cKDNode * node, double * pos, double openangle, kd_gravity_func gravity, void * data)
 
+
+# register_handler()
+
 cdef class KDNode:
     cdef cKDNode * ref
     cdef readonly KDStore store 
     def __init__(self, store):
         self.store = store
-
+    
     cdef void bind(self, cKDNode * ref) nogil:
         self.ref = ref
 
@@ -320,6 +326,35 @@ cdef class KDStore:
         def __get__(self):
             return self.weight.shape[1]
 
+    # memory management:
+
+    cdef readonly list buffers
+    cdef readonly char * _bufferptr
+    cdef readonly npy_intp  _free
+
+    cdef void _addbuffer(self):
+        cdef numpy.ndarray buffer = numpy.empty(1024 * 1024, dtype='u1')
+        self.buffers.append(buffer)
+        self._bufferptr = <char*> (buffer.data)
+        self._free = 1024 * 1024
+
+    cdef void * malloc(self, npy_intp size) nogil:
+        cdef void * ptr
+        if size > self._free:
+            with gil:
+                self._addbuffer()
+        self._free -= size
+        ptr = <void*> self._bufferptr
+        self._bufferptr += size
+        return ptr
+
+    cdef void free(self, npy_intp size, void * ptr) nogil:
+        # do nothing
+        return
+
+    def __cinit__ (self):
+        self.buffers = []
+    
     def __init__(self, numpy.ndarray input, numpy.ndarray weight=None,
             boxsize=None, thresh=10):
         if input.ndim != 2:
@@ -369,13 +404,16 @@ cdef class KDStore:
         else:
             self.boxsize = None
             self.ref.boxsize = NULL
-        self.ref.malloc = NULL
-        self.ref.free = NULL
-        self.tree = kd_build(self.ref)
+        self.ref.userdata = <void*> self
+        self.ref.malloc = <kd_mallocfunc> self.malloc
+        self.ref.free = <kd_freefunc> self.free
+        with nogil:
+            self.tree = kd_build(self.ref)
 
     def __dealloc__(self):
-        if self.tree:
-            kd_free(self.tree)
+        # self.buffers will be freed by cython
+#        if self.tree:
+#            kd_free(self.tree)
         PyMem_Free(self.ref)
 
 def build(numpy.ndarray data, numpy.ndarray weights=None, boxsize=None,
