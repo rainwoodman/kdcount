@@ -214,9 +214,8 @@ class paircount(object):
                sum2 = sum( w1 w2)
 
         with this convention the usual form of landy-sarley
-        (DD -2r DR + r2 RR) / (r2 RR) (with r = sum(wD) / sum(wR))
-        reduces to
-        (DD - 2 DR + RR) / RR
+        (DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1) 
+        (with r = sum(wD) / sum(wR))
 
         centers : the centers of the corresponding corr bin
                   centers = (X, Y, ....)
