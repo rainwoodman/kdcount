@@ -6,6 +6,8 @@ and a Python interface. It uses a KDTree to prune
 the K-D spatial data; for each pair within a given distance D, a callback
 function is called; the user-defined callback function does the actual counting. 
 
+It supports a periodic boundary.
+
 The time complexity is O[(D / n) ** d] [n is number density, because each pair is opened. Note that
 smarter algorithms exist (more or less, O(D / n log Dn), I may remembered it
 wrong See Gary and Moore 200?, it is implemented too, though not very much tested). 
@@ -16,13 +18,12 @@ the smarter alroithm become very difficult to implement.
 The spatial complexity is O[1] [obviously excluding the storage of the position
 and data], thanks to the use of callback.
 
-The python interface is more complicated, and provides a level of abstraction of data.
-I will describe it in the next section.
+The python interface is more complicated, as it provides a level of abstraction of data.
 
-Python Interface
-================
+Python Interface, pykdcount
+===========================
 
-kdcount takes two types of input data: 'point' and 'field'. 
+pykdcount takes two types of input data: 'point' and 'field'. 
 
 'point(pos, weight, extra=None)' describes data with position and weight. For example, galaxies and
 quasars are point data. 
