@@ -125,9 +125,9 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
         }
         p0 += Nd;
     }
+exit:
     free(p1base);
     free(p0base);
-exit:
     return rt;
 }
 
