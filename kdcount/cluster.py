@@ -25,13 +25,18 @@ class fof(object):
         length = length[a]
         inv = numpy.empty(self.N, dtype='intp')
         inv[a] = numpy.arange(self.N)
-        print inv.max(), inv.min()
+        #print inv.max(), inv.min()
         self.labels = inv[labels]
         self.length = length
         self.offset = numpy.empty_like(length)
         self.offset[0] = 0
-        self.offset[1:] = length.cumsum()[1:]
+        self.offset[1:] = length.cumsum()[:-1]
         self.indices = self.labels.argsort() 
+
+    def find(self, groupid):
+        """ return all of the indices of particles of groupid """
+        return self.indices[self.offset[groupid]
+                :self.offset[groupid]+ self.length[groupid]]
 
     def sum(self, weights=None):
         """ return the sum of weights of each object """
