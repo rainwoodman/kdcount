@@ -17,6 +17,7 @@ def test_p(ll):
     print 'linking length', ll
     print 'particles', len(pos)
     print 'groups', r.N
+    print 'iterations', r.iterations
     print 'counts in mass', numpy.bincount(numpy.int32(mass))
     print 'center of most massive group', center[mass.argmax()]
 
