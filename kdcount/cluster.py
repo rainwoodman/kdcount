@@ -9,16 +9,29 @@ class fof(object):
         # iterations
         shmhead = utils.empty(len(data), dtype='intp')
         self.iterations = 0
-        N = 1 
-        #print N
         head = numpy.arange(len(data), dtype='intp')
-        while N > 0:
-            N = self._once(shmhead, head, np)
+        op = 1 
+        while op > 0:
+            op = self._once(shmhead, head, np)
             self.iterations = self.iterations + 1
-            #print N
         u, labels = numpy.unique(head, return_inverse=True)
         self.N = len(u)
-        self.labels = labels
+        length = utils.bincount(labels, 1, self.N)
+        # for example old labels == 5 is the longest halo
+        # then a[0] == 5
+        # we want to replace in labels 5 to 0
+        # thus we need an array inv[5] == 0
+        a = length.argsort()[::-1]
+        length = length[a]
+        inv = numpy.empty(self.N, dtype='intp')
+        inv[a] = numpy.arange(self.N)
+        print inv.max(), inv.min()
+        self.labels = inv[labels]
+        self.length = length
+        self.offset = numpy.empty_like(length)
+        self.offset[0] = 0
+        self.offset[1:] = length.cumsum()[1:]
+        self.indices = self.labels.argsort() 
 
     def sum(self, weights=None):
         """ return the sum of weights of each object """

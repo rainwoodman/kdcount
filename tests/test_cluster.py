@@ -20,7 +20,9 @@ def test_p(ll):
     print 'iterations', r.iterations
     print 'counts in mass', numpy.bincount(numpy.int32(mass))
     print 'center of most massive group', center[mass.argmax()]
-
+    print 'center of first group', center[0]
+    print 'center of first group check', \
+        numpy.mean(pos[r.indices[:r.length[0]]], axis=0, dtype='f8')
 test_p(0.0001)
 test_p(0.001)
 test_p(0.002)
