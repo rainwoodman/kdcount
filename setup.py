@@ -17,7 +17,7 @@ setup(name="kdcount", version="0.1",
       ext_modules = [
         Extension('kdcount.' + name, 
              [ 'kdcount/' + name.replace('.', '/') + '.pyx',],
-             extra_compile_args=['-O0', '-g'],
+             extra_compile_args=['-O3', '-g'],
              libraries=[],
              include_dirs=[get_include(), 'kdcount/'],
              depends = extra

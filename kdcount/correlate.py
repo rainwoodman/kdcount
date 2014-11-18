@@ -1,71 +1,8 @@
-import kdcount
 import numpy
-try:
-    from sharedmem import MapReduce
-except ImportError:
-    class MapReduce(object):
-        def __init__(self, np=None):
-            pass
-        def __enter__(self):
-            return self
-        def __exit__(self, *args):
-            pass
-        def map(self, work, items, reduce=None):
-            if reduce is not None: 
-                callreduce = lambda r: \
-                    reduce(*r) if isinstance(r, tuple) \
-                        else reduce(r)
-            else:
-                callreduce = lambda r: r
-            return [callreduce(work(i)) for i in items]
 
-class dataset(object):
-    def __init__(self, pos, boxsize, extra):
-        """ create a dataset object for points located at pos in a boxsize.
-            points is of (Npoints, Ndim)
-            boxsize will be broadcasted to the dimension of points. 
-            extra can be accessed as dataset.extra.
-        """
-        self.pos = pos
-        self.tree = kdcount.build(self.pos, boxsize=boxsize)
-        self.extra = extra
-
-    def __len__(self):
-        return len(self.pos)
-
-class points(dataset):
-    def __init__(self, pos, weight=None, boxsize=None, extra={}):
-        dataset.__init__(self, pos, boxsize, extra)
-        self._weight = weight
-        if weight is not None:
-            assert len(weight.shape) == 1
-            self.norm = weight.sum(axis=0)
-        else:
-            self.norm = len(pos) * 1.0
-        self.subshape = ()
-
-    def w(self, index):
-        if self._weight is None:
-            return 1.0
-        else:
-            return self._weight[index]
-
-class field(dataset):
-    def __init__(self, pos, value, weight=None, boxsize=None, extra={}):
-        dataset.__init__(self, pos, boxsize, extra)
-        self._weight = weight
-        if weight is not None:
-            self._value = value * weight
-        else:
-            self._value = value
-        self.subshape = value.shape[1:]
-    def wv(self, index):
-        return self._value[index]
-    def w(self, index):
-        if self._weight is None:
-            return 1.0
-        else:
-            return self._weight[index]
+# local imports
+from models import points, field
+from utils import MapReduce, divide_and_conquer
 
 class Binning(object):
     def __init__(self, *args):
@@ -239,7 +176,7 @@ class paircount(object):
         tree1 = data1.tree
         tree2 = data2.tree
         if np != 0:
-            p = list(kdcount.divide_and_conquer(tree1, tree2, 10000))
+            p = list(utils.divide_and_conquer(tree1, tree2, 10000))
         else:
             p = [(tree1, tree2)]
         linearshape = [-1] + list(binning.shape)
