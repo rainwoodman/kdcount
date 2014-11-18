@@ -18,12 +18,17 @@ the smarter alroithm become very difficult to implement.
 The spatial complexity is O[1] [obviously excluding the storage of the position
 and data], thanks to the use of callback.
 
-The python interface is more complicated, as it provides a level of abstraction of data.
+The python interface is more complicated, and powerful:
+ * paircounting;
+ * clustering via Friend-of-Friend algorithm;
+ * multiprocessing if `sharedmem` is installed.
 
-Python Interface, pykdcount
+Python Interface of kdcount
 ===========================
 
-pykdcount takes two types of input data: 'point' and 'field'. 
+Paircounting
+-----------
+kdcount takes two types of input data: 'point' and 'field'. 
 
 'point(pos, weight, extra=None)' describes data with position and weight. For example, galaxies and
 quasars are point data. 
@@ -116,4 +121,18 @@ scheme. It returns an object with the following attributes:
                     len(X) == corr.shape[0] + 2 
         fullsum1 : full version of sum1
         fullsum2 : full version of sum2
+
+Clustering
+-----------
+The Friend-of-Friend clustering algorithm is implemented (Davis et al. 1985 ADSlink:)
+The algorithm is widely used in astronomy and cosmology simulations. All points
+that are within a given 'linking_length' are clustered into one object.
+
+clustering.fof(dataset, linkinglength):
+    
+    N      : number of identified objects
+    labels : the object label of the data points
+    sum()  : total mass of each object, for any given weight. If not given, use
+            weights of dataset
+    center() : center of mass of each object
 
