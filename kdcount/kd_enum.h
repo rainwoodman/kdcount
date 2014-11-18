@@ -117,7 +117,7 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
                 endata.j = t1->ind[j + node[1]->start];
                 endata.r = sqrt(r2);
                 if(0 != callback(data, &endata)) {
-                    rt = -1
+                    rt = -1;
                     goto exit;
                 }
             }
