@@ -8,7 +8,7 @@ setup(name="kdcount", version="0.1",
       url="http://github.com/rainwoodman/kdcount",
       download_url="http://web.phys.cmu.edu/~yfeng1/kdcount-0.1.tar.gz",
       zip_safe=False,
-      package_dir = {'kdcount': 'src'},
+      package_dir = {'kdcount': 'kdcount'},
       packages = [
         'kdcount'
       ],
@@ -16,10 +16,10 @@ setup(name="kdcount", version="0.1",
       install_requires=['numpy'],
       ext_modules = [
         Extension('kdcount.' + name, 
-             [ 'src/' + name.replace('.', '/') + '.pyx',],
-             extra_compile_args=['-O3', '-g'],
+             [ 'kdcount/' + name.replace('.', '/') + '.pyx',],
+             extra_compile_args=['-O0', '-g'],
              libraries=[],
-             include_dirs=[get_include(), 'src/'],
+             include_dirs=[get_include(), 'kdcount/'],
              depends = extra
         ) for name, extra in [
          ('pykdcount', ['kdcount.h']),
