@@ -5,10 +5,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from kdcount import correlate
 import numpy
 
-#pos = numpy.float32(numpy.fromfile('A00_hodfit.raw', dtype='f8').reshape(-1,
-#    8)[::20, 0:3]).copy()
-#numpy.save('TEST-A00_hodfit-small.npy', pos)
-
 def test_p():
     pos = numpy.load(os.path.join(os.path.dirname(__file__),
         'TEST-A00_hodfit-small.npy'))
@@ -30,7 +26,7 @@ def test_p_w():
     pos = numpy.load(os.path.join(os.path.dirname(__file__),
         'TEST-A00_hodfit-small.npy'))
     w = numpy.ones((len(pos))) 
-    dataset = correlate.points(pos, boxsize=1.0, weight=w)
+    dataset = correlate.points(pos, boxsize=1.0, weights=w)
     binning = correlate.RBinning(0.1, Nbins=20)
     r = correlate.paircount(dataset, dataset, binning, np=0)
     print r.centers, r.sum1

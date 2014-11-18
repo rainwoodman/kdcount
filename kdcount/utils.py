@@ -1,10 +1,15 @@
 from heapq import heappush, heappop
+import numpy
 
 try:
     from sharedmem import MapReduce
+    from sharedmem import empty
 except ImportError:
+    import numpy
+    empty = numpy.empty
     class MapReduce(object):
         def __init__(self, np=None):
+            self.critical = self
             pass
         def __enter__(self):
             return self
@@ -41,3 +46,10 @@ def divide_and_conquer(tree1, tree2, chunksize):
             heappush(heap, e(x, y.greater))
     for w, x, y in heap:
         yield x, y
+
+def bincount(dig, weight, minlength):
+    """ bincount supporting scalar and vector weight """
+    if numpy.isscalar(weight):
+        return numpy.bincount(dig, minlength=minlength) * weight
+    else:
+        return numpy.bincount(dig, weight, minlength)

@@ -2,7 +2,7 @@ import numpy
 
 # local imports
 from models import points, field
-from utils import MapReduce, divide_and_conquer
+import utils 
 
 class Binning(object):
     def __init__(self, *args):
@@ -127,11 +127,6 @@ class RBinning(Binning):
                 (Rmin, Rmax, Nbins, logscale))
     def __call__(self, r, i, j, data1, data2):
         return self.linear(r)
-def mybincount(dig, weight, minlength):
-    if numpy.isscalar(weight):
-        return numpy.bincount(dig, minlength=minlength) * weight
-    else:
-        return numpy.bincount(dig, weight, minlength)
 
 class paircount(object):
     """ 
@@ -210,10 +205,10 @@ class paircount(object):
                     sum2ij = data1.w(i) * data2.w(j)
                     sum1ij = sum1ij.reshape(dig.size, -1)
                     for d in range(sum1.shape[0]):
-                        sum1[d].flat [:] += mybincount(dig, 
+                        sum1[d].flat [:] += utils.bincount(dig, 
                                 sum1ij[:, d],
                                 minlength=sum1[d].size)
-                    sum2.flat [:] += mybincount(dig, 
+                    sum2.flat [:] += utils.bincount(dig, 
                             sum2ij,
                             minlength=sum2.size)
                 elif isinstance(data1, field) and isinstance(data2, points):
@@ -221,25 +216,25 @@ class paircount(object):
                     sum2ij = data1.w(i) * data2.w(j)
                     print sum1ij, sum2ij
                     for d in range(sum1.shape[0]):
-                        sum1[d].flat [:] += mybincount(dig, 
+                        sum1[d].flat [:] += utils.bincount(dig, 
                                 sum1ij[:, d],
                                 minlength=sum1[d].size)
-                    sum2.flat [:] += mybincount(dig, 
+                    sum2.flat [:] += utils.bincount(dig, 
                                 sum2ij,
                                 minlength=sum2.size)
                 elif isinstance(data1, points) and isinstance(data2, field):
                     sum1ij = data1.w(i) * data2.wv(j)
                     sum2ij = data1.w(i) * data2.w(j)
                     for d in range(sum1.shape[0]):
-                        sum1[d].flat [:] += mybincount(dig, 
+                        sum1[d].flat [:] += utils.bincount(dig, 
                                 sum1ij[:, d],
                                 minlength=sum1[d].size)
-                    sum2.flat [:] += mybincount(dig, 
+                    sum2.flat [:] += utils.bincount(dig, 
                                 sum2ij,
                                 minlength=sum2.size)
                 elif isinstance(data1, points) and isinstance(data2, points):
                     sum1ij = data1.w(i) * data2.w(j)
-                    sum1.flat [:] += mybincount(dig, 
+                    sum1.flat [:] += utils.bincount(dig, 
                             sum1ij,
                             minlength=sum1.size)
             return sum1, sum2
@@ -247,7 +242,7 @@ class paircount(object):
             sum1g[...] += sum1
             if not (isinstance(data1, points) and isinstance(data2, points)):
                 sum2g[...] += sum2
-        with MapReduce(np=np) as pool:
+        with utils.MapReduce(np=np) as pool:
             pool.map(work, range(len(p)), reduce=reduce)
 
         self.fullsum1 = sum1g.reshape(fullshape).copy()
