@@ -68,14 +68,15 @@ int kd_enum(KDNode * node[2], double maxr,
 
 static int kd_enum_force(KDNode * node[2], double rmax2,
         kd_enum_callback callback, void * data) {
+    int rt = 0;
     ptrdiff_t i, j;
     int d;
     KDStore * t0 = node[0]->store;
     KDStore * t1 = node[1]->store;
     int Nd = t0->input.dims[1];
 
-    double * p0base = alloca(node[0]->size * sizeof(double) * Nd);
-    double * p1base = alloca(node[1]->size * sizeof(double) * Nd);
+    double * p0base = malloc(node[0]->size * sizeof(double) * Nd);
+    double * p1base = malloc(node[1]->size * sizeof(double) * Nd);
     /* collect all node[1] positions to a continue block */
     double * p1, * p0;
     double half[Nd];
@@ -115,12 +116,18 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
             if(r2 <= rmax2) {
                 endata.j = t1->ind[j + node[1]->start];
                 endata.r = sqrt(r2);
-                if(0 != callback(data, &endata)) return -1;
+                if(0 != callback(data, &endata)) {
+                    rt = -1
+                    goto exit;
+                }
             }
             p1 += Nd;
         }
         p0 += Nd;
     }
-    return 0;
+    free(p1base);
+    free(p0base);
+exit:
+    return rt;
 }
 
