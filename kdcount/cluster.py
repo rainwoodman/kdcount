@@ -9,13 +9,39 @@ class fof(object):
 
         # iterations
         shmnext = utils.empty(len(data), dtype='intp')
-        while self.once(shmnext, np) > 0:
-            pass
+        self.iterations = 0
+        N = 1 
+        while N > 0:
+            N = self._once(shmnext, np)
+            self.iterations = self.iterations + 1
+            #print N
         u, labels = numpy.unique(self.next, return_inverse=True)
         self.N = len(u)
         self.labels = labels
-        
-    def once(self, shmnext, np):
+
+    def sum(self, weights=None):
+        """ return the sum of weights of each object """
+        if weights is None:
+            weights = self.data._weights
+        if weights is None:
+            weights = 1.0
+        return utils.bincount(self.labels, weights, self.N)
+
+    def center(self, weights=None):
+        """ return the center of each object """
+        if weights is None:
+            weights = self.data._weights
+        if weights is None:
+            weights = 1.0
+        mass = utils.bincount(self.labels, weights, self.N)
+        cp = numpy.empty((len(mass), self.data.pos.shape[-1]), 'f8')
+        for d in range(self.data.pos.shape[-1]):
+            cp[..., d] = utils.bincount(self.labels, weights *
+                    self.data.pos[..., d], self.N)
+            cp[..., d] /= mass
+        return cp
+
+    def _once(self, shmnext, np):
         tree = self.data.tree
         if np != 0:
             p = list(utils.divide_and_conquer(tree, tree, 10000))
@@ -33,7 +59,8 @@ class fof(object):
                 operations = 0
                 for r, i, j in n1.enumiter(n2, ll):
                     if len(r) == 0: continue
-                    with pool.critical:
+        #            with pool.critical:
+                    if True:
                         mask2 = shmnext[i] > next[j]
                         i = i[mask2]
                         j = j[mask2]
