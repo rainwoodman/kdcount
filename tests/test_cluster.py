@@ -7,7 +7,9 @@ import numpy
 
 def test_p(ll):
     pos = numpy.load(os.path.join(os.path.dirname(__file__),
-        'TEST-A00_hodfit-big.npy'))
+#        'TEST-A00_hodfit-big.npy'
+        'TEST-qpm_06352_0001-big.npy'
+))
 
     print pos.max(axis=0), pos.min(axis=0)
     dataset = cluster.dataset(pos, boxsize=1.0)
@@ -24,6 +26,7 @@ def test_p(ll):
     print 'center of first group check', \
         numpy.mean(pos[r.find(0)], axis=0, dtype='f8')
 test_p(0.0001)
+test_p(0.0004559498158012794)
 test_p(0.001)
 test_p(0.002)
 test_p(0.005)
