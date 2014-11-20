@@ -132,7 +132,7 @@ class fof(object):
                 return operations[0]
 
             def reduce(op):
-                count number of operations
+                #count number of operations
                 #print ops[0]
                 ops[0] += op
 
