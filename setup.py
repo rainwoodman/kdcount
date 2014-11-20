@@ -1,6 +1,16 @@
-from numpy.distutils.core import setup, Extension
-from numpy import get_include
-import monkey
+from distutils.core import setup
+import numpy 
+
+from Cython.Build import cythonize
+from distutils.extension import Extension
+
+def myext(*args):
+    return Extension(*args, include_dirs=["kdcount/", numpy.get_include()])
+
+extensions = [
+        myext("kdcount.pykdcount", ["kdcount/pykdcount.pyx"])
+        ]
+
 setup(name="kdcount", version="0.1",
       author="Yu Feng",
       author_email="yfeng1@andrew.cmu.edu",
@@ -14,15 +24,6 @@ setup(name="kdcount", version="0.1",
       ],
       requires=['numpy'],
       install_requires=['numpy'],
-      ext_modules = [
-        Extension('kdcount.' + name, 
-             [ 'kdcount/' + name.replace('.', '/') + '.pyx',],
-             extra_compile_args=['-O3', '-g'],
-             libraries=[],
-             include_dirs=[get_include(), 'kdcount/'],
-             depends = extra
-        ) for name, extra in [
-         ('pykdcount', ['kdcount.h']),
-        ]
-      ])
+      ext_modules = cythonize(extensions)
+      )
 
