@@ -1,6 +1,7 @@
 import numpy
 from models import dataset
 import utils
+from sys import stdout
 class fof(object):
     def __init__(self, data, linking_length, np=None, verbose=False):
         self.data = data
@@ -17,6 +18,7 @@ class fof(object):
             self.iterations = self.iterations + 1
             if verbose:
                 print 'FOF iteration', self.iterations, op
+                stdout.flush()
         u, labels = numpy.unique(head, return_inverse=True)
         self.N = len(u)
         length = utils.bincount(labels, 1, self.N)
