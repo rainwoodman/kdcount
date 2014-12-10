@@ -12,13 +12,22 @@ class fof(object):
         perm = utils.empty(len(data), dtype='intp')
         head = utils.empty(len(data), dtype='intp')
         head[:] = numpy.arange(len(data), dtype='intp')
-        op = 1 
-        while op > 0:
-            op = self._once(perm, head, np)
-            self.iterations = self.iterations + 1
-            if verbose:
-                print 'FOF iteration', self.iterations, op
-                stdout.flush()
+
+
+        llfactor = 8
+        while llfactor > 0:
+            op = 1 
+            ll = self.linking_length / llfactor
+            while op > 0:
+                op = self._once(perm, head, np, ll)
+                self.iterations = self.iterations + 1
+                if verbose:
+                    print 'FOF iteration', self.iterations, op, llfactor
+                    stdout.flush()
+                if llfactor != 1:
+                    break
+            llfactor = llfactor // 2
+
         u, labels = numpy.unique(head, return_inverse=True)
         self.N = len(u)
         length = utils.bincount(labels, 1, self.N)
@@ -65,7 +74,7 @@ class fof(object):
             cp[..., d] /= mass
         return cp
 
-    def _once(self, perm, head, np):
+    def _once(self, perm, head, np, ll):
         """ fof iteration,
             head[i] is the index of the head particle of the FOF group i
               is currently in
@@ -79,7 +88,6 @@ class fof(object):
             p = [(tree, tree)]
 
         #print 'p', len(p)
-        ll = self.linking_length
         ops = [0]
 
         with utils.MapReduce(np=np) as pool:
