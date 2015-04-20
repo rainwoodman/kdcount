@@ -1,5 +1,5 @@
-kdcount
-=======
+API Reference
+=============
 
 .. toctree::
    :maxdepth: 4
