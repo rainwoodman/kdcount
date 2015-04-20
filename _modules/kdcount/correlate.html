@@ -283,7 +283,7 @@
 <span class="sd">    data1   : :py:class:`dataset`</span>
 <span class="sd">        input data set1. It can be either </span>
 <span class="sd">        :py:class:`field` for discrete sampling of a continuous</span>
-<span class="sd">        field, or :py:class:`models.points` for a point set.</span>
+<span class="sd">        field, or :py:class:`kdcount.models.points` for a point set.</span>
 <span class="sd">    data2   : :py:class:`dataset`</span>
 <span class="sd">        input data set2, see above.</span>
 <span class="sd">    np : int</span>
@@ -293,15 +293,15 @@
 <span class="sd">    -----</span>
 <span class="sd">    The value of sum1 and sum2 depends on the types of input </span>
 
-<span class="sd">    For :py:class:`models.points` and :py:class:`models.points`: </span>
+<span class="sd">    For :py:class:`kdcount.models.points` and :py:class:`kdcount.models.points`: </span>
 <span class="sd">      - sum1 is the per bin sum of products of weights </span>
 <span class="sd">      - sum2 is always 1.0 </span>
 
-<span class="sd">    For :py:class:`models.field` and :py:class:`models.points`:</span>
+<span class="sd">    For :py:class:`kdcount.models.field` and :py:class:`kdcount.models.points`:</span>
 <span class="sd">      - sum1 is the per bin sum of products of weights and the field value</span>
 <span class="sd">      - sum2 is the per bin sum of products of weights</span>
 
-<span class="sd">    For :py:class:`models.field` and :py:class:`models.field`:</span>
+<span class="sd">    For :py:class:`kdcount.models.field` and :py:class:`kdcount.models.field`:</span>
 <span class="sd">      - sum1 is the per bin sum of products of weights and the field value</span>
 <span class="sd">        (one value per field)</span>
 <span class="sd">      - sum2 is the per bin sum of products of weights</span>
