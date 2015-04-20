@@ -1,3 +1,18 @@
+"""
+Correlation function (pair counting) with KDTree.
+
+Pair counting is the basic algorithm to calculate correlation functions.
+Correlation function is a commonly used metric in cosmology to measure
+the clustering of matter, or the growth of large scale structure in the universe.
+
+We implement :py:class:`paircount` for pair counting. Since this is a discrete
+estimator, the binning is modeled by subclasses of :py:class:`Binning`. For example
+
+- :py:class:`RBinning` 
+- :py:class:`RmuBinning`
+- :py:class:`XYBinning`
+
+"""
 import numpy
 
 # local imports
@@ -5,6 +20,21 @@ from models import points, field
 import utils 
 
 class Binning(object):
+    """
+    Binning of the correlation function. Pairs whose distance is with-in a bin
+    is counted towards the bin.
+    
+    Attributes
+    ----------
+    dims    :  array_like
+        internal; descriptors of binning dimensions.
+    edges   :  array_like
+        edges of bins per dimension
+    centers :  array_like
+        centers of bins per dimension; currently it is the 
+        mid point of the edges.
+    
+    """
     def __init__(self, *args):
         """ the shape has one extra per edge
             0 is .le. min
@@ -60,6 +90,21 @@ class Binning(object):
             self.centers = self.centers[0]
 
     def linear(self, *args):
+        """ 
+        Linearize bin indices.
+        
+        This function is called by subclasses. Refer to the source
+        code of :py:class:`RBinning` for an example.
+
+        Parameters
+        ----------
+        args    : list
+            a list of bin index, (xi, yi, zi, ..) 
+        
+        Returns
+        -------
+        linearlized bin index
+        """
         integer = numpy.empty(len(args[0]), ('i8', (self.Ndim,))).T
         for d in range(self.Ndim):
             if self.logscale[d]:
@@ -75,6 +120,21 @@ class Binning(object):
         raise UnimplementedError()
 
 class RmuBinning(Binning):
+    """
+    Binning in R and mu (angular along line of sight)
+
+    Parameters
+    ----------
+    Rmax     : float
+        max radius to go to
+    Nbins    : int
+        number of bins in R direction.
+    Nmubins    : int
+        number of bins in mu direction.
+    observer   : array_like (Ndim)
+        location of the observer (for line of sight) 
+
+    """
     def __init__(self, Rmax, Nbins, Nmubins, observer):
         Binning.__init__(self, 
                 (0, Rmax, Nbins),
@@ -94,11 +154,25 @@ class RmuBinning(Binning):
         return self.linear(r, mu)
 
 class XYBinning(Binning):
-    """ the bins will be 
-        [sky, los]
-        with numpy imshow , the second axis los, will be vertical
-                with imshow( ..T,) the sky will be vertical.
-        """
+    """ 
+    Binning along Sky-Lineofsight directions.
+
+    The bins are be (sky, los)
+
+    Parameters
+    ----------
+    Rmax     : float
+        max radius to go to
+    Nbins    : int
+        number of bins in each direction.
+    observer   : array_like (Ndim)
+        location of the observer (for line of sight) 
+
+    Notes
+    -----
+    with numpy imshow , the second axis los, will be vertical
+            with imshow( ..T,) the sky will be vertical.
+    """
 
     def __init__(self, Rmax, Nbins, observer):
         self.Rmax = Rmax
@@ -122,6 +196,17 @@ class XYBinning(Binning):
         return self.linear(sky, los)
 
 class RBinning(Binning):
+    """ 
+    Binning along radial direction.
+
+    Parameters
+    ----------
+    Rmax     : float
+        max radius to go to
+    Nbins    : int
+        number of bins in each direction.
+
+    """
     def __init__(self, Rmax, Nbins, logscale=False, Rmin=0):
         Binning.__init__(self, 
                 (Rmin, Rmax, Nbins, logscale))
@@ -130,35 +215,55 @@ class RBinning(Binning):
 
 class paircount(object):
     """ 
-        a paircount object has the following attributes:
-        sum1 :    the numerator in the correlator
-        sum2 :    the denominator in the correlator
-        corr :    sum1 / sum2
+    Paircounting via a KD-tree, on two data sets.
 
-        for points x points: 
-               sum1 = sum( w1 w2 )
-               sum2 = 1.0 
-        for field x points:
-               sum1 = sum( w1 w2 v1)
-               sum2 = sum( w1 w2)
-        for field x field:
-               sum1 = sum( w1 w2 v1 v2)
-               sum2 = sum( w1 w2)
+    Attributes
+    ----------
+    sum1 :  array_like
+        the numerator in the correlator
+    sum2 :  array_like
+        the denominator in the correlator
+    centers : list
+        the centers of the corresponding corr bin, one item per 
+        binning direction.
+    edges :   list
+        the edges of the corresponding corr bin, one item per 
+        binning direction.
+    binning : :py:class:`Binning`
+        binning object of this paircount 
+    data1   : :py:class:`dataset`
+        input data set1. It can be either 
+        :py:class:`field` for discrete sampling of a continuous
+        field, or :py:class:`kdcount.models.points` for a point set.
+    data2   : :py:class:`dataset`
+        input data set2, see above.
+    np : int
+        number of parallel processes. set to 0 to disable parallelism
 
-        with this convention the usual form of landy-sarley
+    Notes
+    -----
+    The value of sum1 and sum2 depends on the types of input 
+
+    For :py:class:`kdcount.models.points` and :py:class:`kdcount.models.points`: 
+      - sum1 is the per bin sum of products of weights 
+      - sum2 is always 1.0 
+
+    For :py:class:`kdcount.models.field` and :py:class:`kdcount.models.points`:
+      - sum1 is the per bin sum of products of weights and the field value
+      - sum2 is the per bin sum of products of weights
+
+    For :py:class:`kdcount.models.field` and :py:class:`kdcount.models.field`:
+      - sum1 is the per bin sum of products of weights and the field value
+        (one value per field)
+      - sum2 is the per bin sum of products of weights
+
+    With this convention the usual form of Landy-Salay estimator is (
+    for points x points:
+
         (DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1) 
-        (with r = sum(wD) / sum(wR))
 
-        centers : the centers of the corresponding corr bin
-                  centers = (X, Y, ....)
-                  len(X) == corr.shape[0], len(Y) == corr.shape[1]
-        binning : the binning object to create this paircount 
-        edges :   the edges of the corr bins.
+        with r = sum(wD) / sum(wR)
 
-        fullcorr : the full correlation function with outliners 
-                    len(X) == corr.shape[0] + 2 
-        fullsum1 : full version of sum1
-        fullsum2 : full version of sum2
     """
     def __init__(self, data1, data2, binning, np=None):
         """
@@ -256,7 +361,7 @@ class paircount(object):
         self.edges = binning.edges
         self.centers = binning.centers
 
-def main():
+def _main():
     pm = numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3]
     wm = numpy.ones(len(pm))
     martin = points(pm, wm)
@@ -271,7 +376,7 @@ def main():
     return binning.centers, (DD.sum1 - 
             2 * r * DR.sum1 + r ** 2 * RR.sum1) / (r ** 2 * RR.sum1)
 
-def main2():
+def _main2():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
     print 'read'
     print sim
@@ -289,7 +394,7 @@ def main2():
 
     return DD.centers, DD.sum1 / DD.sum2
 
-def main3():
+def _main3():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
     print 'read'
     pos = numpy.array(numpy.unravel_index(numpy.arange(sim.size),

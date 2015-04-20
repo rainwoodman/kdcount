@@ -1,14 +1,26 @@
+""" 
+Clustering with KDTree
+
+This module implements Friend-of-Friend clustering with a KDtree as
+:py:class:`fof`.
+
+Friend-of-Friend clustering has been commonly used in cosmology to
+identify halos. 
+
+"""
+
 import numpy
 from models import dataset
 import utils
 from sys import stdout
+
 class fof(object):
     """ 
     Friend of Friend clustering
 
     Attributes
     ----------
-    data    : :py:class:`dataset`
+    data    : :py:class:`kdcount.models.dataset`
         data set (positions of particles complied into a KD-Tree
     linking_length : float
         linking length, in data units
