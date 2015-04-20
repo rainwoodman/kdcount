@@ -53,8 +53,9 @@
 <span class="sd">This module implements Friend-of-Friend clustering with a KDtree as</span>
 <span class="sd">:py:class:`fof`.</span>
 
-<span class="sd">Friend-of-Friend clustering has been commonly used in cosmology to</span>
-<span class="sd">identify halos. </span>
+<span class="sd">The Friend-of-Friend clustering algorithm is implemented (Davis et al. 1985 ADSlink:)</span>
+<span class="sd">The algorithm is commonly used in astronomy and cosmology: all points</span>
+<span class="sd">that are within a given &#39;linking_length&#39; are clustered into one object.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -62,13 +63,14 @@
 <span class="kn">from</span> <span class="nn">models</span> <span class="kn">import</span> <span class="n">dataset</span>
 <span class="kn">import</span> <span class="nn">utils</span>
 <span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">stdout</span>
+
 <div class="viewcode-block" id="fof"><a class="viewcode-back" href="../../kdcount.cluster.html#kdcount.cluster.fof">[docs]</a><span class="k">class</span> <span class="nc">fof</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    Friend of Friend clustering</span>
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data    : :py:class:`dataset`</span>
+<span class="sd">    data    : :py:class:`kdcount.models.dataset`</span>
 <span class="sd">        data set (positions of particles complied into a KD-Tree</span>
 <span class="sd">    linking_length : float</span>
 <span class="sd">        linking length, in data units</span>

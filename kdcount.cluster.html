@@ -60,8 +60,9 @@
 <p>Clustering with KDTree</p>
 <p>This module implements Friend-of-Friend clustering with a KDtree as
 <a class="reference internal" href="#kdcount.cluster.fof" title="kdcount.cluster.fof"><code class="xref py py-class docutils literal"><span class="pre">fof</span></code></a>.</p>
-<p>Friend-of-Friend clustering has been commonly used in cosmology to
-identify halos.</p>
+<p>The Friend-of-Friend clustering algorithm is implemented (Davis et al. 1985 ADSlink:)
+The algorithm is commonly used in astronomy and cosmology: all points
+that are within a given &#8216;linking_length&#8217; are clustered into one object.</p>
 <dl class="class">
 <dt id="kdcount.cluster.fof">
 <em class="property">class </em><code class="descclassname">kdcount.cluster.</code><code class="descname">fof</code><span class="sig-paren">(</span><em>data</em>, <em>linking_length</em>, <em>np=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/cluster.html#fof"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.cluster.fof" title="Permalink to this definition">¶</a></dt>
@@ -75,7 +76,7 @@ identify halos.</p>
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td>data</td>
-<td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) data set (positions of particles complied into a KD-Tree</td>
+<td>(<a class="reference internal" href="kdcount.models.html#kdcount.models.dataset" title="kdcount.models.dataset"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.dataset</span></code></a>) data set (positions of particles complied into a KD-Tree</td>
 </tr>
 <tr class="row-even"><td>linking_length</td>
 <td>(float) linking length, in data units</td>

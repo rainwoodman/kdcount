@@ -68,6 +68,21 @@ estimator, the binning is modeled by subclasses of <a class="reference internal"
 <li><a class="reference internal" href="#kdcount.correlate.RmuBinning" title="kdcount.correlate.RmuBinning"><code class="xref py py-class docutils literal"><span class="pre">RmuBinning</span></code></a></li>
 <li><a class="reference internal" href="#kdcount.correlate.XYBinning" title="kdcount.correlate.XYBinning"><code class="xref py py-class docutils literal"><span class="pre">XYBinning</span></code></a></li>
 </ul>
+<p>kdcount takes two types of input data: &#8216;point&#8217; and &#8216;field&#8217;.</p>
+<p><a class="reference internal" href="kdcount.models.html#kdcount.models.points" title="kdcount.models.points"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.points</span></code></a> describes data with position and weight. For example, galaxies and
+quasars are point data. 
+point.pos is a row array of the positions of the points; other fields are
+used internally.
+point.extra is the extra properties that can be used in the Binning. One use
+is to exclude the Lyman-alpha pixels and Quasars from the same sightline.</p>
+<p><a class="reference internal" href="kdcount.models.html#kdcount.models.field" title="kdcount.models.field"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.field</span></code></a> describes a continious field sampled at given positions, each sample
+with a weight; a notorious example is the over-flux field in Lyman-alpha forest
+it is a proxy of the over-density field sampled along quasar sightlines.</p>
+<p>In the Python Interface, to count, one has to define the &#8216;binning&#8217; scheme, by
+subclassing <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">Binning</span></code></a>. Binning describes a multi-dimension binning
+scheme. The dimensions can be derived, for example, the norm of the spatial
+separation can be a dimension the same way as the &#8216;x&#8217; separation. For example, 
+see <a class="reference internal" href="#kdcount.correlate.RmuBinning" title="kdcount.correlate.RmuBinning"><code class="xref py py-class docutils literal"><span class="pre">RmuBinning</span></code></a>.</p>
 <dl class="class">
 <dt id="kdcount.correlate.Binning">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">Binning</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning" title="Permalink to this definition">¶</a></dt>
@@ -144,7 +159,8 @@ code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="
 <dt id="kdcount.correlate.RmuBinning">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RmuBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>Nmubins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RmuBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RmuBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
-<p>Binning in R and mu (angular along line of sight)</p>
+<p>Binning in R and mu (angular along line of sight)
+mu = cos(theta), relative to line of sight from a given observer.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

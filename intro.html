@@ -54,10 +54,33 @@
             
   <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
-<p>kdcount implements two commonly used cosmology routines : pair-counting
-and friend-of-friend clustering with KD-tree.</p>
-<p>The pair-counting interface is in <a class="reference internal" href="kdcount.correlate.html#module-kdcount.correlate" title="kdcount.correlate"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.correlate</span></code></a>.</p>
-<p>The friend of friend clustering interface is in <a class="reference internal" href="kdcount.cluster.html#module-kdcount.cluster" title="kdcount.cluster"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.cluster</span></code></a>.</p>
+</div>
+<div class="section" id="kdcount">
+<h1>kdcount<a class="headerlink" href="#kdcount" title="Permalink to this headline">¶</a></h1>
+<p>kdcount is a simple API for brute force pair counting, there is a C interface
+and a Python interface. It uses a KDTree to prune
+the K-D spatial data; for each pair within a given distance D, a callback
+function is called; the user-defined callback function does the actual counting.</p>
+<p>Periodic boundary is supported, and it is non-trivial.</p>
+<p>The python interface is more complicated, and powerful:</p>
+<blockquote>
+<div><ul class="simple">
+<li>paircounting via <a class="reference internal" href="kdcount.correlate.html#module-kdcount.correlate" title="kdcount.correlate"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.correlate</span></code></a></li>
+<li>clustering via Friend-of-Friend algorithm; <a class="reference internal" href="kdcount.cluster.html#module-kdcount.cluster" title="kdcount.cluster"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.cluster</span></code></a></li>
+</ul>
+</div></blockquote>
+<p>The calculation can be made parallel, if <a href="#id1"><span class="problematic" id="id2">:py:package:`sharedmem`</span></a> is installed.</p>
+<p>The time complexity is <code class="code docutils literal"><span class="pre">O[(D</span> <span class="pre">/</span> <span class="pre">n)</span> <span class="pre">**</span> <span class="pre">d]</span></code>,
+where n is number density. Each pair is opened.</p>
+<p>Note that
+smarter algorithms exist (more or less, O(D / n log Dn), I may remembered it
+wrongly See Gary and Moore 2001.
+The smarter algorithm is internally implemented, but not very much tested, and undocumented;
+do not use it.</p>
+<p>Unfortunately in cosmology we usually want to project the pair separation along
+parallel + perpendicular direction relative to a given observer &#8211; in this case,
+the smarter algorithm become very difficult to implement.</p>
+<p>The spatial complexity is a constant, as we make extensive use of callback functions</p>
 </div>
 
 
@@ -66,6 +89,12 @@ and friend-of-friend clustering with KD-tree.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction</a></li>
+<li><a class="reference internal" href="#kdcount">kdcount</a></li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
                         title="previous chapter">Welcome to kdcount&#8217;s documentation!</a></p>

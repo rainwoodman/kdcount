@@ -61,6 +61,26 @@
 <span class="sd">- :py:class:`RmuBinning`</span>
 <span class="sd">- :py:class:`XYBinning`</span>
 
+<span class="sd">kdcount takes two types of input data: &#39;point&#39; and &#39;field&#39;. </span>
+
+<span class="sd">:py:class:`kdcount.models.points` describes data with position and weight. For example, galaxies and</span>
+<span class="sd">quasars are point data. </span>
+<span class="sd">point.pos is a row array of the positions of the points; other fields are</span>
+<span class="sd">used internally.</span>
+<span class="sd">point.extra is the extra properties that can be used in the Binning. One use</span>
+<span class="sd">is to exclude the Lyman-alpha pixels and Quasars from the same sightline. </span>
+
+<span class="sd">:py:class:`kdcount.models.field` describes a continious field sampled at given positions, each sample</span>
+<span class="sd">with a weight; a notorious example is the over-flux field in Lyman-alpha forest</span>
+<span class="sd">it is a proxy of the over-density field sampled along quasar sightlines. </span>
+
+<span class="sd">In the Python Interface, to count, one has to define the &#39;binning&#39; scheme, by</span>
+<span class="sd">subclassing :py:class:`Binning`. Binning describes a multi-dimension binning</span>
+<span class="sd">scheme. The dimensions can be derived, for example, the norm of the spatial</span>
+<span class="sd">separation can be a dimension the same way as the &#39;x&#39; separation. For example, </span>
+<span class="sd">see :py:class:`RmuBinning`.</span>
+
+
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 
@@ -165,12 +185,30 @@
             <span class="n">integer</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv</span><span class="p">[</span><span class="n">d</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">integer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">)</span>
 </div>
-    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the bin number of pairs separated by distances r, </span>
+<span class="sd">        Use :py:meth:`linear` to convert from multi-dimension bin index to</span>
+<span class="sd">        linear index.</span>
+<span class="sd"> </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        r   : array_like</span>
+<span class="sd">            separation</span>
+
+<span class="sd">        i, j : array_like</span>
+<span class="sd">            index (i, j) of pairs. </span>
+<span class="sd">        data1, data2 :</span>
+<span class="sd">            The position of first point is data1.pos[i], the position of second point is</span>
+<span class="sd">            data2.pos[j]. </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="n">UnimplementedError</span><span class="p">()</span>
 </div>
 <div class="viewcode-block" id="RmuBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.RmuBinning">[docs]</a><span class="k">class</span> <span class="nc">RmuBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Binning in R and mu (angular along line of sight)</span>
+<span class="sd">    mu = cos(theta), relative to line of sight from a given observer. </span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
