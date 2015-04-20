@@ -36,6 +36,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="kdcount.correlate.html" title="kdcount.correlate module"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -52,8 +55,74 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="kdcount-cluster-module">
-<h1>kdcount.cluster module<a class="headerlink" href="#kdcount-cluster-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-kdcount.cluster">
+<span id="kdcount-cluster-module"></span><h1>kdcount.cluster module<a class="headerlink" href="#module-kdcount.cluster" title="Permalink to this headline">¶</a></h1>
+<p>Clustering with KDTree</p>
+<p>This module implements Friend-of-Friend clustering with a KDtree as
+<a class="reference internal" href="#kdcount.cluster.fof" title="kdcount.cluster.fof"><code class="xref py py-class docutils literal"><span class="pre">fof</span></code></a>.</p>
+<p>Friend-of-Friend clustering has been commonly used in cosmology to
+identify halos.</p>
+<dl class="class">
+<dt id="kdcount.cluster.fof">
+<em class="property">class </em><code class="descclassname">kdcount.cluster.</code><code class="descname">fof</code><span class="sig-paren">(</span><em>data</em>, <em>linking_length</em>, <em>np=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/cluster.html#fof"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.cluster.fof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Friend of Friend clustering</p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>data</td>
+<td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) data set (positions of particles complied into a KD-Tree</td>
+</tr>
+<tr class="row-even"><td>linking_length</td>
+<td>(float) linking length, in data units</td>
+</tr>
+<tr class="row-odd"><td>np</td>
+<td>(int) parallel processes to use (0 to disable)</td>
+</tr>
+<tr class="row-even"><td>verbose</td>
+<td>(boolean) print some verbose information</td>
+</tr>
+<tr class="row-odd"><td>N</td>
+<td>(int) number of clusters identified</td>
+</tr>
+<tr class="row-even"><td>labels</td>
+<td>(array_like) the label (cluster id) of each object</td>
+</tr>
+<tr class="row-odd"><td>length</td>
+<td>(array_like) number of particles per cluster</td>
+</tr>
+<tr class="row-even"><td>offset</td>
+<td>(array_like) offset of the first particle in indices</td>
+</tr>
+<tr class="row-odd"><td>indices</td>
+<td>(array_like) index of particles indices[offset[i]:length[i]] is the indices of particles in cluster i.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="kdcount.cluster.fof.center">
+<code class="descname">center</code><span class="sig-paren">(</span><em>weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/cluster.html#fof.center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.cluster.fof.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the center of each object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="kdcount.cluster.fof.find">
+<code class="descname">find</code><span class="sig-paren">(</span><em>groupid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/cluster.html#fof.find"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.cluster.fof.find" title="Permalink to this definition">¶</a></dt>
+<dd><p>return all of the indices of particles of groupid</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="kdcount.cluster.fof.sum">
+<code class="descname">sum</code><span class="sig-paren">(</span><em>weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/cluster.html#fof.sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.cluster.fof.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the sum of weights of each object</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
@@ -98,6 +167,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="kdcount.correlate.html" title="kdcount.correlate module"
              >next</a> |</li>

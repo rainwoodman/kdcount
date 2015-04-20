@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>kdcount.correlate &mdash; kdcount 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="kdcount 0.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kdcount 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for kdcount.correlate</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="c"># local imports</span>
+<span class="kn">from</span> <span class="nn">models</span> <span class="kn">import</span> <span class="n">points</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">import</span> <span class="nn">utils</span> 
+
+<div class="viewcode-block" id="Binning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.Binning">[docs]</a><span class="k">class</span> <span class="nc">Binning</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; the shape has one extra per edge</span>
+<span class="sd">            0 is .le. min</span>
+<span class="sd">            -1 is .g. max</span>
+<span class="sd">            args are (min, max, Nbins)</span>
+<span class="sd">            the first is for R</span>
+<span class="sd">            centers is squezzed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dims</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="p">[</span>
+                    <span class="p">(</span><span class="s">&#39;inv&#39;</span><span class="p">,</span> <span class="s">&#39;f8&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;min&#39;</span><span class="p">,</span> <span class="s">&#39;f8&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;max&#39;</span><span class="p">,</span> <span class="s">&#39;f8&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&#39;i4&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;logscale&#39;</span><span class="p">,</span> <span class="s">&#39;?&#39;</span><span class="p">)</span>
+                    <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="s">&#39;min&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="s">&#39;max&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="s">&#39;inv&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logscale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="s">&#39;logscale&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">Nbins</span> <span class="o">=</span> <span class="n">dim</span>
+                <span class="n">log</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">log</span> <span class="o">=</span> <span class="n">dim</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nbins</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logscale</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">log</span>
+            <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nbins</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="nb">max</span> <span class="o">/</span> <span class="nb">min</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nbins</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="nb">max</span> <span class="o">-</span> <span class="nb">min</span><span class="p">)</span>
+            <span class="n">edge</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Nbins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+                <span class="n">edge</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="n">edge</span> <span class="o">*</span> <span class="nb">min</span>
+                <span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">*</span> <span class="n">edge</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">**</span> <span class="mf">0.5</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">edge</span> <span class="o">=</span> <span class="n">edge</span> <span class="o">+</span> <span class="nb">min</span>
+                <span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">edge</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="mf">0.5</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">center</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Rmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ndim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">+</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">centers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Binning.linear"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.Binning.linear">[docs]</a>    <span class="k">def</span> <span class="nf">linear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">integer</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="p">(</span><span class="s">&#39;i8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ndim</span><span class="p">,)))</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ndim</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logscale</span><span class="p">[</span><span class="n">d</span><span class="p">]:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">x</span><span class="p">[</span><span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.9</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">[</span><span class="n">d</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">[</span><span class="n">d</span><span class="p">]</span>
+            <span class="n">integer</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv</span><span class="p">[</span><span class="n">d</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">integer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">UnimplementedError</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="RmuBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.RmuBinning">[docs]</a><span class="k">class</span> <span class="nc">RmuBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">Nmubins</span><span class="p">,</span> <span class="n">observer</span><span class="p">):</span>
+        <span class="n">Binning</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">),</span>
+                <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Nmubins</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">):</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="n">data2</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">r1</span> <span class="o">+</span> <span class="n">r2</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer</span>
+        <span class="n">dr</span> <span class="o">=</span> <span class="n">r1</span> <span class="o">-</span> <span class="n">r2</span>
+        <span class="n">dot</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij, ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">center</span><span class="p">)</span> 
+        <span class="n">center</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij, ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">center</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">dot</span> <span class="o">/</span> <span class="p">(</span><span class="n">center</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span>
+        <span class="n">mu</span><span class="p">[</span><span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10.0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="XYBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.XYBinning">[docs]</a><span class="k">class</span> <span class="nc">XYBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; the bins will be </span>
+<span class="sd">        [sky, los]</span>
+<span class="sd">        with numpy imshow , the second axis los, will be vertical</span>
+<span class="sd">                with imshow( ..T,) the sky will be vertical.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">observer</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Rmax</span> <span class="o">=</span> <span class="n">Rmax</span>
+        <span class="n">Binning</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">),</span>
+            <span class="p">(</span><span class="o">-</span><span class="n">Rmax</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Nbins</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span> <span class="o">=</span> <span class="n">observer</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">):</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="n">data2</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">r1</span> <span class="o">+</span> <span class="n">r2</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer</span>
+        <span class="n">dr</span> <span class="o">=</span> <span class="n">r1</span> <span class="o">-</span> <span class="n">r2</span>
+        <span class="n">dot</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij, ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">center</span><span class="p">)</span> 
+        <span class="n">center2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij, ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">center</span><span class="p">)</span>
+        <span class="n">los</span> <span class="o">=</span> <span class="n">dot</span> <span class="o">/</span> <span class="n">center2</span> <span class="o">**</span> <span class="mf">0.5</span>
+        <span class="n">dr2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij, ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">dr</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dr2</span> <span class="o">-</span> <span class="n">los</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">sky</span> <span class="o">=</span> <span class="n">x2</span> <span class="o">**</span> <span class="mf">0.5</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">sky</span><span class="p">,</span> <span class="n">los</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="RBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.RBinning">[docs]</a><span class="k">class</span> <span class="nc">RBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">Rmin</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">Binning</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                <span class="p">(</span><span class="n">Rmin</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">logscale</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="paircount"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.paircount">[docs]</a><span class="k">class</span> <span class="nc">paircount</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        a paircount object has the following attributes:</span>
+<span class="sd">        sum1 :    the numerator in the correlator</span>
+<span class="sd">        sum2 :    the denominator in the correlator</span>
+<span class="sd">        corr :    sum1 / sum2</span>
+
+<span class="sd">        for points x points: </span>
+<span class="sd">               sum1 = sum( w1 w2 )</span>
+<span class="sd">               sum2 = 1.0 </span>
+<span class="sd">        for field x points:</span>
+<span class="sd">               sum1 = sum( w1 w2 v1)</span>
+<span class="sd">               sum2 = sum( w1 w2)</span>
+<span class="sd">        for field x field:</span>
+<span class="sd">               sum1 = sum( w1 w2 v1 v2)</span>
+<span class="sd">               sum2 = sum( w1 w2)</span>
+
+<span class="sd">        with this convention the usual form of landy-sarley</span>
+<span class="sd">        (DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1) </span>
+<span class="sd">        (with r = sum(wD) / sum(wR))</span>
+
+<span class="sd">        centers : the centers of the corresponding corr bin</span>
+<span class="sd">                  centers = (X, Y, ....)</span>
+<span class="sd">                  len(X) == corr.shape[0], len(Y) == corr.shape[1]</span>
+<span class="sd">        binning : the binning object to create this paircount </span>
+<span class="sd">        edges :   the edges of the corr bins.</span>
+
+<span class="sd">        fullcorr : the full correlation function with outliners </span>
+<span class="sd">                    len(X) == corr.shape[0] + 2 </span>
+<span class="sd">        fullsum1 : full version of sum1</span>
+<span class="sd">        fullsum2 : full version of sum2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">binning</span><span class="p">,</span> <span class="n">np</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        binning is an instance of Binning, (eg, RBinning, RmuBinning)</span>
+
+<span class="sd">        if the value has multiple components,</span>
+<span class="sd">        return counts with be &#39;tuple&#39;, one item for each component</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">tree1</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">tree</span>
+        <span class="n">tree2</span> <span class="o">=</span> <span class="n">data2</span><span class="o">.</span><span class="n">tree</span>
+        <span class="k">if</span> <span class="n">np</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">divide_and_conquer</span><span class="p">(</span><span class="n">tree1</span><span class="p">,</span> <span class="n">tree2</span><span class="p">,</span> <span class="mi">10000</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[(</span><span class="n">tree1</span><span class="p">,</span> <span class="n">tree2</span><span class="p">)]</span>
+        <span class="n">linearshape</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+            <span class="n">fullshape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data1</span><span class="o">.</span><span class="n">subshape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+            <span class="n">sum2g</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">linearshape</span><span class="p">)</span>
+            <span class="n">fullshape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data2</span><span class="o">.</span><span class="n">subshape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+            <span class="n">sum2g</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">linearshape</span><span class="p">)</span>
+            <span class="n">fullshape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data1</span><span class="o">.</span><span class="n">subshape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">data1</span><span class="o">.</span><span class="n">subshape</span> <span class="o">==</span> <span class="n">data2</span><span class="o">.</span><span class="n">subshape</span>
+            <span class="n">sum2g</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">linearshape</span><span class="p">)</span>
+            <span class="n">fullshape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data1</span><span class="o">.</span><span class="n">subshape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="n">sum1g</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">fullshape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">linearshape</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">work</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">sum1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">sum1g</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+                <span class="n">sum2</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sum2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">sum2g</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">n1</span><span class="o">.</span><span class="n">enumiter</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span> <span class="n">binning</span><span class="o">.</span><span class="n">Rmax</span><span class="p">):</span>
+                <span class="n">dig</span> <span class="o">=</span> <span class="n">binning</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+                    <span class="n">sum1ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">wv</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">wv</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">sum2ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">sum1ij</span> <span class="o">=</span> <span class="n">sum1ij</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dig</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sum1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="n">sum1</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                                <span class="n">sum1ij</span><span class="p">[:,</span> <span class="n">d</span><span class="p">],</span>
+                                <span class="n">minlength</span><span class="o">=</span><span class="n">sum1</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                    <span class="n">sum2</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                            <span class="n">sum2ij</span><span class="p">,</span>
+                            <span class="n">minlength</span><span class="o">=</span><span class="n">sum2</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+                    <span class="n">sum1ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">wv</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">sum2ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="n">sum1ij</span><span class="p">,</span> <span class="n">sum2ij</span>
+                    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sum1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="n">sum1</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                                <span class="n">sum1ij</span><span class="p">[:,</span> <span class="n">d</span><span class="p">],</span>
+                                <span class="n">minlength</span><span class="o">=</span><span class="n">sum1</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                    <span class="n">sum2</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                                <span class="n">sum2ij</span><span class="p">,</span>
+                                <span class="n">minlength</span><span class="o">=</span><span class="n">sum2</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+                    <span class="n">sum1ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">wv</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">sum2ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sum1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="n">sum1</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                                <span class="n">sum1ij</span><span class="p">[:,</span> <span class="n">d</span><span class="p">],</span>
+                                <span class="n">minlength</span><span class="o">=</span><span class="n">sum1</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                    <span class="n">sum2</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                                <span class="n">sum2ij</span><span class="p">,</span>
+                                <span class="n">minlength</span><span class="o">=</span><span class="n">sum2</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+                    <span class="n">sum1ij</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">data2</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">sum1</span><span class="o">.</span><span class="n">flat</span> <span class="p">[:]</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">dig</span><span class="p">,</span> 
+                            <span class="n">sum1ij</span><span class="p">,</span>
+                            <span class="n">minlength</span><span class="o">=</span><span class="n">sum1</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">sum1</span><span class="p">,</span> <span class="n">sum2</span>
+        <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="n">sum1</span><span class="p">,</span> <span class="n">sum2</span><span class="p">):</span>
+            <span class="n">sum1g</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sum1</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">)):</span>
+                <span class="n">sum2g</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sum2</span>
+        <span class="k">with</span> <span class="n">utils</span><span class="o">.</span><span class="n">MapReduce</span><span class="p">(</span><span class="n">np</span><span class="o">=</span><span class="n">np</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">work</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)),</span> <span class="nb">reduce</span><span class="o">=</span><span class="nb">reduce</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fullsum1</span> <span class="o">=</span> <span class="n">sum1g</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">fullshape</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sum1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fullsum1</span><span class="p">[[</span><span class="bp">Ellipsis</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span> <span class="o">*</span> <span class="n">binning</span><span class="o">.</span><span class="n">Ndim</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">points</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fullsum2</span> <span class="o">=</span> <span class="n">sum2g</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">binning</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sum2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fullsum2</span><span class="p">[</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span> <span class="o">*</span> <span class="n">binning</span><span class="o">.</span><span class="n">Ndim</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">binning</span> <span class="o">=</span> <span class="n">binning</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="n">binning</span><span class="o">.</span><span class="n">edges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="n">binning</span><span class="o">.</span><span class="n">centers</span>
+</div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">pm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="s">&#39;A00_hodfit.raw&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">)[::</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">wm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pm</span><span class="p">))</span>
+    <span class="n">martin</span> <span class="o">=</span> <span class="n">points</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">wm</span><span class="p">)</span>
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1000000</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">wr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pr</span><span class="p">))</span>
+    <span class="n">random</span> <span class="o">=</span> <span class="n">points</span><span class="p">(</span><span class="n">pr</span><span class="p">,</span> <span class="n">wr</span><span class="p">)</span>
+    <span class="n">binning</span> <span class="o">=</span> <span class="n">RBinning</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
+    <span class="n">DR</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">martin</span><span class="p">,</span> <span class="n">random</span><span class="p">,</span> <span class="n">binning</span><span class="p">)</span>
+    <span class="n">DD</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">martin</span><span class="p">,</span> <span class="n">martin</span><span class="p">,</span> <span class="n">binning</span><span class="p">)</span>
+    <span class="n">RR</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">random</span><span class="p">,</span> <span class="n">random</span><span class="p">,</span> <span class="n">binning</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">martin</span><span class="o">.</span><span class="n">norm</span> <span class="o">/</span> <span class="n">random</span><span class="o">.</span><span class="n">norm</span>
+    <span class="k">return</span> <span class="n">binning</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="p">(</span><span class="n">DD</span><span class="o">.</span><span class="n">sum1</span> <span class="o">-</span> 
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span> <span class="o">*</span> <span class="n">DR</span><span class="o">.</span><span class="n">sum1</span> <span class="o">+</span> <span class="n">r</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">RR</span><span class="o">.</span><span class="n">sum1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">r</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">RR</span><span class="o">.</span><span class="n">sum1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="main2"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.main2">[docs]</a><span class="k">def</span> <span class="nf">main2</span><span class="p">():</span>
+    <span class="n">sim</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="s">&#39;grid-128.raw&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f4&#39;</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;read&#39;</span>
+    <span class="k">print</span> <span class="n">sim</span>
+    <span class="k">print</span> <span class="n">sim</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">),</span> <span class="n">sim</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="mf">128.0</span>
+    <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.1</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">sim</span><span class="p">[</span><span class="n">sample</span><span class="p">],</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+<span class="c">#    value = sim[sample]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="n">sample</span><span class="p">],</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;data ready&#39;</span>
+    <span class="n">binning</span> <span class="o">=</span> <span class="n">RBinning</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
+    <span class="n">DD</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">binning</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">DD</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">DD</span><span class="o">.</span><span class="n">sum1</span> <span class="o">/</span> <span class="n">DD</span><span class="o">.</span><span class="n">sum2</span>
+</div>
+<div class="viewcode-block" id="main3"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.main3">[docs]</a><span class="k">def</span> <span class="nf">main3</span><span class="p">():</span>
+    <span class="n">sim</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="s">&#39;grid-128.raw&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f4&#39;</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;read&#39;</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="mf">128.0</span>
+    <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.2</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">sim</span><span class="p">[</span><span class="n">sample</span><span class="p">],</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="n">sample</span><span class="p">],</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;data ready&#39;</span>
+    <span class="n">DD</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">RmuBinning</span><span class="p">(</span><span class="mf">0.10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">DD</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kdcount 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Yu Feng.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

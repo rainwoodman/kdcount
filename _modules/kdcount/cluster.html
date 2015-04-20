@@ -1,0 +1,303 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>kdcount.cluster &mdash; kdcount 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="kdcount 0.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kdcount 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for kdcount.cluster</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Clustering with KDTree</span>
+
+<span class="sd">This module implements Friend-of-Friend clustering with a KDtree as</span>
+<span class="sd">:py:class:`fof`.</span>
+
+<span class="sd">Friend-of-Friend clustering has been commonly used in cosmology to</span>
+<span class="sd">identify halos. </span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">models</span> <span class="kn">import</span> <span class="n">dataset</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">stdout</span>
+<div class="viewcode-block" id="fof"><a class="viewcode-back" href="../../kdcount.cluster.html#kdcount.cluster.fof">[docs]</a><span class="k">class</span> <span class="nc">fof</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Friend of Friend clustering</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data    : :py:class:`dataset`</span>
+<span class="sd">        data set (positions of particles complied into a KD-Tree</span>
+<span class="sd">    linking_length : float</span>
+<span class="sd">        linking length, in data units</span>
+<span class="sd">    np     : int</span>
+<span class="sd">        parallel processes to use (0 to disable)</span>
+<span class="sd">    verbose : boolean</span>
+<span class="sd">        print some verbose information</span>
+
+<span class="sd">    N   : int</span>
+<span class="sd">        number of clusters identified</span>
+<span class="sd">    labels : array_like</span>
+<span class="sd">        the label (cluster id) of each object </span>
+<span class="sd">    length : array_like</span>
+<span class="sd">        number of particles per cluster </span>
+<span class="sd">    offset : array_like</span>
+<span class="sd">        offset of the first particle in indices</span>
+<span class="sd">    indices : array_like</span>
+<span class="sd">        index of particles indices[offset[i]:length[i]] is the indices</span>
+<span class="sd">        of particles in cluster i.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">linking_length</span><span class="p">,</span> <span class="n">np</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linking_length</span> <span class="o">=</span> <span class="n">linking_length</span>
+
+        <span class="c"># iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;intp&#39;</span><span class="p">)</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;intp&#39;</span><span class="p">)</span>
+        <span class="n">head</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;intp&#39;</span><span class="p">)</span>
+
+
+        <span class="n">llfactor</span> <span class="o">=</span> <span class="mi">8</span>
+        <span class="k">while</span> <span class="n">llfactor</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="mi">1</span> 
+            <span class="n">ll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linking_length</span> <span class="o">/</span> <span class="n">llfactor</span>
+            <span class="k">while</span> <span class="n">op</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_once</span><span class="p">(</span><span class="n">perm</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">np</span><span class="p">,</span> <span class="n">ll</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;FOF iteration&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">llfactor</span>
+                    <span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">llfactor</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="n">llfactor</span> <span class="o">=</span> <span class="n">llfactor</span> <span class="o">//</span> <span class="mi">2</span>
+
+        <span class="n">u</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="c"># for example old labels == 5 is the longest halo</span>
+        <span class="c"># then a[0] == 5</span>
+        <span class="c"># we want to replace in labels 5 to 0</span>
+        <span class="c"># thus we need an array inv[5] == 0</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">length</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="n">length</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+        <span class="n">inv</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;intp&#39;</span><span class="p">)</span>
+        <span class="n">inv</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="c">#print inv.max(), inv.min()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">inv</span><span class="p">[</span><span class="n">labels</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">length</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span> 
+
+<div class="viewcode-block" id="fof.find"><a class="viewcode-back" href="../../kdcount.cluster.html#kdcount.cluster.fof.find">[docs]</a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groupid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; return all of the indices of particles of groupid &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">[</span><span class="n">groupid</span><span class="p">]</span>
+                <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">[</span><span class="n">groupid</span><span class="p">]</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">[</span><span class="n">groupid</span><span class="p">]]</span>
+</div>
+<div class="viewcode-block" id="fof.sum"><a class="viewcode-back" href="../../kdcount.cluster.html#kdcount.cluster.fof.sum">[docs]</a>    <span class="k">def</span> <span class="nf">sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; return the sum of weights of each object &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">_weights</span>
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="fof.center"><a class="viewcode-back" href="../../kdcount.cluster.html#kdcount.cluster.fof.center">[docs]</a>    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; return the center of each object &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">_weights</span>
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">mass</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="s">&#39;f8&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">cp</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="n">weights</span> <span class="o">*</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">d</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+            <span class="n">cp</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">d</span><span class="p">]</span> <span class="o">/=</span> <span class="n">mass</span>
+        <span class="k">return</span> <span class="n">cp</span>
+</div>
+    <span class="k">def</span> <span class="nf">_once</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">perm</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">np</span><span class="p">,</span> <span class="n">ll</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; fof iteration,</span>
+<span class="sd">            head[i] is the index of the head particle of the FOF group i</span>
+<span class="sd">              is currently in</span>
+<span class="sd">            perm is a scratch space for permutation;</span>
+<span class="sd">               in each iteration head[i] is replaced with perm[head[i]]</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tree</span>
+        <span class="k">if</span> <span class="n">np</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">divide_and_conquer</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="mi">10000</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[(</span><span class="n">tree</span><span class="p">,</span> <span class="n">tree</span><span class="p">)]</span>
+
+        <span class="c">#print &#39;p&#39;, len(p)</span>
+        <span class="n">ops</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">with</span> <span class="n">utils</span><span class="o">.</span><span class="n">MapReduce</span><span class="p">(</span><span class="n">np</span><span class="o">=</span><span class="n">np</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+            <span class="n">chunksize</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>
+            <span class="c"># fill perm with no changes</span>
+            <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">chunksize</span><span class="p">)</span>
+                <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">))</span>
+                <span class="n">perm</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">),</span> <span class="n">chunksize</span><span class="p">))</span>
+
+            <span class="c"># calculate perm, such that if two groups are </span>
+            <span class="c"># merged, the head is set to the smaller particle index</span>
+            <span class="k">def</span> <span class="nf">work</span><span class="p">(</span><span class="n">iwork</span><span class="p">):</span>
+                <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">iwork</span><span class="p">]</span>
+                <span class="n">operations</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> 
+<span class="c">#                    print iwork, &#39;len(r)&#39;, len(r)</span>
+
+                    <span class="n">mask</span> <span class="o">=</span> <span class="n">r</span> <span class="o">&lt;=</span> <span class="n">ll</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                    <span class="c"># update the head id; </span>
+                    <span class="c"># only for those that would decrease</span>
+                    <span class="n">mask2</span> <span class="o">=</span> <span class="n">head</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">head</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">mask2</span><span class="p">]</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="n">mask2</span><span class="p">]</span>
+                    <span class="n">ni</span> <span class="o">=</span> <span class="n">head</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">nj</span> <span class="o">=</span> <span class="n">head</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ni</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">return</span>
+
+                    <span class="c"># we will replace in head all ni-s to nj</span>
+                    <span class="c"># find the minimal replacement of ni</span>
+                    <span class="n">arg</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">lexsort</span><span class="p">((</span><span class="n">ni</span><span class="p">,</span> <span class="o">-</span><span class="n">nj</span><span class="p">))</span>
+                    <span class="n">ni</span> <span class="o">=</span> <span class="n">ni</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+                    <span class="n">nj</span> <span class="o">=</span> <span class="n">nj</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+                    <span class="c">#  find the last item in each i</span>
+                    <span class="n">lasts</span> <span class="o">=</span> <span class="p">(</span><span class="n">ni</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">ni</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">lasts</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+                        <span class="n">lasts</span><span class="p">,</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">ni</span><span class="p">)</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+                    <span class="n">ni</span> <span class="o">=</span> <span class="n">ni</span><span class="p">[</span><span class="n">lasts</span><span class="p">]</span>
+                    <span class="n">nj</span> <span class="o">=</span> <span class="n">nj</span><span class="p">[</span><span class="n">lasts</span><span class="p">]</span>
+
+                    <span class="c">#  write to each entry, once, in order</span>
+                    <span class="c">#  minimizing memory clashes from many ranks;</span>
+                    <span class="c">#  the algorithm is stable against racing</span>
+                    <span class="c">#  but it would slow down the cache if each rank</span>
+                    <span class="c">#  were directly writing.</span>
+                    <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">critical</span><span class="p">:</span>
+                        <span class="n">mask</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">ni</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">nj</span>
+                        <span class="n">ni</span> <span class="o">=</span> <span class="n">ni</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                        <span class="n">nj</span> <span class="o">=</span> <span class="n">nj</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                        <span class="n">perm</span><span class="p">[</span><span class="n">ni</span><span class="p">]</span> <span class="o">=</span> <span class="n">nj</span>
+                        <span class="n">operations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ni</span><span class="p">)</span>
+<span class="c">#                    print iwork, &#39;len(r)&#39;, len(i)</span>
+                <span class="n">n1</span><span class="o">.</span><span class="n">enum</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span> <span class="n">ll</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">bunch</span><span class="o">=</span><span class="mi">10000</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
+<span class="c">#                print &#39;work&#39;, iwork, &#39;done&#39;</span>
+                <span class="k">return</span> <span class="n">operations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
+                <span class="c">#count number of operations</span>
+                <span class="c">#print ops[0]</span>
+                <span class="n">ops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">op</span>
+
+            <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">work</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)),</span> <span class="nb">reduce</span><span class="o">=</span><span class="nb">reduce</span><span class="p">)</span>
+
+            <span class="c"># replace; this is done repeatedly</span>
+            <span class="c"># since it is possible we count a progenitor</span>
+            <span class="c"># into a merged progenitor.</span>
+            <span class="c"># in that case we do not want to do another</span>
+            <span class="c"># round of expensive tree walk</span>
+            <span class="k">def</span> <span class="nf">work2</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">chunksize</span><span class="p">)</span>
+                <span class="n">N</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="n">N</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">tmp</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">head</span><span class="p">[</span><span class="n">s</span><span class="p">]]</span>
+                    <span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="n">head</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tmp</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                    <span class="n">head</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+                     
+            <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">work2</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">),</span> <span class="n">chunksize</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kdcount 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Yu Feng.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

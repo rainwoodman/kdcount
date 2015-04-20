@@ -36,6 +36,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="kdcount.models.html" title="kdcount.models module"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -52,8 +55,94 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="kdcount-correlate-module">
-<h1>kdcount.correlate module<a class="headerlink" href="#kdcount-correlate-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-kdcount.correlate">
+<span id="kdcount-correlate-module"></span><h1>kdcount.correlate module<a class="headerlink" href="#module-kdcount.correlate" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="kdcount.correlate.Binning">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">Binning</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="kdcount.correlate.Binning.linear">
+<code class="descname">linear</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.linear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="kdcount.correlate.RBinning">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>logscale=False</em>, <em>Rmin=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RBinning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="kdcount.correlate.RmuBinning">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RmuBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>Nmubins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RmuBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RmuBinning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="kdcount.correlate.XYBinning">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">XYBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#XYBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.XYBinning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+<p>the bins will be 
+[sky, los]
+with numpy imshow , the second axis los, will be vertical</p>
+<blockquote>
+<div>with imshow( ..T,) the sky will be vertical.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="kdcount.correlate.main">
+<code class="descclassname">kdcount.correlate.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="kdcount.correlate.main2">
+<code class="descclassname">kdcount.correlate.</code><code class="descname">main2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#main2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.main2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="kdcount.correlate.main3">
+<code class="descclassname">kdcount.correlate.</code><code class="descname">main3</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#main3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.main3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="kdcount.correlate.paircount">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">paircount</code><span class="sig-paren">(</span><em>data1</em>, <em>data2</em>, <em>binning</em>, <em>np=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#paircount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.paircount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>a paircount object has the following attributes:
+sum1 :    the numerator in the correlator
+sum2 :    the denominator in the correlator
+corr :    sum1 / sum2</p>
+<dl class="docutils">
+<dt>for points x points: </dt>
+<dd>sum1 = sum( w1 w2 )
+sum2 = 1.0</dd>
+<dt>for field x points:</dt>
+<dd>sum1 = sum( w1 w2 v1)
+sum2 = sum( w1 w2)</dd>
+<dt>for field x field:</dt>
+<dd>sum1 = sum( w1 w2 v1 v2)
+sum2 = sum( w1 w2)</dd>
+</dl>
+<p>with this convention the usual form of landy-sarley
+(DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1) 
+(with r = sum(wD) / sum(wR))</p>
+<dl class="docutils">
+<dt>centers <span class="classifier-delimiter">:</span> <span class="classifier">the centers of the corresponding corr bin</span></dt>
+<dd>centers = (X, Y, ....)
+len(X) == corr.shape[0], len(Y) == corr.shape[1]</dd>
+</dl>
+<p>binning : the binning object to create this paircount 
+edges :   the edges of the corr bins.</p>
+<dl class="docutils">
+<dt>fullcorr <span class="classifier-delimiter">:</span> <span class="classifier">the full correlation function with outliners </span></dt>
+<dd>len(X) == corr.shape[0] + 2</dd>
+</dl>
+<p>fullsum1 : full version of sum1
+fullsum2 : full version of sum2</p>
+</dd></dl>
+
 </div>
 
 
@@ -98,6 +187,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="kdcount.models.html" title="kdcount.models module"
              >next</a> |</li>
