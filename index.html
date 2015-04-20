@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="kdcount 0.1 documentation" href="#" />
-    <link rel="next" title="Introduction" href="intro.html" /> 
+    <link rel="next" title="kdcount" href="modules.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -37,7 +37,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="modules.html" title="kdcount"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">kdcount 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -51,11 +51,44 @@
   <div class="section" id="welcome-to-kdcount-s-documentation">
 <h1>Welcome to kdcount&#8217;s documentation!<a class="headerlink" href="#welcome-to-kdcount-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>Contents:</p>
+</div>
+<div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>kdcount is a simple API for brute force pair counting, there is a C interface
+and a Python interface. It uses a KDTree to prune
+the K-D spatial data; for each pair within a given distance D, a callback
+function is called; the user-defined callback function does the actual counting.</p>
+<p>Periodic boundary is supported, and it is non-trivial.</p>
+<p>The python interface is more complicated, and powerful:</p>
+<blockquote>
+<div><ul class="simple">
+<li>paircounting via <a class="reference internal" href="kdcount.correlate.html#module-kdcount.correlate" title="kdcount.correlate"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.correlate</span></code></a></li>
+<li>clustering via Friend-of-Friend algorithm; <a class="reference internal" href="kdcount.cluster.html#module-kdcount.cluster" title="kdcount.cluster"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.cluster</span></code></a></li>
+</ul>
+</div></blockquote>
+<p>The calculation can be made parallel, if <code class="xref py py-mod docutils literal"><span class="pre">sharedmem</span></code> is installed.</p>
+<p>The time complexity is <code class="code docutils literal"><span class="pre">O[(D</span> <span class="pre">/</span> <span class="pre">n)</span> <span class="pre">**</span> <span class="pre">d]</span></code>,
+where n is number density. Each pair is opened.</p>
+<p>Note that
+smarter algorithms exist (more or less, O(D / n log Dn), I may remembered it
+wrongly See Gary and Moore 2001.
+The smarter algorithm is internally implemented, but not very much tested, and undocumented;
+do not use it.</p>
+<p>Unfortunately in cosmology we usually want to project the pair separation along
+parallel + perpendicular direction relative to a given observer &#8211; in this case,
+the smarter algorithm become very difficult to implement.</p>
+<p>The spatial complexity is a constant, as we make extensive use of callback functions</p>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>clone the code with</p>
+<blockquote>
+<div>git clone <a class="reference external" href="http://github.com/rainwoodman/kdcount">http://github.com/rainwoodman/kdcount</a></div></blockquote>
+<p>Then install with</p>
+<blockquote>
+<div>python setup.py intall &#8211;user</div></blockquote>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="intro.html#kdcount">kdcount</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">kdcount</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="kdcount.html">kdcount package</a></li>
 </ul>
@@ -81,12 +114,14 @@
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Welcome to kdcount&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
   <h4>Next topic</h4>
-  <p class="topless"><a href="intro.html"
-                        title="next chapter">Introduction</a></p>
+  <p class="topless"><a href="modules.html"
+                        title="next chapter">kdcount</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -121,7 +156,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="modules.html" title="kdcount"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">kdcount 0.1 documentation</a> &raquo;</li> 
       </ul>

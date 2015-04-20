@@ -8,11 +8,12 @@ Welcome to kdcount's documentation!
 
 Contents:
 
+.. include :: intro.rst
+.. include :: install.rst
+
 .. toctree::
    :maxdepth: 2
 
-   intro
-   install
    modules
 
 

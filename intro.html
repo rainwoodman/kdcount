@@ -23,9 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="kdcount 0.1 documentation" href="index.html" />
-    <link rel="next" title="Installation" href="install.html" />
-    <link rel="prev" title="Welcome to kdcount’s documentation!" href="index.html" /> 
+    <link rel="top" title="kdcount 0.1 documentation" href="index.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -37,12 +35,6 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="install.html" title="Installation"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="index.html" title="Welcome to kdcount’s documentation!"
-             accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">kdcount 0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -54,9 +46,6 @@
             
   <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
-</div>
-<div class="section" id="kdcount">
-<h1>kdcount<a class="headerlink" href="#kdcount" title="Permalink to this headline">¶</a></h1>
 <p>kdcount is a simple API for brute force pair counting, there is a C interface
 and a Python interface. It uses a KDTree to prune
 the K-D spatial data; for each pair within a given distance D, a callback
@@ -69,7 +58,7 @@ function is called; the user-defined callback function does the actual counting.
 <li>clustering via Friend-of-Friend algorithm; <a class="reference internal" href="kdcount.cluster.html#module-kdcount.cluster" title="kdcount.cluster"><code class="xref py py-mod docutils literal"><span class="pre">kdcount.cluster</span></code></a></li>
 </ul>
 </div></blockquote>
-<p>The calculation can be made parallel, if <a href="#id1"><span class="problematic" id="id2">:py:package:`sharedmem`</span></a> is installed.</p>
+<p>The calculation can be made parallel, if <code class="xref py py-mod docutils literal"><span class="pre">sharedmem</span></code> is installed.</p>
 <p>The time complexity is <code class="code docutils literal"><span class="pre">O[(D</span> <span class="pre">/</span> <span class="pre">n)</span> <span class="pre">**</span> <span class="pre">d]</span></code>,
 where n is number density. Each pair is opened.</p>
 <p>Note that
@@ -89,18 +78,6 @@ the smarter algorithm become very difficult to implement.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Introduction</a></li>
-<li><a class="reference internal" href="#kdcount">kdcount</a></li>
-</ul>
-
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to kdcount&#8217;s documentation!</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="install.html"
-                        title="next chapter">Installation</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -134,12 +111,6 @@ the smarter algorithm become very difficult to implement.</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="install.html" title="Installation"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="index.html" title="Welcome to kdcount’s documentation!"
-             >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">kdcount 0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
