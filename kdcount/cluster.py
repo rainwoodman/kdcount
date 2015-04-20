@@ -3,6 +3,33 @@ from models import dataset
 import utils
 from sys import stdout
 class fof(object):
+    """ 
+    Friend of Friend clustering
+
+    Attributes
+    ----------
+    data    : :py:class:`dataset`
+        data set (positions of particles complied into a KD-Tree
+    linking_length : float
+        linking length, in data units
+    np     : int
+        parallel processes to use (0 to disable)
+    verbose : boolean
+        print some verbose information
+
+    N   : int
+        number of clusters identified
+    labels : array_like
+        the label (cluster id) of each object 
+    length : array_like
+        number of particles per cluster 
+    offset : array_like
+        offset of the first particle in indices
+    indices : array_like
+        index of particles indices[offset[i]:length[i]] is the indices
+        of particles in cluster i.
+
+    """    
     def __init__(self, data, linking_length, np=None, verbose=False):
         self.data = data
         self.linking_length = linking_length
