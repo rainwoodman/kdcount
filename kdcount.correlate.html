@@ -57,14 +57,63 @@
             
   <div class="section" id="module-kdcount.correlate">
 <span id="kdcount-correlate-module"></span><h1>kdcount.correlate module<a class="headerlink" href="#module-kdcount.correlate" title="Permalink to this headline">¶</a></h1>
+<p>Correlation function (pair counting) with KDTree.</p>
+<p>Pair counting is the basic algorithm to calculate correlation functions.
+Correlation function is a commonly used metric in cosmology to measure
+the clustering of matter, or the growth of large scale structure in the universe.</p>
+<p>We implement <a class="reference internal" href="#kdcount.correlate.paircount" title="kdcount.correlate.paircount"><code class="xref py py-class docutils literal"><span class="pre">paircount</span></code></a> for pair counting. Since this is a discrete
+estimator, the binning is modeled by subclasses of <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">Binning</span></code></a>. For example</p>
+<ul class="simple">
+<li><a class="reference internal" href="#kdcount.correlate.RBinning" title="kdcount.correlate.RBinning"><code class="xref py py-class docutils literal"><span class="pre">RBinning</span></code></a></li>
+<li><a class="reference internal" href="#kdcount.correlate.RmuBinning" title="kdcount.correlate.RmuBinning"><code class="xref py py-class docutils literal"><span class="pre">RmuBinning</span></code></a></li>
+<li><a class="reference internal" href="#kdcount.correlate.XYBinning" title="kdcount.correlate.XYBinning"><code class="xref py py-class docutils literal"><span class="pre">XYBinning</span></code></a></li>
+</ul>
 <dl class="class">
 <dt id="kdcount.correlate.Binning">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">Binning</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Binning of the correlation function. Pairs whose distance is with-in a bin
+is counted towards the bin.</p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="93%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>dims</td>
+<td>( array_like) internal; descriptors of binning dimensions.</td>
+</tr>
+<tr class="row-even"><td>edges</td>
+<td>( array_like) edges of bins per dimension</td>
+</tr>
+<tr class="row-odd"><td>centers</td>
+<td>( array_like) centers of bins per dimension; currently it is the mid point of the edges.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="kdcount.correlate.Binning.linear">
 <code class="descname">linear</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.linear" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Linearize bin indices.</p>
+<p>This function is called by subclasses. Refer to the source
+code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="kdcount.correlate.RBinning"><code class="xref py py-class docutils literal"><span class="pre">RBinning</span></code></a> for an example.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>args</strong> : list</p>
+<blockquote>
+<div><p>a list of bin index, (xi, yi, zi, ..)</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">linearlized bin index</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </dd></dl>
 
@@ -72,23 +121,87 @@
 <dt id="kdcount.correlate.RBinning">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>logscale=False</em>, <em>Rmin=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+<p>Binning along radial direction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Rmax</strong> : float</p>
+<blockquote>
+<div><p>max radius to go to</p>
+</div></blockquote>
+<p><strong>Nbins</strong> : int</p>
+<blockquote class="last">
+<div><p>number of bins in each direction.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="class">
 <dt id="kdcount.correlate.RmuBinning">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RmuBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>Nmubins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RmuBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RmuBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+<p>Binning in R and mu (angular along line of sight)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Rmax</strong> : float</p>
+<blockquote>
+<div><p>max radius to go to</p>
+</div></blockquote>
+<p><strong>Nbins</strong> : int</p>
+<blockquote>
+<div><p>number of bins in R direction.</p>
+</div></blockquote>
+<p><strong>Nmubins</strong> : int</p>
+<blockquote>
+<div><p>number of bins in mu direction.</p>
+</div></blockquote>
+<p><strong>observer</strong> : array_like (Ndim)</p>
+<blockquote class="last">
+<div><p>location of the observer (for line of sight)</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="class">
 <dt id="kdcount.correlate.XYBinning">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">XYBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#XYBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.XYBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
-<p>the bins will be 
-[sky, los]
-with numpy imshow , the second axis los, will be vertical</p>
+<p>Binning along Sky-Lineofsight directions.</p>
+<p>The bins are be (sky, los)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Rmax</strong> : float</p>
 <blockquote>
-<div>with imshow( ..T,) the sky will be vertical.</div></blockquote>
+<div><p>max radius to go to</p>
+</div></blockquote>
+<p><strong>Nbins</strong> : int</p>
+<blockquote>
+<div><p>number of bins in each direction.</p>
+</div></blockquote>
+<p><strong>observer</strong> : array_like (Ndim)</p>
+<blockquote class="last">
+<div><p>location of the observer (for line of sight)</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<dl class="docutils">
+<dt>with numpy imshow , the second axis los, will be vertical</dt>
+<dd>with imshow( ..T,) the sky will be vertical.</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -110,37 +223,69 @@ with numpy imshow , the second axis los, will be vertical</p>
 <dt id="kdcount.correlate.paircount">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">paircount</code><span class="sig-paren">(</span><em>data1</em>, <em>data2</em>, <em>binning</em>, <em>np=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#paircount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.paircount" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>a paircount object has the following attributes:
-sum1 :    the numerator in the correlator
-sum2 :    the denominator in the correlator
-corr :    sum1 / sum2</p>
+<p>Paircounting via a KD-tree, on two data sets.</p>
+<p class="rubric">Notes</p>
+<p>The value of sum1 and sum2 depends on the types of input</p>
 <dl class="docutils">
-<dt>for points x points: </dt>
-<dd>sum1 = sum( w1 w2 )
-sum2 = 1.0</dd>
-<dt>for field x points:</dt>
-<dd>sum1 = sum( w1 w2 v1)
-sum2 = sum( w1 w2)</dd>
-<dt>for field x field:</dt>
-<dd>sum1 = sum( w1 w2 v1 v2)
-sum2 = sum( w1 w2)</dd>
+<dt>For <code class="xref py py-class docutils literal"><span class="pre">points</span></code> and <code class="xref py py-class docutils literal"><span class="pre">points</span></code>: </dt>
+<dd><ul class="first last simple">
+<li>sum1 is the per bin sum of products of weights</li>
+<li>sum2 is always 1.0</li>
+</ul>
+</dd>
+<dt>For <code class="xref py py-class docutils literal"><span class="pre">field</span></code> and <code class="xref py py-class docutils literal"><span class="pre">points</span></code>:</dt>
+<dd><ul class="first last simple">
+<li>sum1 is the per bin sum of products of weights and the field value</li>
+<li>sum2 is the per bin sum of products of weights</li>
+</ul>
+</dd>
+<dt>For <code class="xref py py-class docutils literal"><span class="pre">field</span></code> and <code class="xref py py-class docutils literal"><span class="pre">field</span></code>:</dt>
+<dd><ul class="first last simple">
+<li>sum1 is the per bin sum of products of weights and the field value
+(one value per field)</li>
+<li>sum2 is the per bin sum of products of weights</li>
+</ul>
+</dd>
 </dl>
-<p>with this convention the usual form of landy-sarley
-(DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1) 
-(with r = sum(wD) / sum(wR))</p>
-<dl class="docutils">
-<dt>centers <span class="classifier-delimiter">:</span> <span class="classifier">the centers of the corresponding corr bin</span></dt>
-<dd>centers = (X, Y, ....)
-len(X) == corr.shape[0], len(Y) == corr.shape[1]</dd>
-</dl>
-<p>binning : the binning object to create this paircount 
-edges :   the edges of the corr bins.</p>
-<dl class="docutils">
-<dt>fullcorr <span class="classifier-delimiter">:</span> <span class="classifier">the full correlation function with outliners </span></dt>
-<dd>len(X) == corr.shape[0] + 2</dd>
-</dl>
-<p>fullsum1 : full version of sum1
-fullsum2 : full version of sum2</p>
+<p>With this convention the usual form of Landy-Salay estimator is (
+for points x points:</p>
+<blockquote>
+<div><p>(DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1)</p>
+<p>with r = sum(wD) / sum(wR)</p>
+</div></blockquote>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="4%" />
+<col width="96%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>sum1</td>
+<td>( array_like) the numerator in the correlator</td>
+</tr>
+<tr class="row-even"><td>sum2</td>
+<td>( array_like) the denominator in the correlator</td>
+</tr>
+<tr class="row-odd"><td>centers</td>
+<td>(list) the centers of the corresponding corr bin, one item per binning direction.</td>
+</tr>
+<tr class="row-even"><td>edges</td>
+<td>(  list) the edges of the corresponding corr bin, one item per binning direction.</td>
+</tr>
+<tr class="row-odd"><td>binning</td>
+<td>(<a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">Binning</span></code></a>) binning object of this paircount</td>
+</tr>
+<tr class="row-even"><td>data1</td>
+<td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) input data set1. It can be either <code class="xref py py-class docutils literal"><span class="pre">field</span></code> for discrete sampling of a continuous field, or <code class="xref py py-class docutils literal"><span class="pre">points</span></code> for a point set.</td>
+</tr>
+<tr class="row-odd"><td>data2</td>
+<td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) input data set2, see above.</td>
+</tr>
+<tr class="row-even"><td>np</td>
+<td>(int) number of parallel processes. set to 0 to disable parallelism</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

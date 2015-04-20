@@ -47,6 +47,21 @@
           <div class="body" role="main">
             
   <h1>Source code for kdcount.correlate</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Correlation function (pair counting) with KDTree.</span>
+
+<span class="sd">Pair counting is the basic algorithm to calculate correlation functions.</span>
+<span class="sd">Correlation function is a commonly used metric in cosmology to measure</span>
+<span class="sd">the clustering of matter, or the growth of large scale structure in the universe.</span>
+
+<span class="sd">We implement :py:class:`paircount` for pair counting. Since this is a discrete</span>
+<span class="sd">estimator, the binning is modeled by subclasses of :py:class:`Binning`. For example</span>
+
+<span class="sd">- :py:class:`RBinning` </span>
+<span class="sd">- :py:class:`RmuBinning`</span>
+<span class="sd">- :py:class:`XYBinning`</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 
 <span class="c"># local imports</span>
@@ -54,6 +69,21 @@
 <span class="kn">import</span> <span class="nn">utils</span> 
 
 <div class="viewcode-block" id="Binning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.Binning">[docs]</a><span class="k">class</span> <span class="nc">Binning</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Binning of the correlation function. Pairs whose distance is with-in a bin</span>
+<span class="sd">    is counted towards the bin.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dims    :  array_like</span>
+<span class="sd">        internal; descriptors of binning dimensions.</span>
+<span class="sd">    edges   :  array_like</span>
+<span class="sd">        edges of bins per dimension</span>
+<span class="sd">    centers :  array_like</span>
+<span class="sd">        centers of bins per dimension; currently it is the </span>
+<span class="sd">        mid point of the edges.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; the shape has one extra per edge</span>
 <span class="sd">            0 is .le. min</span>
@@ -109,6 +139,21 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">centers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Binning.linear"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.Binning.linear">[docs]</a>    <span class="k">def</span> <span class="nf">linear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Linearize bin indices.</span>
+<span class="sd">        </span>
+<span class="sd">        This function is called by subclasses. Refer to the source</span>
+<span class="sd">        code of :py:class:`RBinning` for an example.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        args    : list</span>
+<span class="sd">            a list of bin index, (xi, yi, zi, ..) </span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        linearlized bin index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">integer</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="p">(</span><span class="s">&#39;i8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ndim</span><span class="p">,)))</span><span class="o">.</span><span class="n">T</span>
         <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ndim</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logscale</span><span class="p">[</span><span class="n">d</span><span class="p">]:</span>
@@ -124,6 +169,21 @@
         <span class="k">raise</span> <span class="n">UnimplementedError</span><span class="p">()</span>
 </div>
 <div class="viewcode-block" id="RmuBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.RmuBinning">[docs]</a><span class="k">class</span> <span class="nc">RmuBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Binning in R and mu (angular along line of sight)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Rmax     : float</span>
+<span class="sd">        max radius to go to</span>
+<span class="sd">    Nbins    : int</span>
+<span class="sd">        number of bins in R direction.</span>
+<span class="sd">    Nmubins    : int</span>
+<span class="sd">        number of bins in mu direction.</span>
+<span class="sd">    observer   : array_like (Ndim)</span>
+<span class="sd">        location of the observer (for line of sight) </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">Nmubins</span><span class="p">,</span> <span class="n">observer</span><span class="p">):</span>
         <span class="n">Binning</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
                 <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">),</span>
@@ -143,11 +203,25 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="XYBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.XYBinning">[docs]</a><span class="k">class</span> <span class="nc">XYBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; the bins will be </span>
-<span class="sd">        [sky, los]</span>
-<span class="sd">        with numpy imshow , the second axis los, will be vertical</span>
-<span class="sd">                with imshow( ..T,) the sky will be vertical.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Binning along Sky-Lineofsight directions.</span>
+
+<span class="sd">    The bins are be (sky, los)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Rmax     : float</span>
+<span class="sd">        max radius to go to</span>
+<span class="sd">    Nbins    : int</span>
+<span class="sd">        number of bins in each direction.</span>
+<span class="sd">    observer   : array_like (Ndim)</span>
+<span class="sd">        location of the observer (for line of sight) </span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    with numpy imshow , the second axis los, will be vertical</span>
+<span class="sd">            with imshow( ..T,) the sky will be vertical.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">observer</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Rmax</span> <span class="o">=</span> <span class="n">Rmax</span>
@@ -171,6 +245,17 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">sky</span><span class="p">,</span> <span class="n">los</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="RBinning"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.RBinning">[docs]</a><span class="k">class</span> <span class="nc">RBinning</span><span class="p">(</span><span class="n">Binning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Binning along radial direction.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Rmax     : float</span>
+<span class="sd">        max radius to go to</span>
+<span class="sd">    Nbins    : int</span>
+<span class="sd">        number of bins in each direction.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">Rmin</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="n">Binning</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
                 <span class="p">(</span><span class="n">Rmin</span><span class="p">,</span> <span class="n">Rmax</span><span class="p">,</span> <span class="n">Nbins</span><span class="p">,</span> <span class="n">logscale</span><span class="p">))</span>
@@ -179,35 +264,55 @@
 </div>
 <div class="viewcode-block" id="paircount"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.paircount">[docs]</a><span class="k">class</span> <span class="nc">paircount</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
-<span class="sd">        a paircount object has the following attributes:</span>
-<span class="sd">        sum1 :    the numerator in the correlator</span>
-<span class="sd">        sum2 :    the denominator in the correlator</span>
-<span class="sd">        corr :    sum1 / sum2</span>
+<span class="sd">    Paircounting via a KD-tree, on two data sets.</span>
 
-<span class="sd">        for points x points: </span>
-<span class="sd">               sum1 = sum( w1 w2 )</span>
-<span class="sd">               sum2 = 1.0 </span>
-<span class="sd">        for field x points:</span>
-<span class="sd">               sum1 = sum( w1 w2 v1)</span>
-<span class="sd">               sum2 = sum( w1 w2)</span>
-<span class="sd">        for field x field:</span>
-<span class="sd">               sum1 = sum( w1 w2 v1 v2)</span>
-<span class="sd">               sum2 = sum( w1 w2)</span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sum1 :  array_like</span>
+<span class="sd">        the numerator in the correlator</span>
+<span class="sd">    sum2 :  array_like</span>
+<span class="sd">        the denominator in the correlator</span>
+<span class="sd">    centers : list</span>
+<span class="sd">        the centers of the corresponding corr bin, one item per </span>
+<span class="sd">        binning direction.</span>
+<span class="sd">    edges :   list</span>
+<span class="sd">        the edges of the corresponding corr bin, one item per </span>
+<span class="sd">        binning direction.</span>
+<span class="sd">    binning : :py:class:`Binning`</span>
+<span class="sd">        binning object of this paircount </span>
+<span class="sd">    data1   : :py:class:`dataset`</span>
+<span class="sd">        input data set1. It can be either </span>
+<span class="sd">        :py:class:`field` for discrete sampling of a continuous</span>
+<span class="sd">        field, or :py:class:`points` for a point set.</span>
+<span class="sd">    data2   : :py:class:`dataset`</span>
+<span class="sd">        input data set2, see above.</span>
+<span class="sd">    np : int</span>
+<span class="sd">        number of parallel processes. set to 0 to disable parallelism</span>
 
-<span class="sd">        with this convention the usual form of landy-sarley</span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The value of sum1 and sum2 depends on the types of input </span>
+
+<span class="sd">    For :py:class:`points` and :py:class:`points`: </span>
+<span class="sd">      - sum1 is the per bin sum of products of weights </span>
+<span class="sd">      - sum2 is always 1.0 </span>
+
+<span class="sd">    For :py:class:`field` and :py:class:`points`:</span>
+<span class="sd">      - sum1 is the per bin sum of products of weights and the field value</span>
+<span class="sd">      - sum2 is the per bin sum of products of weights</span>
+
+<span class="sd">    For :py:class:`field` and :py:class:`field`:</span>
+<span class="sd">      - sum1 is the per bin sum of products of weights and the field value</span>
+<span class="sd">        (one value per field)</span>
+<span class="sd">      - sum2 is the per bin sum of products of weights</span>
+
+<span class="sd">    With this convention the usual form of Landy-Salay estimator is (</span>
+<span class="sd">    for points x points:</span>
+
 <span class="sd">        (DD.sum1 -2r DR.sum1 + r2 RR.sum1) / (r2 RR.sum1) </span>
-<span class="sd">        (with r = sum(wD) / sum(wR))</span>
 
-<span class="sd">        centers : the centers of the corresponding corr bin</span>
-<span class="sd">                  centers = (X, Y, ....)</span>
-<span class="sd">                  len(X) == corr.shape[0], len(Y) == corr.shape[1]</span>
-<span class="sd">        binning : the binning object to create this paircount </span>
-<span class="sd">        edges :   the edges of the corr bins.</span>
+<span class="sd">        with r = sum(wD) / sum(wR)</span>
 
-<span class="sd">        fullcorr : the full correlation function with outliners </span>
-<span class="sd">                    len(X) == corr.shape[0] + 2 </span>
-<span class="sd">        fullsum1 : full version of sum1</span>
-<span class="sd">        fullsum2 : full version of sum2</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">binning</span><span class="p">,</span> <span class="n">np</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
