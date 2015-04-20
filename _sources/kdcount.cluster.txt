@@ -1,0 +1,7 @@
+kdcount.cluster module
+======================
+
+.. automodule:: kdcount.cluster
+    :members:
+    :undoc-members:
+    :show-inheritance:

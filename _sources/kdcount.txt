@@ -1,0 +1,21 @@
+kdcount package
+===============
+
+Submodules
+----------
+
+.. toctree::
+
+   kdcount.cluster
+   kdcount.correlate
+   kdcount.models
+   kdcount.pykdcount
+   kdcount.utils
+
+Module contents
+---------------
+
+.. automodule:: kdcount
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,7 @@
+kdcount.correlate module
+========================
+
+.. automodule:: kdcount.correlate
+    :members:
+    :undoc-members:
+    :show-inheritance:

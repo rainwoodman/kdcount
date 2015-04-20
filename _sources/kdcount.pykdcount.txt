@@ -1,0 +1,7 @@
+kdcount.pykdcount module
+========================
+
+.. automodule:: kdcount.pykdcount
+    :members:
+    :undoc-members:
+    :show-inheritance:
