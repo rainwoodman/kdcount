@@ -283,7 +283,7 @@
 <span class="sd">    data1   : :py:class:`dataset`</span>
 <span class="sd">        input data set1. It can be either </span>
 <span class="sd">        :py:class:`field` for discrete sampling of a continuous</span>
-<span class="sd">        field, or :py:class:`points` for a point set.</span>
+<span class="sd">        field, or :py:class:`models.points` for a point set.</span>
 <span class="sd">    data2   : :py:class:`dataset`</span>
 <span class="sd">        input data set2, see above.</span>
 <span class="sd">    np : int</span>
@@ -293,15 +293,15 @@
 <span class="sd">    -----</span>
 <span class="sd">    The value of sum1 and sum2 depends on the types of input </span>
 
-<span class="sd">    For :py:class:`points` and :py:class:`points`: </span>
+<span class="sd">    For :py:class:`models.points` and :py:class:`models.points`: </span>
 <span class="sd">      - sum1 is the per bin sum of products of weights </span>
 <span class="sd">      - sum2 is always 1.0 </span>
 
-<span class="sd">    For :py:class:`field` and :py:class:`points`:</span>
+<span class="sd">    For :py:class:`models.field` and :py:class:`models.points`:</span>
 <span class="sd">      - sum1 is the per bin sum of products of weights and the field value</span>
 <span class="sd">      - sum2 is the per bin sum of products of weights</span>
 
-<span class="sd">    For :py:class:`field` and :py:class:`field`:</span>
+<span class="sd">    For :py:class:`models.field` and :py:class:`models.field`:</span>
 <span class="sd">      - sum1 is the per bin sum of products of weights and the field value</span>
 <span class="sd">        (one value per field)</span>
 <span class="sd">      - sum2 is the per bin sum of products of weights</span>
@@ -410,7 +410,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="n">binning</span><span class="o">.</span><span class="n">edges</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="n">binning</span><span class="o">.</span><span class="n">centers</span>
 </div>
-<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">_main</span><span class="p">():</span>
     <span class="n">pm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="s">&#39;A00_hodfit.raw&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">)[::</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
     <span class="n">wm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pm</span><span class="p">))</span>
     <span class="n">martin</span> <span class="o">=</span> <span class="n">points</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">wm</span><span class="p">)</span>
@@ -424,8 +424,8 @@
     <span class="n">r</span> <span class="o">=</span> <span class="n">martin</span><span class="o">.</span><span class="n">norm</span> <span class="o">/</span> <span class="n">random</span><span class="o">.</span><span class="n">norm</span>
     <span class="k">return</span> <span class="n">binning</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="p">(</span><span class="n">DD</span><span class="o">.</span><span class="n">sum1</span> <span class="o">-</span> 
             <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span> <span class="o">*</span> <span class="n">DR</span><span class="o">.</span><span class="n">sum1</span> <span class="o">+</span> <span class="n">r</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">RR</span><span class="o">.</span><span class="n">sum1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">r</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">RR</span><span class="o">.</span><span class="n">sum1</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="main2"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.main2">[docs]</a><span class="k">def</span> <span class="nf">main2</span><span class="p">():</span>
+
+<span class="k">def</span> <span class="nf">_main2</span><span class="p">():</span>
     <span class="n">sim</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="s">&#39;grid-128.raw&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f4&#39;</span><span class="p">)</span>
     <span class="k">print</span> <span class="s">&#39;read&#39;</span>
     <span class="k">print</span> <span class="n">sim</span>
@@ -442,8 +442,8 @@
     <span class="n">DD</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">binning</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">DD</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">DD</span><span class="o">.</span><span class="n">sum1</span> <span class="o">/</span> <span class="n">DD</span><span class="o">.</span><span class="n">sum2</span>
-</div>
-<div class="viewcode-block" id="main3"><a class="viewcode-back" href="../../kdcount.correlate.html#kdcount.correlate.main3">[docs]</a><span class="k">def</span> <span class="nf">main3</span><span class="p">():</span>
+
+<span class="k">def</span> <span class="nf">_main3</span><span class="p">():</span>
     <span class="n">sim</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="s">&#39;grid-128.raw&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f4&#39;</span><span class="p">)</span>
     <span class="k">print</span> <span class="s">&#39;read&#39;</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
@@ -454,7 +454,7 @@
     <span class="n">data</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="n">sample</span><span class="p">],</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
     <span class="k">print</span> <span class="s">&#39;data ready&#39;</span>
     <span class="n">DD</span> <span class="o">=</span> <span class="n">paircount</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">RmuBinning</span><span class="p">(</span><span class="mf">0.10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">DD</span></div>
+    <span class="k">return</span> <span class="n">DD</span>
 </pre></div>
 
           </div>

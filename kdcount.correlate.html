@@ -204,21 +204,6 @@ code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="kdcount.correlate.main">
-<code class="descclassname">kdcount.correlate.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.main" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="kdcount.correlate.main2">
-<code class="descclassname">kdcount.correlate.</code><code class="descname">main2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#main2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.main2" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="kdcount.correlate.main3">
-<code class="descclassname">kdcount.correlate.</code><code class="descname">main3</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#main3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.main3" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="class">
 <dt id="kdcount.correlate.paircount">
 <em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">paircount</code><span class="sig-paren">(</span><em>data1</em>, <em>data2</em>, <em>binning</em>, <em>np=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#paircount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.paircount" title="Permalink to this definition">¶</a></dt>
@@ -227,19 +212,19 @@ code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="
 <p class="rubric">Notes</p>
 <p>The value of sum1 and sum2 depends on the types of input</p>
 <dl class="docutils">
-<dt>For <code class="xref py py-class docutils literal"><span class="pre">points</span></code> and <code class="xref py py-class docutils literal"><span class="pre">points</span></code>: </dt>
+<dt>For <code class="xref py py-class docutils literal"><span class="pre">models.points</span></code> and <code class="xref py py-class docutils literal"><span class="pre">models.points</span></code>: </dt>
 <dd><ul class="first last simple">
 <li>sum1 is the per bin sum of products of weights</li>
 <li>sum2 is always 1.0</li>
 </ul>
 </dd>
-<dt>For <code class="xref py py-class docutils literal"><span class="pre">field</span></code> and <code class="xref py py-class docutils literal"><span class="pre">points</span></code>:</dt>
+<dt>For <code class="xref py py-class docutils literal"><span class="pre">models.field</span></code> and <code class="xref py py-class docutils literal"><span class="pre">models.points</span></code>:</dt>
 <dd><ul class="first last simple">
 <li>sum1 is the per bin sum of products of weights and the field value</li>
 <li>sum2 is the per bin sum of products of weights</li>
 </ul>
 </dd>
-<dt>For <code class="xref py py-class docutils literal"><span class="pre">field</span></code> and <code class="xref py py-class docutils literal"><span class="pre">field</span></code>:</dt>
+<dt>For <code class="xref py py-class docutils literal"><span class="pre">models.field</span></code> and <code class="xref py py-class docutils literal"><span class="pre">models.field</span></code>:</dt>
 <dd><ul class="first last simple">
 <li>sum1 is the per bin sum of products of weights and the field value
 (one value per field)</li>
@@ -276,7 +261,7 @@ for points x points:</p>
 <td>(<a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">Binning</span></code></a>) binning object of this paircount</td>
 </tr>
 <tr class="row-even"><td>data1</td>
-<td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) input data set1. It can be either <code class="xref py py-class docutils literal"><span class="pre">field</span></code> for discrete sampling of a continuous field, or <code class="xref py py-class docutils literal"><span class="pre">points</span></code> for a point set.</td>
+<td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) input data set1. It can be either <code class="xref py py-class docutils literal"><span class="pre">field</span></code> for discrete sampling of a continuous field, or <code class="xref py py-class docutils literal"><span class="pre">models.points</span></code> for a point set.</td>
 </tr>
 <tr class="row-odd"><td>data2</td>
 <td>(<code class="xref py py-class docutils literal"><span class="pre">dataset</span></code>) input data set2, see above.</td>
