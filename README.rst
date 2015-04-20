@@ -13,7 +13,7 @@ The python interface is more complicated, and powerful:
  * paircounting via :py:mod:`kdcount.correlate`
  * clustering via Friend-of-Friend algorithm; :py:mod:`kdcount.cluster`
 
-The calculation can be made parallel, if :py:package:`sharedmem` is installed.
+The calculation can be made parallel, if :py:mod:`sharedmem` is installed.
 
 Refer to the to the API Reference at http://rainwoodman.github.io/kdcount
 
