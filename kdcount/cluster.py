@@ -108,6 +108,9 @@ class fof(object):
                     if len(r) == 0: return 
 #                    print iwork, 'len(r)', len(r)
 
+                    mask = r <= ll
+                    i = i[mask]
+                    j = j[mask]
                     # update the head id; 
                     # only for those that would decrease
                     mask2 = head[i] > head[j]
@@ -115,6 +118,9 @@ class fof(object):
                     j = j[mask2]
                     ni = head[i]
                     nj = head[j]
+                    if len(ni) == 0:
+                        return
+
                     # we will replace in head all ni-s to nj
                     # find the minimal replacement of ni
                     arg = numpy.lexsort((ni, -nj))
@@ -122,6 +128,8 @@ class fof(object):
                     nj = nj[arg]
                     #  find the last item in each i
                     lasts = (ni[1:] != ni[:-1]).nonzero()[0]
+                    lasts = numpy.concatenate([
+                        lasts, [len(ni) -1]])
                     ni = ni[lasts]
                     nj = nj[lasts]
 
