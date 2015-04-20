@@ -53,6 +53,24 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span> <span class="s">&#39;points&#39;</span><span class="p">,</span> <span class="s">&#39;field&#39;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="dataset"><a class="viewcode-back" href="../../kdcount.models.html#kdcount.models.dataset">[docs]</a><span class="k">class</span> <span class="nc">dataset</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A data set with a KD-tree </span>
+<span class="sd">    </span>
+<span class="sd">    Useful subclasses for :py:class:`kdcount.correlate.paircount` are</span>
+<span class="sd">    :py:class:`points`, and :py:class:`field`</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pos : array_like (Npoints, Ndim)</span>
+<span class="sd">        position of sample points</span>
+<span class="sd">    weights : array_like</span>
+<span class="sd">        weight of objects, default is 1.0. Not to be confused with :code:`values`.</span>
+<span class="sd">    boxsize : float</span>
+<span class="sd">        if not None, a periodic boundary is assumed, and boxsize is the size of periodic box. </span>
+<span class="sd">    extra : dict</span>
+<span class="sd">        extra properties.</span>
+<span class="sd"> </span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boxsize</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{}):</span>
         <span class="sd">&quot;&quot;&quot; create a dataset object for points located at pos in a boxsize.</span>
 <span class="sd">            points is of (Npoints, Ndim)</span>
@@ -66,7 +84,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span> <span class="o">=</span> <span class="n">weights</span>
 
 <div class="viewcode-block" id="dataset.w"><a class="viewcode-back" href="../../kdcount.models.html#kdcount.models.dataset.w">[docs]</a>    <span class="k">def</span> <span class="nf">w</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; weight at index &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; weight at index ; internal method&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">1.0</span>
         <span class="k">else</span><span class="p">:</span>
@@ -76,6 +94,13 @@
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="points"><a class="viewcode-back" href="../../kdcount.models.html#kdcount.models.points">[docs]</a><span class="k">class</span> <span class="nc">points</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Point-wise data set</span>
+<span class="sd">       </span>
+<span class="sd">    Examples are galaxies, halos. These objects come with a position and a</span>
+<span class="sd">    weight, and are discrete representation of the underlying density field.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boxsize</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{}):</span>
         <span class="n">dataset</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">boxsize</span><span class="p">,</span> <span class="n">extra</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
@@ -86,6 +111,21 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">subshape</span> <span class="o">=</span> <span class="p">()</span>
 </div>
 <div class="viewcode-block" id="field"><a class="viewcode-back" href="../../kdcount.models.html#kdcount.models.field">[docs]</a><span class="k">class</span> <span class="nc">field</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Discrte sampling data set</span>
+<span class="sd">       </span>
+<span class="sd">    Examples are Lyman-alpha forest transmission fractions, over-density fields. </span>
+<span class="sd">    These objects come with a position, a value, and a weight. The value</span>
+<span class="sd">    is the underlying field integrated over some sampling kernel.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pos     : array_like</span>
+<span class="sd">        sample points</span>
+<span class="sd">    value   : array_like</span>
+<span class="sd">        the sample value at pos.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boxsize</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{}):</span>
         <span class="n">dataset</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">boxsize</span><span class="p">,</span> <span class="n">extra</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
@@ -94,7 +134,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">subshape</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
 <div class="viewcode-block" id="field.wv"><a class="viewcode-back" href="../../kdcount.models.html#kdcount.models.field.wv">[docs]</a>    <span class="k">def</span> <span class="nf">wv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; weight * value &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; the product of weight and value, internal method. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">index</span><span class="p">]</span></div></div>
 </pre></div>
 

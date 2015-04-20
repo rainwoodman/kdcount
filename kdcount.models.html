@@ -61,10 +61,34 @@
 <dt id="kdcount.models.dataset">
 <em class="property">class </em><code class="descclassname">kdcount.models.</code><code class="descname">dataset</code><span class="sig-paren">(</span><em>pos</em>, <em>weights=None</em>, <em>boxsize=None</em>, <em>extra={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A data set with a KD-tree</p>
+<p>Useful subclasses for <a class="reference internal" href="kdcount.correlate.html#kdcount.correlate.paircount" title="kdcount.correlate.paircount"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.paircount</span></code></a> are
+<a class="reference internal" href="#kdcount.models.points" title="kdcount.models.points"><code class="xref py py-class docutils literal"><span class="pre">points</span></code></a>, and <a class="reference internal" href="#kdcount.models.field" title="kdcount.models.field"><code class="xref py py-class docutils literal"><span class="pre">field</span></code></a></p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="93%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>pos</td>
+<td>(array_like (Npoints, Ndim)) position of sample points</td>
+</tr>
+<tr class="row-even"><td>weights</td>
+<td>(array_like) weight of objects, default is 1.0. Not to be confused with <code class="code docutils literal"><span class="pre">values</span></code>.</td>
+</tr>
+<tr class="row-odd"><td>boxsize</td>
+<td>(float) if not None, a periodic boundary is assumed, and boxsize is the size of periodic box.</td>
+</tr>
+<tr class="row-even"><td>extra</td>
+<td>(dict) extra properties.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="kdcount.models.dataset.w">
 <code class="descname">w</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#dataset.w"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.dataset.w" title="Permalink to this definition">¶</a></dt>
-<dd><p>weight at index</p>
+<dd><p>weight at index ; internal method</p>
 </dd></dl>
 
 </dd></dl>
@@ -73,16 +97,38 @@
 <dt id="kdcount.models.points">
 <em class="property">class </em><code class="descclassname">kdcount.models.</code><code class="descname">points</code><span class="sig-paren">(</span><em>pos</em>, <em>weights=None</em>, <em>boxsize=None</em>, <em>extra={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.points" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.models.dataset" title="kdcount.models.dataset"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.dataset</span></code></a></p>
+<p>Point-wise data set</p>
+<p>Examples are galaxies, halos. These objects come with a position and a
+weight, and are discrete representation of the underlying density field.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="kdcount.models.field">
 <em class="property">class </em><code class="descclassname">kdcount.models.</code><code class="descname">field</code><span class="sig-paren">(</span><em>pos</em>, <em>value</em>, <em>weights=None</em>, <em>boxsize=None</em>, <em>extra={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.field" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.models.dataset" title="kdcount.models.dataset"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.dataset</span></code></a></p>
+<p>Discrte sampling data set</p>
+<p>Examples are Lyman-alpha forest transmission fractions, over-density fields. 
+These objects come with a position, a value, and a weight. The value
+is the underlying field integrated over some sampling kernel.</p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>pos</td>
+<td>(array_like) sample points</td>
+</tr>
+<tr class="row-even"><td>value</td>
+<td>(array_like) the sample value at pos.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="kdcount.models.field.wv">
 <code class="descname">wv</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#field.wv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.field.wv" title="Permalink to this definition">¶</a></dt>
-<dd><p>weight * value</p>
+<dd><p>the product of weight and value, internal method.</p>
 </dd></dl>
 
 </dd></dl>
