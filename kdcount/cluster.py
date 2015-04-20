@@ -4,8 +4,9 @@ Clustering with KDTree
 This module implements Friend-of-Friend clustering with a KDtree as
 :py:class:`fof`.
 
-Friend-of-Friend clustering has been commonly used in cosmology to
-identify halos. 
+The Friend-of-Friend clustering algorithm is implemented (Davis et al. 1985 ADSlink:)
+The algorithm is commonly used in astronomy and cosmology: all points
+that are within a given 'linking_length' are clustered into one object.
 
 """
 

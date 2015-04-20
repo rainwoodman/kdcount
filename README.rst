@@ -1,5 +1,5 @@
-Introduction
-============
+kdcount
+=======
 
 kdcount is a simple API for brute force pair counting, there is a C interface
 and a Python interface. It uses a KDTree to prune
@@ -13,7 +13,9 @@ The python interface is more complicated, and powerful:
  * paircounting via :py:mod:`kdcount.correlate`
  * clustering via Friend-of-Friend algorithm; :py:mod:`kdcount.cluster`
 
-The calculation can be made parallel, if :py:mod:`sharedmem` is installed.
+The calculation can be made parallel, if :py:package:`sharedmem` is installed.
+
+Refer to the to the API Reference at http://rainwoodman.github.io/kdcount
 
 The time complexity is :code:`O[(D / n) ** d]`, 
 where n is number density. Each pair is opened. 

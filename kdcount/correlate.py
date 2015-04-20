@@ -12,6 +12,26 @@ estimator, the binning is modeled by subclasses of :py:class:`Binning`. For exam
 - :py:class:`RmuBinning`
 - :py:class:`XYBinning`
 
+kdcount takes two types of input data: 'point' and 'field'. 
+
+:py:class:`kdcount.models.points` describes data with position and weight. For example, galaxies and
+quasars are point data. 
+point.pos is a row array of the positions of the points; other fields are
+used internally.
+point.extra is the extra properties that can be used in the Binning. One use
+is to exclude the Lyman-alpha pixels and Quasars from the same sightline. 
+
+:py:class:`kdcount.models.field` describes a continious field sampled at given positions, each sample
+with a weight; a notorious example is the over-flux field in Lyman-alpha forest
+it is a proxy of the over-density field sampled along quasar sightlines. 
+
+In the Python Interface, to count, one has to define the 'binning' scheme, by
+subclassing :py:class:`Binning`. Binning describes a multi-dimension binning
+scheme. The dimensions can be derived, for example, the norm of the spatial
+separation can be a dimension the same way as the 'x' separation. For example, 
+see :py:class:`RmuBinning`.
+
+
 """
 import numpy
 
@@ -116,12 +136,30 @@ class Binning(object):
             integer[d] = numpy.ceil(x * self.inv[d])
         return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
-    def __call__(self, r, i, j):
+    def __call__(self, r, i, j, data1, data2):
+        """
+        Calculate the bin number of pairs separated by distances r, 
+        Use :py:meth:`linear` to convert from multi-dimension bin index to
+        linear index.
+ 
+        Parameters
+        ----------
+        r   : array_like
+            separation
+
+        i, j : array_like
+            index (i, j) of pairs. 
+        data1, data2 :
+            The position of first point is data1.pos[i], the position of second point is
+            data2.pos[j]. 
+
+        """
         raise UnimplementedError()
 
 class RmuBinning(Binning):
     """
     Binning in R and mu (angular along line of sight)
+    mu = cos(theta), relative to line of sight from a given observer. 
 
     Parameters
     ----------

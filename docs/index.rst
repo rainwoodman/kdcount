@@ -6,14 +6,13 @@
 Welcome to kdcount's documentation!
 ===================================
 
-Contents:
+.. contents::
 
-.. toctree::
-   :maxdepth: 2
 
-   intro
-   install
-   modules
+.. include :: intro.rst
+.. include :: install.rst
+
+.. include :: modules.rst
 
 
 Indices and tables
