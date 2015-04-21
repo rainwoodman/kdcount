@@ -1,5 +1,7 @@
 *.py[cod]
 
+kdcount/pykdcount.c
+#
 # C extensions
 *.so
 
