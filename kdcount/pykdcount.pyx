@@ -182,15 +182,15 @@ cdef class KDNode:
         for r, i, j in makeiter(feeder):
             yield r, i, j
 
-    def enum(self, KDNode other, rmax, process=None, bunch=10000, **kwargs):
+    def enum(self, KDNode other, rmax, process=None, bunch=100000, **kwargs):
         """ cross correlate with other, for all pairs
             closer than rmax, iterate.
 
-            def process(r, i, j, **kwargs):
-                ...
+            >>> def process(r, i, j, **kwargs):
+            >>>    ...
 
-            A.enum(... process, **kwargs):
-                ...
+            >>> A.enum(... process, **kwargs):
+            >>>   ...
 
             where r is the distance, i and j are the original
             input array index of the data. arbitrary args can be passed

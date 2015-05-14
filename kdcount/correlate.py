@@ -341,7 +341,7 @@ class paircount(object):
                 sum2 = 1.0
             else:
                 sum2 = numpy.zeros_like(sum2g)
-            for r, i, j in n1.enumiter(n2, binning.Rmax):
+            def callback(r, i, j):
                 dig = binning(r, i, j, data1, data2)
                 if isinstance(data1, field) and isinstance(data2, field):
                     sum1ij = data1.wv(i) * data2.wv(j)
@@ -380,6 +380,7 @@ class paircount(object):
                     sum1.flat [:] += utils.bincount(dig, 
                             sum1ij,
                             minlength=sum1.size)
+            n1.enum(n2, binning.Rmax, process=callback)
             return sum1, sum2
         def reduce(sum1, sum2):
             sum1g[...] += sum1
