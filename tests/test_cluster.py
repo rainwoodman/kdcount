@@ -1,33 +1,15 @@
-import sys
-import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 from kdcount import cluster
 import numpy
 
-def test_p(ll):
-    pos = numpy.load(os.path.join(os.path.dirname(__file__),
-        'TEST-A00_hodfit-small.npy'
-))
+def test_cluster():
 
+    pos = numpy.linspace(0, 1, 100, endpoint=False).reshape(-1, 1)
     dataset = cluster.dataset(pos, boxsize=1.0)
-    r = cluster.fof(dataset, ll, np=None)
-    mass = r.sum()
-    center = r.center()
-    print('linking length', ll)
-    print('particles', len(pos))
-    print('groups', r.N)
-    print('iterations', r.iterations)
-    print('counts in mass', numpy.bincount(numpy.int32(mass)))
-    print('center of most massive group', center[mass.argmax()])
-    print('center of first group', center[0])
-    print('center of first group check', \
-        numpy.mean(pos[r.find(0)], axis=0, dtype='f8'))
-test_p(0.0001)
-test_p(0.0004559498158012794)
-test_p(0.001)
-test_p(0.002)
-test_p(0.005)
-test_p(0.01)
-test_p(0.02)
-test_p(0.1)
+
+    r = cluster.fof(dataset, 0.008, np=None)
+    assert r.N == 100
+    assert (r.sum() == 1).all()
+    r = cluster.fof(dataset, 0.011, np=None)
+    assert r.N == 1
+    assert (r.sum() == 100).all()
+

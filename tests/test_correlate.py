@@ -1,36 +1,50 @@
-import sys
-import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 from kdcount import correlate
 import numpy
 
-def test_p():
-    pos = numpy.load(os.path.join(os.path.dirname(__file__),
-        'TEST-A00_hodfit-small.npy'))
+from numpy.testing import assert_almost_equal, assert_allclose
 
+def test_unweighted():
+    numpy.random.seed(1234)
+    pos = numpy.random.uniform(size=(4000, 3))
     dataset = correlate.points(pos, boxsize=1.0)
-    binning = correlate.RBinning(0.1, Nbins=20)
+    binning = correlate.RBinning(0.5, Nbins=10)
     r = correlate.paircount(dataset, dataset, binning, np=0)
-    print(r.centers, r.sum1)
-def test_np():
-    pos = numpy.load(os.path.join(os.path.dirname(__file__),
-        'TEST-A00_hodfit-small.npy'))
 
-    dataset = correlate.points(pos, boxsize=None)
-    binning = correlate.RBinning(0.1, Nbins=20)
+    assert_allclose(
+        r.sum1,
+        4 * numpy.pi / 3 * numpy.diff(r.edges ** 3) * len(dataset) ** 2,
+        rtol=1e-2)
+
+
+def test_weighted():
+    numpy.random.seed(1234)
+    pos = numpy.random.uniform(size=(4000, 3))
+    dataset = correlate.points(pos, boxsize=1.0, weights=numpy.ones(len(pos)))
+    binning = correlate.RBinning(0.5, Nbins=10)
     r = correlate.paircount(dataset, dataset, binning, np=0)
-    print(r.centers, r.sum1)
 
-def test_p_w():
-    pos = numpy.load(os.path.join(os.path.dirname(__file__),
-        'TEST-A00_hodfit-small.npy'))
-    w = numpy.ones((len(pos))) 
-    dataset = correlate.points(pos, boxsize=1.0, weights=w)
-    binning = correlate.RBinning(0.1, Nbins=20)
+    assert_allclose(
+        r.sum1,
+        4 * numpy.pi / 3 * numpy.diff(r.edges ** 3) * len(dataset) ** 2,
+        rtol=1e-2)
+
+
+def test_field():
+    numpy.random.seed(1234)
+    pos = numpy.random.uniform(size=(4000, 3))
+    dataset = correlate.field(pos, value=numpy.ones(len(pos)), 
+            boxsize=1.0, weights=numpy.ones(len(pos)))
+    binning = correlate.RBinning(0.5, Nbins=10)
     r = correlate.paircount(dataset, dataset, binning, np=0)
-    print(r.centers, r.sum1)
 
-test_p()
-test_np()
-test_p_w()
+    assert_allclose(
+        r.sum1,
+        4 * numpy.pi / 3 * numpy.diff(r.edges ** 3) * len(dataset) ** 2,
+        rtol=1e-2)
+
+    assert_allclose(
+        r.sum2,
+        4 * numpy.pi / 3 * numpy.diff(r.edges ** 3) * len(dataset) ** 2,
+        rtol=1e-2)
+
+
