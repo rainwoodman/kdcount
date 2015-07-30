@@ -36,8 +36,8 @@ see :py:class:`RmuBinning`.
 import numpy
 
 # local imports
-from models import points, field
-import utils 
+from .models import points, field
+from . import utils 
 
 class Binning(object):
     """
@@ -357,7 +357,6 @@ class paircount(object):
                 elif isinstance(data1, field) and isinstance(data2, points):
                     sum1ij = data1.wv(i) * data2.w(j)
                     sum2ij = data1.w(i) * data2.w(j)
-                    print sum1ij, sum2ij
                     for d in range(sum1.shape[0]):
                         sum1[d].flat [:] += utils.bincount(dig, 
                                 sum1ij[:, d],
@@ -417,9 +416,6 @@ def _main():
 
 def _main2():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
-    print 'read'
-    print sim
-    print sim.mean(dtype='f8'), sim.max()
     pos = numpy.array(numpy.unravel_index(numpy.arange(sim.size),
         (128, 128, 128))).T / 128.0
     numpy.random.seed(1000)
@@ -427,7 +423,7 @@ def _main2():
     value = numpy.tile(sim[sample], (2, 1)).T
 #    value = sim[sample]
     data = field(pos[sample], value=value)
-    print 'data ready'
+    print('data ready')
     binning = RBinning(0.1, 40)
     DD = paircount(data, data, binning)
 
@@ -435,13 +431,12 @@ def _main2():
 
 def _main3():
     sim = numpy.fromfile('grid-128.raw', dtype='f4')
-    print 'read'
     pos = numpy.array(numpy.unravel_index(numpy.arange(sim.size),
         (128, 128, 128))).T / 128.0
     numpy.random.seed(1000)
     sample = numpy.random.uniform(size=len(pos)) < 0.2
     value = numpy.tile(sim[sample], (2, 1)).T
     data = field(pos[sample], value=value)
-    print 'data ready'
+    print('data ready')
     DD = paircount(data, data, RmuBinning(0.10, 8, 20, 0.5))
     return DD

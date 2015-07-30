@@ -11,8 +11,8 @@ that are within a given 'linking_length' are clustered into one object.
 """
 
 import numpy
-from models import dataset
-import utils
+from .models import dataset
+from . import utils
 from sys import stdout
 
 class fof(object):
@@ -62,7 +62,7 @@ class fof(object):
                 op = self._once(perm, head, np, ll)
                 self.iterations = self.iterations + 1
                 if verbose:
-                    print 'FOF iteration', self.iterations, op, llfactor
+                    print('FOF iteration', self.iterations, op, llfactor)
                     stdout.flush()
                 if llfactor != 1:
                     break

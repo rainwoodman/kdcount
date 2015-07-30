@@ -131,6 +131,14 @@ cdef class KDNode:
             return numpy.array([min[d] for d in
                 range(self.ref.store.input.dims[1])])
 
+    def __richcmp__(self, other, int op):
+        if op == 0: return False
+        if op == 1: return True
+        if op == 2: return True
+        if op == 3: return False
+        if op == 4: return False
+        if op == 5: return True
+
     def __repr__(self):
         return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
 
@@ -422,10 +430,13 @@ def build(numpy.ndarray data, numpy.ndarray weights=None, boxsize=None,
     return store.root
 
 import threading
-import Queue
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 import signal
 def makeiter(feeder):
-    q = Queue.Queue(2)
+    q = queue.Queue(2)
     def process(*args):
         q.put(args)
     def wrap(process):

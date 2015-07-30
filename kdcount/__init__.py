@@ -7,5 +7,5 @@ import os.path
 #    os.path.dirname(inspect.getfile(sys.modules[__name__]))
 #    ]})
 
-from pykdcount import *
+from .pykdcount import *
 
