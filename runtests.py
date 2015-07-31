@@ -7,5 +7,6 @@ sys.path.insert(0, os.path.abspath('.'))
 from sys import argv
 
 tester = Tester()
-tester.test(extra_argv=['-w', 'tests'] + argv[1:])
-
+r = tester.test(extra_argv=['-w', 'tests'] + argv[1:])
+if not r:
+    raise Exception("Tests failed")
