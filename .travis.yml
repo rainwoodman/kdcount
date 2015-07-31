@@ -21,6 +21,6 @@ install:
     - source activate test
     - conda install --yes numpy=$NUMPY_VERSION nose cython
     - pip install sharedmem
-    - python setup.py install
+    - python setup.py build_ext --inplace
 
 script: python ./runtests.py
