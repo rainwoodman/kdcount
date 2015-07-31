@@ -6,14 +6,22 @@ and a Python interface. It uses a KDTree to prune
 the K-D spatial data; for each pair within a given distance D, a callback
 function is called; the user-defined callback function does the actual counting. 
 
+.. image:: https://api.travis-ci.org/rainwoodman/kdcount.svg
+    :alt: Build Status
+    :target: https://travis-ci.org/rainwoodmankdcount/
+
 Periodic boundary is supported, and it is non-trivial.
 
 The python interface is more complicated, and powerful:
 
  * paircounting via :py:mod:`kdcount.correlate`
  * clustering via Friend-of-Friend algorithm; :py:mod:`kdcount.cluster`
-
+ 
 The calculation can be made parallel, if :py:mod:`sharedmem` is installed.
+
+.. code:: sh
+
+    easy_install --user sharedmem
 
 Refer to the to the API Reference at http://rainwoodman.github.io/kdcount
 
