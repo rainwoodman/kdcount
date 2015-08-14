@@ -149,17 +149,18 @@ class fof(object):
 #                    print iwork, 'len(r)', len(r)
 
                     mask = r <= ll
+                    if not mask.any(): return
                     i = i[mask]
                     j = j[mask]
                     # update the head id; 
                     # only for those that would decrease
                     mask2 = head[i] > head[j]
+                    if not mask2.any(): return
+
                     i = i[mask2]
                     j = j[mask2]
                     ni = head[i]
                     nj = head[j]
-                    if len(ni) == 0:
-                        return
 
                     # we will replace in head all ni-s to nj
                     # find the minimal replacement of ni
@@ -167,11 +168,11 @@ class fof(object):
                     ni = ni[arg]
                     nj = nj[arg]
                     #  find the last item in each i
-                    lasts = (ni[1:] != ni[:-1]).nonzero()[0]
-                    lasts = numpy.concatenate([
-                        lasts, [len(ni) -1]])
-                    ni = ni[lasts]
-                    nj = nj[lasts]
+                    mask3 = numpy.empty(len(ni), '?')
+                    mask3[:-1] = ni[1:] != ni[:-1]
+                    mask3[-1] = True
+                    ni = ni[mask3]
+                    nj = nj[mask3]
 
                     #  write to each entry, once, in order
                     #  minimizing memory clashes from many ranks;
@@ -203,10 +204,10 @@ class fof(object):
             # round of expensive tree walk
             def work2(i):
                 s = slice(i, i + chunksize)
-                N = 1
-                while N > 0:
+                while True:
                     tmp = perm[head[s]]
-                    N = (head[s] != tmp).sum()
+                    if (head[s] == tmp).all():
+                        break
                     head[s] = tmp
                      
             pool.map(work2, range(0, len(head), chunksize))
