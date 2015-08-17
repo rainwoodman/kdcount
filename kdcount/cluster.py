@@ -128,7 +128,6 @@ class fof(object):
             p = [(tree, tree)]
 
         #print 'p', len(p)
-        ops = [0]
 
         with utils.MapReduce(np=np) as pool:
             chunksize = 1024 * 1024
@@ -184,18 +183,13 @@ class fof(object):
                         ni = ni[mask]
                         nj = nj[mask]
                         perm[ni] = nj
-                        operations[0] += len(ni)
+
 #                    print iwork, 'len(r)', len(i)
-                n1.enum(n2, ll, process, bunch=10000 * 8)
+                n1.enum(n2, ll, process, bunch=1024 * 80)
 #                print 'work', iwork, 'done'
-                return operations[0]
+                return
 
-            def reduce(op):
-                #count number of operations
-                #print ops[0]
-                ops[0] += op
-
-            pool.map(work, range(len(p)), reduce=reduce)
+            pool.map(work, range(len(p)))
 
             # replace; this is done repeatedly
             # since it is possible we count a progenitor
@@ -204,12 +198,16 @@ class fof(object):
             # round of expensive tree walk
             def work2(i):
                 s = slice(i, i + chunksize)
+                ops = 0
                 while True:
                     tmp = perm[head[s]]
-                    if (head[s] == tmp).all():
+                    changed = head[s] != tmp
+                    if changed.any():
+                        ops += int(changed.sum())
+                        head[s] = tmp
+                    else:
                         break
-                    head[s] = tmp
-                     
-            pool.map(work2, range(0, len(head), chunksize))
-        return ops[0]
+                return ops         
+            ops = pool.map(work2, range(0, len(head), chunksize))
+        return sum(ops)
 
