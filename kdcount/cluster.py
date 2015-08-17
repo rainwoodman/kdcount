@@ -143,33 +143,32 @@ class fof(object):
             def work(iwork):
                 n1, n2 = p[iwork]
                 operations = [0]
-                def process(r, i, j):
+                def process(r, i, j, head=head, perm=perm, pool=pool,
+                ):
                     if len(r) == 0: return 
 #                    print iwork, 'len(r)', len(r)
 
-                    mask = r <= ll
-                    if not mask.any(): return
-                    i = i[mask]
-                    j = j[mask]
-                    # update the head id; 
-                    # only for those that would decrease
-                    mask2 = head[i] > head[j]
-                    if not mask2.any(): return
-
-                    i = i[mask2]
-                    j = j[mask2]
                     ni = head[i]
                     nj = head[j]
 
+                    mask = (r <= ll) & (ni > nj)
+
+                    if not mask.any(): return
+
                     # we will replace in head all ni-s to nj
+                    ni = ni[mask]
+                    nj = nj[mask]
+                        
                     # find the minimal replacement of ni
                     arg = numpy.lexsort((ni, -nj))
+
                     ni = ni[arg]
                     nj = nj[arg]
                     #  find the last item in each i
                     mask3 = numpy.empty(len(ni), '?')
                     mask3[:-1] = ni[1:] != ni[:-1]
                     mask3[-1] = True
+
                     ni = ni[mask3]
                     nj = nj[mask3]
 
