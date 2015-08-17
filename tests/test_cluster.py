@@ -18,9 +18,10 @@ def test_cluster():
 
 
 def test_parallel():
+    numpy.random.seed(1234)
     pos = numpy.random.uniform(size=(100000, 2))
     dataset = cluster.dataset(pos, boxsize=1.0)
-    r1 = cluster.fof(dataset, 0.03, verbose=True)
+    r1 = cluster.fof(dataset, 0.03, np=0, verbose=True)
     r2 = cluster.fof(dataset, 0.03, np=4, verbose=True)
 
     assert r2.N == r1.N
