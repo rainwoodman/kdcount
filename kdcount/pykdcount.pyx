@@ -405,7 +405,7 @@ cdef class KDStore:
         self.ref.thresh = thresh
         self.ind = numpy.empty(self.ref.input.dims[0], dtype='intp')
         self.ref.ind = <npy_intp*> self.ind.data
-        if boxsize != None:
+        if boxsize is not None:
             self.boxsize = numpy.empty(self.ref.input.dims[1], dtype='f8')
             self.boxsize[:] = boxsize
             self.ref.boxsize = <double*>self.boxsize.data
