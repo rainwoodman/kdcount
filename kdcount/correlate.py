@@ -303,7 +303,7 @@ class paircount(object):
         with r = sum(wD) / sum(wR)
 
     """
-    def __init__(self, data1, data2, binning, np=None):
+    def __init__(self, data1, data2, binning, usefast=True, np=None):
         """
         binning is an instance of Binning, (eg, RBinning, RmuBinning)
 
@@ -379,7 +379,18 @@ class paircount(object):
                     sum1.flat [:] += utils.bincount(dig, 
                             sum1ij,
                             minlength=sum1.size)
-            n1.enum(n2, binning.Rmax, process=callback)
+            if usefast and type(binning) is RBinning \
+                and isinstance(data1, points) \
+                and isinstance(data2, points) \
+                and data1._weights is None \
+                and data2._weights is None :
+                counts, weights = data1.tree.count(data2.tree, binning.edges)
+                d = numpy.diff(counts)
+                sum1[0, 0] = counts[0]
+                sum1[0, 1:-1] += d
+            else:
+                n1.enum(n2, binning.Rmax, process=callback)
+
             return sum1, sum2
         def reduce(sum1, sum2):
             sum1g[...] += sum1

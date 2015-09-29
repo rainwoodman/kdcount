@@ -10,7 +10,7 @@ class points(models.points):
         pos[:, 2] = numpy.sin(dec)
         r = numpy.cos(dec)
         pos[:, 0] = numpy.sin(ra) * r
-        pos[:, 1] = numpy.cos(ra) * r
+        pos[:, 1] = numpy.cos(ra) * r 
 
         models.points.__init__(self, pos, weights, boxsize, extra)
 

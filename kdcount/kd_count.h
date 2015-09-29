@@ -16,7 +16,7 @@ static int bisect_left(double key, double * r2, int N) {
     return left;
 }
 static int bisect_right(double key, double * r2, int N) {
-    if(key < r2[0]) return 0;
+    if(key <= r2[0]) return 0;
     if(key > r2[N-1]) return N;
     int left = 0, right = N;
     while(right > left) {

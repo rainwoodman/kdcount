@@ -18,7 +18,7 @@ def test_cluster():
 
     binning = sphere.AngularBinning(1.0, 10)
 
-    r = correlate.paircount(dataset, dataset, binning=binning)
+    r = correlate.paircount(dataset, dataset, binning=binning, usefast=False)
     assert_allclose( 
     r.sum1, 
     0.5 * numpy.diff(-numpy.cos(binning.angular_edges * numpy.pi / 180)) * len(ra) ** 2,
