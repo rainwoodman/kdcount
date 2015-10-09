@@ -8,7 +8,6 @@ def test_cluster():
     dataset = cluster.dataset(pos, boxsize=1.0)
 
     r = cluster.fof(dataset, 1.1 / len(pos), np=0, verbose=True)
-    print r.N
     assert r.N == 1
     assert (r.sum() == len(pos)).all()
 
@@ -25,6 +24,5 @@ def test_parallel():
     r2 = cluster.fof(dataset, 0.03, np=4, verbose=True)
 
     assert r2.N == r1.N
-    print r2.length
     assert_equal(r2.sum(), r1.sum())
 
