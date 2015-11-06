@@ -11,6 +11,7 @@ Welcome to kdcount's documentation!
 
 .. include :: intro.rst
 .. include :: install.rst
+.. include :: correlation.rst
 
 .. include :: modules.rst
 
