@@ -49,21 +49,21 @@
           <div class="body" role="main">
             
   <div class="section" id="welcome-to-kdcount-s-documentation">
-<h1><a class="toc-backref" href="#id3">Welcome to kdcount&#8217;s documentation!</a><a class="headerlink" href="#welcome-to-kdcount-s-documentation" title="Permalink to this headline">¶</a></h1>
+<h1><a class="toc-backref" href="#id1">Welcome to kdcount&#8217;s documentation!</a><a class="headerlink" href="#welcome-to-kdcount-s-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="simple">
-<li><a class="reference internal" href="#welcome-to-kdcount-s-documentation" id="id3">Welcome to kdcount&#8217;s documentation!</a></li>
-<li><a class="reference internal" href="#introduction" id="id4">Introduction</a></li>
-<li><a class="reference internal" href="#installation" id="id5">Installation</a></li>
-<li><a class="reference internal" href="#correlation-function" id="id6">Correlation Function</a></li>
-<li><a class="reference internal" href="#api-reference" id="id7">API Reference</a></li>
-<li><a class="reference internal" href="#indices-and-tables" id="id8">Indices and tables</a></li>
+<li><a class="reference internal" href="#welcome-to-kdcount-s-documentation" id="id1">Welcome to kdcount&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id3">Installation</a></li>
+<li><a class="reference internal" href="#correlation-function" id="id4">Correlation Function</a></li>
+<li><a class="reference internal" href="#api-reference" id="id5">API Reference</a></li>
+<li><a class="reference internal" href="#indices-and-tables" id="id6">Indices and tables</a></li>
 </ul>
 </div>
 </div>
 <div class="section" id="introduction">
-<h1><a class="toc-backref" href="#id4">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<h1><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 <p>kdcount is a simple API for brute force pair counting, there is a C interface
 and a Python interface. It uses a KDTree to prune
 the K-D spatial data; for each pair within a given distance D, a callback
@@ -90,7 +90,7 @@ the smarter algorithm become very difficult to implement.</p>
 <p>The spatial complexity is a constant, as we make extensive use of callback functions</p>
 </div>
 <div class="section" id="installation">
-<h1><a class="toc-backref" href="#id5">Installation</a><a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<h1><a class="toc-backref" href="#id3">Installation</a><a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <p>clone the code with</p>
 <blockquote>
 <div>git clone <a class="reference external" href="http://github.com/rainwoodman/kdcount">http://github.com/rainwoodman/kdcount</a></div></blockquote>
@@ -99,7 +99,7 @@ the smarter algorithm become very difficult to implement.</p>
 <div>python setup.py intall &#8211;user</div></blockquote>
 </div>
 <div class="section" id="correlation-function">
-<h1><a class="toc-backref" href="#id6">Correlation Function</a><a class="headerlink" href="#correlation-function" title="Permalink to this headline">¶</a></h1>
+<h1><a class="toc-backref" href="#id4">Correlation Function</a><a class="headerlink" href="#correlation-function" title="Permalink to this headline">¶</a></h1>
 <p>Correlation function can be estimated in several ways. Common estimators are</p>
 <ul class="simple">
 <li>xi = DD / RR - 1</li>
@@ -111,10 +111,11 @@ RR stands for the number of &#8216;random&#8217; pairs in the same distance bin.
 the number of &#8216;random&#8217; to &#8216;data&#8217; pairs in the same distance bin. &#8216;random&#8217; points are defined as input without any clustering, it sort of describes the &#8216;expected&#8217; pairs.</p>
 <p>For point like input data and random, kdcount.correlat.paircount can calculate DD and RR, as the sum1 attribute of the result.</p>
 <p>For a simple case, N positions in a periodic box of volume V,</p>
-<p><a href="#id1"><span class="problematic" id="id2">:displaymath:`RR = \frac{4\pi}{3} (r_2^3 - r_1^3) * \frac{N}{V} N`</span></a>.</p>
-</div>
+<div class="math">
+<p><img src="_images/math/aead9f2e743ba154c65ec7fe0cf63d5c6a7f3375.png" alt="RR = \frac{4\pi}{3} (r_2^3 - r_1^3) * \frac{N}{V} N ."/></p>
+</div></div>
 <div class="section" id="api-reference">
-<h1><a class="toc-backref" href="#id7">API Reference</a><a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<h1><a class="toc-backref" href="#id5">API Reference</a><a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="kdcount.html">kdcount package</a><ul>
@@ -133,7 +134,7 @@ the number of &#8216;random&#8217; to &#8216;data&#8217; pairs in the same dista
 </div>
 </div>
 <div class="section" id="indices-and-tables">
-<h1><a class="toc-backref" href="#id8">Indices and tables</a><a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<h1><a class="toc-backref" href="#id6">Indices and tables</a><a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><a class="reference internal" href="genindex.html"><span>Index</span></a></li>
 <li><a class="reference internal" href="py-modindex.html"><span>Module Index</span></a></li>

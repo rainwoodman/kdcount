@@ -17,6 +17,8 @@ For point like input data and random, kdcount.correlat.paircount can calculate D
 
 For a simple case, N positions in a periodic box of volume V, 
 
-:displaymath:`RR = \frac{4\pi}{3} (r_2^3 - r_1^3) * \frac{N}{V} N`.
+.. math::
+
+    RR = \frac{4\pi}{3} (r_2^3 - r_1^3) * \frac{N}{V} N .
 
 
