@@ -19,6 +19,6 @@ For a simple case, N positions in a periodic box of volume V,
 
 .. math::
 
-    RR = \frac{4\pi}{3} (r_2^3 - r_1^3) * \frac{N}{V} N .
+    RR = \frac{4\pi}{3} (r_2^3 - r_1^3) \frac{N}{V} N .
 
 
