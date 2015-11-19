@@ -1,0 +1,2 @@
+include kdcount/*.pyx
+include kdcount/*.[ch]
