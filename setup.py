@@ -11,12 +11,11 @@ extensions = [
         myext("kdcount.pykdcount", ["kdcount/pykdcount.pyx"])
         ]
 
-setup(name="kdcount", version="0.1",
+setup(name="kdcount", version="0.2",
       author="Yu Feng",
-      author_email="yfeng1@andrew.cmu.edu",
+      author_email="rainwoodman@gmail.com",
       description="A slower KDTree cross correlator",
       url="http://github.com/rainwoodman/kdcount",
-      download_url="http://web.phys.cmu.edu/~yfeng1/kdcount-0.1.tar.gz",
       zip_safe=False,
       package_dir = {'kdcount': 'kdcount'},
       packages = [
