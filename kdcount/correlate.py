@@ -270,9 +270,9 @@ class FlatSkyBinning(Binning):
     los : int, {0, 1, 2}
         the axis to treat as the line-of-sight
     """
-    def __init__(self, rmax, Nr, Nmubins, los):
-        rbins = (0, Rmax, Nbins)
-        mubins = (-1, 1, Nmubins)
+    def __init__(self, rmax, Nr, Nmu, los):
+        rbins = (0, rmax, Nr)
+        mubins = (-1, 1, Nmu)
         Binning.__init__(self, rbins, mubins)
         self.los = los
 
