@@ -250,6 +250,49 @@ class RBinning(Binning):
                 (Rmin, Rmax, Nbins, logscale))
     def __call__(self, r, i, j, data1, data2):
         return self.linear(r)
+        
+class FlatSkyBinning(Binning):
+    """
+    Binning in R and mu, in the flat sky approximation, such 
+    that all pairs have the same line-of-sight, which is 
+    taken to be the axis specified by the `los` parameter 
+    (default is the last dimension)
+    
+
+    Parameters
+    ----------
+    rmax : float
+        the maximum radius to measure to
+    Nr : int
+        the number of bins in `r` direction.
+    Nmu : int
+        the number of bins in `mu` direction.
+    los : int, {0, 1, 2}
+        the axis to treat as the line-of-sight
+    """
+    def __init__(self, rmax, Nr, Nmubins, los):
+        rbins = (0, Rmax, Nbins)
+        mubins = (-1, 1, Nmubins)
+        Binning.__init__(self, rbins, mubins)
+        self.los = los
+
+    def __call__(self, r, i, j, data1, data2):
+        r1 = data1.pos[i]
+        r2 = data2.pos[j]
+        
+        # parallel separation
+        d_par = (r1-r2)[:,self.los]
+        
+        # enforce periodic boundary conditions
+        L = data1.boxsize[self.los]
+        d_par[d_par > L*0.5] -= L
+        d_par[d_par <= -L*0.5] += L
+        
+        # mu
+        mu = d_par / r
+        mu[r == 0] = 10.0 # ignore self pairs by setting mu out of bounds
+        
+        return self.linear(r, mu)
 
 class paircount(object):
     """ 
