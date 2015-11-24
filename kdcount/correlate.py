@@ -53,9 +53,12 @@ class Binning(object):
     centers :  array_like
         centers of bins per dimension; currently it is the 
         mid point of the edges.
+    compute_mean_coords : bool, optional
+        If `True`, store and compute the mean coordinate values
+        in the __call__ function. Default is `False`
     
     """
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         """ the shape has one extra per edge
             0 is .le. min
             -1 is .g. max
@@ -63,6 +66,8 @@ class Binning(object):
             the first is for R
             centers is squezzed
         """
+        self.compute_mean_coords = kwargs.get('compute_mean_coords', False)
+        
         self.dims = numpy.empty(len(args),
                 dtype=[
                     ('inv', 'f8'),
@@ -78,6 +83,7 @@ class Binning(object):
         self.logscale = self.dims['logscale']
         self.edges = []
         self.centers = []
+        
         for i, dim in enumerate(args):
             if len(dim) == 3:
                 min, max, Nbins = dim
@@ -108,6 +114,15 @@ class Binning(object):
         if self.Ndim == 1:
             self.edges = self.edges[0]
             self.centers = self.centers[0]
+            
+        # for storing the mean values in each bin
+        # computed when pair counting
+        if self.compute_mean_coords:
+            self.meancenters = []
+            for idim in range(self.Ndim):
+                self.meancenters.append(numpy.zeros(self.shape))        
+            self.counts = numpy.zeros(self.shape)
+
 
     def linear(self, *args):
         """ 
@@ -173,10 +188,11 @@ class RmuBinning(Binning):
         location of the observer (for line of sight) 
 
     """
-    def __init__(self, Rmax, Nbins, Nmubins, observer):
+    def __init__(self, Rmax, Nbins, Nmubins, observer, **kwargs):
         Binning.__init__(self, 
                 (0, Rmax, Nbins),
-                (-1, 1, Nmubins)
+                (-1, 1, Nmubins),
+                **kwargs
             )
         self.observer = numpy.array(observer)
 
@@ -189,7 +205,15 @@ class RmuBinning(Binning):
         center = numpy.einsum('ij, ij->i', center, center) ** 0.5
         mu = dot / (center * r)
         mu[r == 0] = 10.0
-        return self.linear(r, mu)
+        dig = self.linear(r, mu)
+        
+        # update the mean bin counts
+        if self.compute_mean_coords:
+            self.counts.flat += utils.bincount(dig, 1., minlength=self.counts.size)
+            self.meancenters[0].flat += utils.bincount(dig, r, minlength=self.meancenters[0].size)
+            self.meancenters[1].flat += utils.bincount(dig, mu, minlength=self.meancenters[1].size)
+        
+        return dig
 
 class XYBinning(Binning):
     """ 
@@ -212,11 +236,12 @@ class XYBinning(Binning):
             with imshow( ..T,) the sky will be vertical.
     """
 
-    def __init__(self, Rmax, Nbins, observer):
+    def __init__(self, Rmax, Nbins, observer, **kwargs):
         self.Rmax = Rmax
         Binning.__init__(self,
             (0, Rmax, Nbins),
-            (-Rmax, Rmax, 2 * Nbins)
+            (-Rmax, Rmax, 2 * Nbins), 
+            **kwargs
             )
         self.observer = observer
 
@@ -231,7 +256,16 @@ class XYBinning(Binning):
         dr2 = numpy.einsum('ij, ij->i', dr, dr)
         x2 = numpy.abs(dr2 - los ** 2)
         sky = x2 ** 0.5
-        return self.linear(sky, los)
+        
+        dig = self.linear(sky, los)
+        
+        # update the mean bin counts
+        if self.compute_mean_coords:
+            self.counts.flat += utils.bincount(dig, 1., minlength=self.counts.size)
+            self.meancenters[0].flat += utils.bincount(dig, sky, minlength=self.meancenters[0].size)
+            self.meancenters[1].flat += utils.bincount(dig, los, minlength=self.meancenters[1].size)
+        
+        return dig
 
 class RBinning(Binning):
     """ 
@@ -245,11 +279,20 @@ class RBinning(Binning):
         number of bins in each direction.
 
     """
-    def __init__(self, Rmax, Nbins, logscale=False, Rmin=0):
-        Binning.__init__(self, 
-                (Rmin, Rmax, Nbins, logscale))
+    def __init__(self, Rmax, Nbins, logscale=False, Rmin=0, **kwargs):
+        rbins = (Rmin, Rmax, Nbins, logscale)
+        Binning.__init__(self, rbins, **kwargs)
+        
     def __call__(self, r, i, j, data1, data2):
-        return self.linear(r)
+        
+        dig = self.linear(r)
+        
+        # update the mean bin counts
+        if self.compute_mean_coords:
+            self.counts.flat += utils.bincount(dig, 1., minlength=self.counts.size)
+            self.meancenters[0].flat += utils.bincount(dig, r, minlength=self.meancenters[0].size)
+
+        return dig
         
 class FlatSkyBinning(Binning):
     """
@@ -270,10 +313,10 @@ class FlatSkyBinning(Binning):
     los : int, {0, 1, 2}
         the axis to treat as the line-of-sight
     """
-    def __init__(self, rmax, Nr, Nmu, los):
+    def __init__(self, rmax, Nr, Nmu, los, **kwargs):
         rbins = (0, rmax, Nr)
         mubins = (-1, 1, Nmu)
-        Binning.__init__(self, rbins, mubins)
+        Binning.__init__(self, rbins, mubins, **kwargs)
         self.los = los
 
     def __call__(self, r, i, j, data1, data2):
@@ -289,10 +332,20 @@ class FlatSkyBinning(Binning):
         d_par[d_par <= -L*0.5] += L
         
         # mu
-        mu = d_par / r
+        with numpy.errstate(invalid='ignore'):
+            mu = d_par / r
         mu[r == 0] = 10.0 # ignore self pairs by setting mu out of bounds
         
-        return self.linear(r, mu)
+        # linear bin index
+        dig = self.linear(r, mu)
+        
+        # update the mean bin counts
+        if self.compute_mean_coords:
+            self.counts.flat += utils.bincount(dig, 1., minlength=self.counts.size)
+            self.meancenters[0].flat += utils.bincount(dig, r, minlength=self.meancenters[0].size)
+            self.meancenters[1].flat += utils.bincount(dig, mu, minlength=self.meancenters[1].size)
+        
+        return dig
 
 class paircount(object):
     """ 
@@ -350,10 +403,17 @@ class paircount(object):
         """
         binning is an instance of Binning, (eg, RBinning, RmuBinning)
 
-        if the value has multiple components,
-        return counts with be 'tuple', one item for each component
+        Notes
+        -----
+        *   if the value has multiple components, return counts with be 'tuple', 
+            one item for each component
+        *   if `binning.compute_mean_coords` is `True`, then `meancenters` will hold
+            the mean coordinate value in each bin. Cannot have `usefast = True`
+            and `binning.compute_mean_coords = True`
         """
-
+        if usefast and binning.compute_mean_coords:
+            raise NotImplementedError("cannot currently compute bin centers and use the fast algorithm")
+        
         tree1 = data1.tree
         tree2 = data2.tree
         if np != 0:
@@ -376,7 +436,11 @@ class paircount(object):
             fullshape = list(data1.subshape) + list(binning.shape)
 
         sum1g = numpy.zeros(fullshape, dtype='f8').reshape(linearshape)
-
+        
+        if binning.compute_mean_coords:
+            N = numpy.zeros_like(binning.counts)
+            centers = [numpy.zeros_like(binning.meancenters[i]) for i in range(binning.Ndim)]
+        
         def work(i):
             n1, n2 = p[i]
             sum1 = numpy.zeros_like(sum1g)
@@ -439,6 +503,12 @@ class paircount(object):
             sum1g[...] += sum1
             if not (isinstance(data1, points) and isinstance(data2, points)):
                 sum2g[...] += sum2
+            
+            if binning.compute_mean_coords:
+                N[...] += binning.counts
+                for i in range(binning.Ndim):
+                    centers[i][...] += binning.meancenters[i]
+                
         with utils.MapReduce(np=np) as pool:
             pool.map(work, range(len(p)), reduce=reduce)
 
@@ -452,6 +522,19 @@ class paircount(object):
         self.binning = binning
         self.edges = binning.edges
         self.centers = binning.centers
+        
+        # add the mean centers
+        if binning.compute_mean_coords:
+            self.meancenters_sum = centers
+            self.counts = N
+        
+            self.meancenters = []
+            sl = [slice(1, -1)] * binning.Ndim
+            with numpy.errstate(invalid='ignore'):
+                for i in range(binning.Ndim):
+                    self.meancenters.append( (centers[i]/N)[sl] )
+            if binning.Ndim == 1:
+                self.meancenters = self.meancenters[0]
 
 def _main():
     pm = numpy.fromfile('A00_hodfit.raw').reshape(-1, 8)[::1, :3]
