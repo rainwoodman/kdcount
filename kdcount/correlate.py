@@ -604,6 +604,7 @@ class paircount(object):
             sum2g = numpy.zeros(binning.shape, dtype='f8').reshape(linearshape)
         
         # initialize arrays for computing mean coords
+        N = None; centers = None
         if binning.compute_mean_coords:
             N = numpy.zeros_like(binning.pair_counts)
             centers = [numpy.zeros(binning.shape) for i in range(binning.Ndim)]
