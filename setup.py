@@ -11,7 +11,7 @@ extensions = [
         myext("kdcount.pykdcount", ["kdcount/pykdcount.pyx"])
         ]
 
-setup(name="kdcount", version="0.3.0rc0",
+setup(name="kdcount", version="0.3.0",
       author="Yu Feng",
       author_email="rainwoodman@gmail.com",
       description="A slower KDTree cross correlator",
