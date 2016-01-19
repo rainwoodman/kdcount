@@ -1,4 +1,4 @@
-static int kd_count_force(KDNode * node[2], double * r2,
+static int kd_count_check(KDNode * node[2], double * r2,
         uint64_t * count, double * weight, size_t Nbins);
 
 static int bisect_left(double key, double * r2, int N) {
@@ -103,14 +103,14 @@ int kd_count(KDNode * node[2], double * r2,
         return rt;
     } else {
         /* can't open the node, need to enumerate */
-        return kd_count_force(node, 
+        return kd_count_check(node, 
                 &r2[start], 
                 &count[start], 
                 &weight[start * Nw], 
                 end - start);
     }
 }
-static int kd_count_force(KDNode * node[2], double * r2,
+static int kd_count_check(KDNode * node[2], double * r2,
         uint64_t * count, double * weight, size_t Nbins) {
     ptrdiff_t i, j;
     int d;

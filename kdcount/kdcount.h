@@ -470,16 +470,3 @@ static inline void kd_collect(KDNode * node, double * input, double * weight) {
 #include "kd_enum.h"
 #include "kd_grav.h"
 #include "kd_tearoff.h"
-
-#include <signal.h>
-static void handler(int signo)
-{
-    int i = 1;
-    fprintf(stderr, "pid=%d, got signal=%d\n", getpid(), signo);
-     while (i) { }
-}
-
-static void register_handler() {
-    fprintf(stderr, "pid=%d, set up signal handler\n", getpid() );
-    signal(11, handler);
-}

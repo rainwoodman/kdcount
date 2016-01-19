@@ -1,4 +1,4 @@
-static int kd_enum_force(KDNode * node[2], double rmax2,
+static int kd_enum_check(KDNode * node[2], double rmax2,
         kd_enum_callback callback, void * data);
 /*
  * enumerate two KDNode trees, up to radius max.
@@ -63,10 +63,10 @@ int kd_enum(KDNode * node[2], double maxr,
          * and enumerate  */
     }
 
-    return kd_enum_force(node, rmax2, callback, data);
+    return kd_enum_check(node, rmax2, callback, data);
 }
 
-static int kd_enum_force(KDNode * node[2], double rmax2,
+static int kd_enum_check(KDNode * node[2], double rmax2,
         kd_enum_callback callback, void * data) {
     int rt = 0;
     ptrdiff_t i, j;
@@ -94,7 +94,6 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
     kd_collect(node[0], p0base, NULL);
     kd_collect(node[1], p1base, NULL);
 
-    double bad = rmax2 * 2 + 1;
     for (p0 = p0base, i = 0; i < node[0]->size; i++) {
         endata.i = t0->ind[i + node[0]->start];
         for (p1 = p1base, j = 0; j < node[1]->size; j++) {
@@ -105,12 +104,6 @@ static int kd_enum_force(KDNode * node[2], double rmax2,
                 if (t0->boxsize) {
                     if (dx > half[d]) dx = full[d] - dx;
                 }
-                /*
-                if (dx > maxr) {
-                    r2 = bad;
-                    p1 += Nd - d;
-                    break;
-                } */
                 r2 += dx * dx;
             }
             if(r2 <= rmax2) {
