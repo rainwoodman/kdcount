@@ -60,6 +60,8 @@ cdef extern from "kdcount.h":
     int kd_count(cKDNode * node[2], double * r2,
             npy_uint64 * count, double * weight, npy_intp Nbins) except -1
 
+    int kd_fof(cKDNode * tree, double linklength, npy_intp * head)
+
     double kd_grav(cKDNode * node, double * pos, double openangle, kd_gravity_func gravity, void * data)
 
 
@@ -172,6 +174,17 @@ cdef class KDNode:
                 <npy_uint64*>count.data,
                 <double*>weight.data, len(r))
         return count, weight
+
+    def fof(self, double linkinglength, out=None):
+        cdef numpy.ndarray buf
+        if out is not None:
+            assert out.dtype == numpy.dtype('intp')
+            buf = out
+        else:
+            buf = numpy.empty(self.size, dtype='intp')
+        if -1 == kd_fof(self.ref, linkinglength, <npy_intp*> buf.data):
+            raise RuntimeError("Too many friend of friend iterations. This is likely a bug.");
+        return buf
 
     def enumiter(self, KDNode other, rmax, bunch=100000):
         """ cross correlate with other, for all pairs

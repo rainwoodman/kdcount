@@ -17,6 +17,7 @@ def test_cluster():
 
 
 def test_parallel():
+    # this is deprecated. fof is on longer paralle.
     numpy.random.seed(1234)
     pos = numpy.random.uniform(size=(100000, 2))
     dataset = cluster.dataset(pos, boxsize=1.0)
@@ -25,4 +26,7 @@ def test_parallel():
 
     assert r2.N == r1.N
     assert_equal(r2.sum(), r1.sum())
+
+    assert r2.N == r3.N
+    assert_equal(r2.sum(), r3.sum())
 

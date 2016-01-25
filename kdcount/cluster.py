@@ -43,30 +43,17 @@ class fof(object):
         of particles in cluster i.
 
     """    
-    def __init__(self, data, linking_length, np=None, verbose=False):
+    def __init__(self, data, linking_length, np=None):
         self.data = data
         self.linking_length = linking_length
 
         # iterations
         self.iterations = 0
-        perm = utils.empty(len(data), dtype='intp')
         head = utils.empty(len(data), dtype='intp')
-        head[:] = numpy.arange(len(data), dtype='intp')
 
-
-        llfactor = 8
-        while llfactor > 0:
-            op = 1 
-            ll = self.linking_length / llfactor
-            while op > 0:
-                op = self._once(perm, head, np, ll)
-                self.iterations = self.iterations + 1
-                if verbose:
-                    print('FOF iteration', self.iterations, op, llfactor)
-                    stdout.flush()
-                if llfactor != 1:
-                    break
-            llfactor = llfactor // 2
+        # this will set the head to a particle index 
+        # need to convert this to a feature id with unique.
+        data.tree.fof(linking_length, head)
 
         u, labels = numpy.unique(head, return_inverse=True)
         self.N = len(u)
@@ -114,99 +101,4 @@ class fof(object):
             cp[..., d] /= mass
         return cp
 
-    def _once(self, perm, head, np, ll):
-        """ fof iteration,
-            head[i] is the index of the head particle of the FOF group i
-              is currently in
-            perm is a scratch space for permutation;
-               in each iteration head[i] is replaced with perm[head[i]]
-        """ 
-        tree = self.data.tree
-        if np != 0:
-            p = list(utils.divide_and_conquer(tree, tree, 10000))
-        else:
-            p = [(tree, tree)]
-
-        #print 'p', len(p)
-
-        with utils.MapReduce(np=np) as pool:
-            chunksize = 1024 * 1024
-            # fill perm with no changes
-            def init(i):
-                s = slice(i, i + chunksize)
-                a, b, c = s.indices(len(head))
-                perm[s] = numpy.arange(a, b)
-            pool.map(init, range(0, len(head), chunksize))
-
-            # calculate perm, such that if two groups are 
-            # merged, the head is set to the smaller particle index
-            def work(iwork):
-                n1, n2 = p[iwork]
-                operations = [0]
-                def process(r, i, j, head=head, perm=perm, pool=pool,
-                ):
-                    if len(r) == 0: return 
-#                    print iwork, 'len(r)', len(r)
-
-                    ni = head[i]
-                    nj = head[j]
-
-                    mask = (r <= ll) & (ni > nj)
-
-                    if not mask.any(): return
-
-                    # we will replace in head all ni-s to nj
-                    ni = ni[mask]
-                    nj = nj[mask]
-                        
-                    # find the minimal replacement of ni
-                    arg = numpy.lexsort((ni, -nj))
-
-                    ni = ni[arg]
-                    nj = nj[arg]
-                    #  find the last item in each i
-                    mask3 = numpy.empty(len(ni), '?')
-                    mask3[:-1] = ni[1:] != ni[:-1]
-                    mask3[-1] = True
-
-                    ni = ni[mask3]
-                    nj = nj[mask3]
-
-                    #  write to each entry, once, in order
-                    #  minimizing memory clashes from many ranks;
-                    #  the algorithm is stable against racing
-                    #  but it would slow down the cache if each rank
-                    #  were directly writing.
-                    with pool.critical:
-                        mask = perm[ni] > nj
-                        ni = ni[mask]
-                        nj = nj[mask]
-                        perm[ni] = nj
-
-#                    print iwork, 'len(r)', len(i)
-                n1.enum(n2, ll, process, bunch=1024 * 80)
-#                print 'work', iwork, 'done'
-                return
-
-            pool.map(work, range(len(p)))
-
-            # replace; this is done repeatedly
-            # since it is possible we count a progenitor
-            # into a merged progenitor.
-            # in that case we do not want to do another
-            # round of expensive tree walk
-            def work2(i):
-                s = slice(i, i + chunksize)
-                ops = 0
-                while True:
-                    tmp = perm[head[s]]
-                    changed = head[s] != tmp
-                    if changed.any():
-                        ops += int(changed.sum())
-                        head[s] = tmp
-                    else:
-                        break
-                return ops         
-            ops = pool.map(work2, range(0, len(head), chunksize))
-        return sum(ops)
 

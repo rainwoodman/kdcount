@@ -470,3 +470,4 @@ static inline void kd_collect(KDNode * node, double * input, double * weight) {
 #include "kd_enum.h"
 #include "kd_grav.h"
 #include "kd_tearoff.h"
+#include "kd_fof.h"
