@@ -7,7 +7,7 @@ def test_simple():
     numpy.random.seed(1234)
     pos = numpy.random.uniform(size=(10, 3))
     dataset = correlate.points(pos, boxsize=1.0)
-    binning = correlate.RBinning(0.5, Nbins=10)
+    binning = correlate.RBinning(numpy.linspace(0.5, 10))
     r = correlate.paircount(dataset, dataset, binning, np=0)
 
     r1 = correlate.paircount(dataset, dataset, binning, usefast=True, np=0)
@@ -19,7 +19,7 @@ def test_unweighted():
     numpy.random.seed(1234)
     pos = numpy.random.uniform(size=(4000, 3))
     dataset = correlate.points(pos, boxsize=1.0)
-    binning = correlate.RBinning(0.5, Nbins=10)
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
     r = correlate.paircount(dataset, dataset, binning, np=0)
 
     assert_allclose(
@@ -36,7 +36,7 @@ def test_weighted():
     numpy.random.seed(1234)
     pos = numpy.random.uniform(size=(4000, 3))
     dataset = correlate.points(pos, boxsize=1.0, weights=numpy.ones(len(pos)))
-    binning = correlate.RBinning(0.5, Nbins=10)
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
     r = correlate.paircount(dataset, dataset, binning, np=0)
 
     assert_allclose(
@@ -50,7 +50,7 @@ def test_field():
     pos = numpy.random.uniform(size=(4000, 3))
     dataset = correlate.field(pos, value=numpy.ones(len(pos)), 
             boxsize=1.0, weights=numpy.ones(len(pos)))
-    binning = correlate.RBinning(0.5, Nbins=10)
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
     r = correlate.paircount(dataset, dataset, binning, np=0)
 
     assert_allclose(

@@ -121,6 +121,10 @@ class Binning(object):
         
         # setup the info we need from the edges
         self._setup()
+        
+        if self.Ndim == 1:
+            self.edges   = self.edges[0]
+            self.centers = self.centers[0]
                             
         # for storing the mean values in each bin
         # computed when pair counting
