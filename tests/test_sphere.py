@@ -16,7 +16,7 @@ def test_cluster():
 
     assert r.N == len(dataset)
 
-    binning = sphere.AngularBinning(1.0, 10)
+    binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
 
     r = correlate.paircount(dataset, dataset, binning=binning, usefast=False)
     assert_allclose( 
