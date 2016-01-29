@@ -118,15 +118,10 @@ class Binning(object):
         for i in range(self.Ndim):
             center = 0.5 * (self.edges[i][1:] + self.edges[i][:-1])
             self.centers.append(center)
-
-        self.N = tuple(len(self.centers[i]) for i in range(self.Ndim))
-        self.shape = tuple(N+2 for N in self.N)
         
-        # store Rmax
-        if 'r' not in dims:
-            raise ValueError("at least one `Binning` dimension must be named `r`")
-        self.Rmax = self.edges[self.dims.index('r')][-1]
-                    
+        # setup the info we need from the edges
+        self._setup()
+                            
         # for storing the mean values in each bin
         # computed when pair counting
         if self.compute_mean_coords:
@@ -135,6 +130,46 @@ class Binning(object):
                 self.mean_centers_sum.append(numpy.zeros(self.shape))
             self.pair_counts = numpy.zeros(self.shape)
                    
+    def _setup(self):
+        """
+        Setup the binning info we need from the `edges`
+        """
+        
+        dtype        = [('inv', 'f8'), ('min', 'f8'), ('max', 'f8'),('N', 'i4'), ('spacing','object')]
+        self._info   = numpy.empty(self.Ndim, dtype=dtype)
+        self.min     = self._info['min']
+        self.max     = self._info['max']
+        self.N       = self._info['N']
+        self.inv     = self._info['inv']
+        self.spacing = self._info['spacing']
+        
+        for i, dim in enumerate(self.dims):
+            
+            self.N[i] = len(self.edges[i])-1
+            self.min[i] = self.edges[i][0]
+            self.max[i] = self.edges[i][-1]
+            
+            # determine the type of spacing
+            self.spacing[i] = None
+            lin_diff = numpy.diff(self.edges[i])
+            with numpy.errstate(divide='ignore', invalid='ignore'):
+                log_diff = numpy.diff(numpy.log10(self.edges[i]))
+            if numpy.allclose(lin_diff, lin_diff[0]):
+                self.spacing[i] = 'linspace'
+                self.inv[i] = self.N[i] * 1.0 / (self.max[i] - self.min[i])
+            elif numpy.allclose(log_diff, log_diff[0]):
+                self.spacing[i] = 'logspace'
+                self.inv[i] = self.N[i] * 1.0 / numpy.log10(self.max[i] / self.min[i])
+                
+        self.shape = self.N + 2
+        
+        # store Rmax
+        self.Rmax = self.max[0]
+        
+        # remove self-pairs in `r` when using numpy.digitize in linear
+        if numpy.isclose(self.min[0], 0.) and self.spacing[0] is None: 
+            self.min[0] = 1e-5
+            
     def linear(self, **tobin):
         """ 
         Linearize bin indices.
@@ -150,8 +185,27 @@ class Binning(object):
         Returns
         -------
         linearlized bin index
-        """
-        integer = [numpy.digitize(tobin[dim], self.edges[i]) for i, dim in enumerate(self.dims)]
+        """ 
+        N = len(tobin[tobin.keys()[0]])
+        integer = numpy.empty(N, ('i8', (self.Ndim,))).T
+        
+        # do each dimension
+        for i, dim in enumerate(self.dims):
+            
+            if self.spacing[i] == 'linspace':
+                x = tobin[dim] - self.min[i]
+                integer[i] = numpy.ceil(x * self.inv[i])
+
+            elif self.spacing[i] == 'logspace':
+
+                x = tobin[dim].copy()
+                x[x == 0] = self.min[i] * 0.9
+                x = numpy.log10(x / self.min[i])
+                integer[i] = numpy.ceil(x * self.inv[i])
+            
+            elif self.spacing[i] is None:
+                integer[i] = numpy.digitize(tobin[dim], self.edges[i])
+        
         return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
     def digitize(self, r, i, j, data1, data2):
@@ -270,54 +324,52 @@ class RmuBinning(Binning):
         
         return dig
 
-# class XYBinning(Binning):
-#     """
-#     Binning along Sky-Lineofsight directions.
-#
-#     The bins are be (sky, los)
-#
-#     Parameters
-#     ----------
-#     Rmax     : float
-#         max radius to go to
-#     Nbins    : int
-#         number of bins in each direction.
-#     observer   : array_like (Ndim)
-#         location of the observer (for line of sight)
-#
-#     Notes
-#     -----
-#     with numpy imshow , the second axis los, will be vertical
-#             with imshow( ..T,) the sky will be vertical.
-#     """
-#
-#     def __init__(self, Rmax, Nbins, observer, **kwargs):
-#         self.Rmax = Rmax
-#         Binning.__init__(self,
-#             (0, Rmax, Nbins),
-#             (-Rmax, Rmax, 2 * Nbins),
-#             **kwargs
-#             )
-#         self.observer = observer
-#
-#     def digitize(self, r, i, j, data1, data2):
-#         r1 = data1.pos[i]
-#         r2 = data2.pos[j]
-#         center = 0.5 * (r1 + r2) - self.observer
-#         dr = r1 - r2
-#         dot = numpy.einsum('ij, ij->i', dr, center)
-#         center2 = numpy.einsum('ij, ij->i', center, center)
-#         los = dot / center2 ** 0.5
-#         dr2 = numpy.einsum('ij, ij->i', dr, dr)
-#         x2 = numpy.abs(dr2 - los ** 2)
-#         sky = x2 ** 0.5
-#
-#         dig = self.linear(sky, los)
-#
-#         # update the mean coords
-#         self.update_mean_coords(dig, sky, los)
-#
-#         return dig
+class XYBinning(Binning):
+    """
+    Binning along Sky-Lineofsight directions.
+
+    The bins are be (sky, los)
+
+    Parameters
+    ----------
+    Rmax     : float
+        max radius to go to
+    Nbins    : int
+        number of bins in each direction.
+    observer   : array_like (Ndim)
+        location of the observer (for line of sight)
+
+    Notes
+    -----
+    with numpy imshow , the second axis los, will be vertical
+            with imshow( ..T,) the sky will be vertical.
+    """
+
+    def __init__(self, Rmax, Nbins, observer, **kwargs):
+        self.Rmax = Rmax
+        sky_bins = np.linspace(0, Rmax, Nbins)
+        los_bins = np.linspace(-Rmax, Rmax, 2*Nbins)
+        Binning.__init__(self, ['sky', 'los'], [sky_bins, los_bins], **kwargs)
+        self.observer = observer
+
+    def digitize(self, r, i, j, data1, data2):
+        r1 = data1.pos[i]
+        r2 = data2.pos[j]
+        center = 0.5 * (r1 + r2) - self.observer
+        dr = r1 - r2
+        dot = numpy.einsum('ij, ij->i', dr, center)
+        center2 = numpy.einsum('ij, ij->i', center, center)
+        los = dot / center2 ** 0.5
+        dr2 = numpy.einsum('ij, ij->i', dr, dr)
+        x2 = numpy.abs(dr2 - los ** 2)
+        sky = x2 ** 0.5
+
+        dig = self.linear(sky=sky, los=los)
+
+        # update the mean coords
+        self.update_mean_coords(dig, sky=sky, los=los)
+
+        return dig
 
 class RBinning(Binning):
     """ 
@@ -710,7 +762,7 @@ def _main():
     pr = numpy.random.uniform(size=(1000000, 3))
     wr = numpy.ones(len(pr))
     random = points(pr, wr)
-    binning = RBinning(0.1, 40)
+    binning = RBinning(numpy.linspace(0, 0.1, 40))
     DR = paircount(martin, random, binning)
     DD = paircount(martin, martin, binning)
     RR = paircount(random, random, binning)
@@ -728,7 +780,7 @@ def _main2():
 #    value = sim[sample]
     data = field(pos[sample], value=value)
     print('data ready')
-    binning = RBinning(0.1, 40)
+    binning = RBinning(numpy.linspace(0, 0.1, 40))
     DD = paircount(data, data, binning)
 
     return DD.centers, DD.sum1 / DD.sum2
@@ -742,5 +794,7 @@ def _main3():
     value = numpy.tile(sim[sample], (2, 1)).T
     data = field(pos[sample], value=value)
     print('data ready')
-    DD = paircount(data, data, RmuBinning(0.10, 8, 20, 0.5))
+    rbins = numpy.linspace(0, 0.10, 8)
+    Nmu = 20
+    DD = paircount(data, data, RmuBinning(rbins, Nmu, 0.5))
     return DD
