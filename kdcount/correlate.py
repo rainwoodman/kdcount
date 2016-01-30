@@ -208,7 +208,10 @@ class Binning(object):
                 integer[i] = numpy.ceil(x * self.inv[i])
             
             elif self.spacing[i] is None:
-                integer[i] = numpy.digitize(tobin[dim], self.edges[i])
+                if self.Ndim == 1:
+                    integer[i] = numpy.digitize(tobin[dim], self.edges)
+                else:
+                    integer[i] = numpy.digitize(tobin[dim], self.edges[i])
         
         return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
