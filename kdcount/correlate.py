@@ -607,10 +607,10 @@ class paircount(object):
         # run the work, using a context manager
         with paircount_worker(self, binning, [data1, data2], np=np, usefast=usefast) as worker:
             with utils.MapReduce(np=worker.np) as pool:
-                pool.map(worker, range(worker.size), reduce=worker.reduce)
+                pool.map(worker.work, range(worker.size), reduce=worker.reduce)
 
 
-class paircount_worker():
+class paircount_worker(object):
     """
     Context that runs the actual pair counting, attaching the appropriate 
     attributes to the parent `paircount`
@@ -637,7 +637,7 @@ class paircount_worker():
         self.usefast = usefast
         
         # set the wrapped callables that do the work
-        self.__call__ = lambda i: self.__work__(i)
+        self.work = lambda i: self.__work__(i)
         self.reduce = lambda *args: self.__reduce__(*args)
         
     def __work__(self, i):
