@@ -170,9 +170,6 @@ class Binning(object):
         # store Rmax
         self.Rmax = self.max[0]
         
-        # remove self-pairs in `r` when using numpy.digitize in linear
-        if numpy.isclose(self.min[0], 0.) and self.spacing[0] is None: 
-            self.min[0] = 1e-5
             
     def linear(self, **tobin):
         """ 
@@ -201,17 +198,14 @@ class Binning(object):
                 integer[i] = numpy.ceil(x * self.inv[i])
 
             elif self.spacing[i] == 'logspace':
-
                 x = tobin[dim].copy()
                 x[x == 0] = self.min[i] * 0.9
                 x = numpy.log10(x / self.min[i])
                 integer[i] = numpy.ceil(x * self.inv[i])
-            
+
             elif self.spacing[i] is None:
-                if self.Ndim == 1:
-                    integer[i] = numpy.digitize(tobin[dim], self.edges)
-                else:
-                    integer[i] = numpy.digitize(tobin[dim], self.edges[i])
+                edge = self.edges if self.Ndim == 1 else self.edges[i]
+                integer[i] = numpy.searchsorted(edge, tobin[dim], side='left')
         
         return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
