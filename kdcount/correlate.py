@@ -187,7 +187,7 @@ class Binning(object):
         -------
         linearlized bin index
         """ 
-        N = len(tobin[tobin.keys()[0]])
+        N = len(tobin[list(tobin.keys())[0]])
         integer = numpy.empty(N, ('i8', (self.Ndim,))).T
         
         # do each dimension
