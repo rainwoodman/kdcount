@@ -3,7 +3,7 @@
 cimport numpy
 import numpy
 from cpython.mem cimport PyMem_Malloc, PyMem_Free, PyMem_Realloc
-from libc.stdint cimport intptr_t as npy_intp
+from numpy cimport npy_intp
 from libc.stdint cimport uint64_t as npy_uint64
 numpy.import_array()
 
@@ -18,7 +18,6 @@ cdef extern from "kdtree.h":
     ctypedef void (*kd_freefunc)(void* data, npy_intp size, void * ptr) nogil
     ctypedef void * (*kd_mallocfunc)(void* data, npy_intp size) nogil
 
-    void register_handler() nogil
     struct cKDArray "KDArray":
         char * buffer
         npy_intp dims[2]
@@ -28,7 +27,6 @@ cdef extern from "kdtree.h":
     
     struct cKDTree "KDTree":
         cKDArray input
-        cKDArray weight
         int thresh
         npy_intp * ind
         double * boxsize
@@ -38,9 +36,15 @@ cdef extern from "kdtree.h":
         void * userdata
         npy_intp size 
 
+    struct cKDAttr "KDAttr":
+        cKDTree * tree
+        cKDArray input
+        double * buffer
+
     struct cKDNode "KDNode":
         cKDTree * tree
         cKDNode * link[2]
+        npy_intp index
         npy_intp start
         npy_intp size
         int dim
@@ -57,8 +61,11 @@ cdef extern from "kdtree.h":
 
     int kd_fof(cKDNode * tree, double linklength, npy_intp * head)
 
+    void kd_attr_init(cKDAttr * attr, cKDNode * root)
+    double kd_attr_get_node(cKDAttr * attr, cKDNode * node) 
+    double kd_attr_get(cKDAttr * attr, ptrdiff_t i)
+    void kd_attr_destroy(cKDAttr * attr)
 
-# register_handler()
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -68,6 +75,10 @@ cdef class KDNode:
     
     cdef void bind(self, cKDNode * ref) nogil:
         self.ref = ref
+
+    property index:
+        def __get__(self):
+            return self.ref.index
 
     property less:
         def __get__(self):
@@ -266,9 +277,36 @@ cdef int callback(CBData * data, KDEnumData * endata) except -1:
     data.length = data.length + 1
     return 0
 
+cdef class KDAttr:
+    cdef cKDAttr * ref
+    cdef readonly numpy.ndarray input
+    cdef readonly KDTree tree
+    cdef readonly numpy.ndarray buffer
+
+    def __init__(self, KDTree tree, numpy.ndarray input):
+        self.tree = tree
+        self.input = input
+        self.ref = <cKDAttr*>PyMem_Malloc(sizeof(cKDAttr))
+        kd_attr_init(self.ref, tree._root);
+        cdef npy_intp size =tree.ref.size
+        cdef double [:] buffer = <double [:size]> self.ref.buffer
+        self.buffer = numpy.array(buffer)
+
+    def __getitem__(self, node):
+        cdef KDNode _node
+        if isinstance(node, KDNode):
+            _node = node
+            assert _node.ref.tree == self.tree.ref
+            return self.buffer[_node.ref.index]
+        else:
+            raise KeyError("Only node can be used.")
+    def __dealloc__(self): 
+        kd_attr_destroy(self.ref)
+        PyMem_Free(self.ref)
+        
 cdef class KDTree:
     cdef cKDTree * ref
-    cdef cKDNode * tree
+    cdef cKDNode * _root 
     cdef readonly numpy.ndarray input
     cdef readonly numpy.ndarray ind
     cdef readonly numpy.ndarray boxsize
@@ -278,7 +316,7 @@ cdef class KDTree:
     property root:
         def __get__(self):
             cdef KDNode rt = KDNode(self)
-            rt.bind(self.tree)
+            rt.bind(self._root)
             return rt
     property size:
         def __get__(self):
@@ -348,18 +386,17 @@ cdef class KDTree:
         self.ref.malloc = <kd_mallocfunc> self.malloc
         self.ref.free = <kd_freefunc> self.free
         with nogil:
-            self.tree = kd_build(self.ref)
+            self._root = kd_build(self.ref)
 
     def __dealloc__(self):
         # self.buffers will be freed by cython
-#        if self.tree:
-#            kd_free(self.tree)
+        # no need to call kd_free !
         PyMem_Free(self.ref)
 
 def build(numpy.ndarray data, boxsize=None,
         thresh=10):
     tree = KDTree(data, boxsize=boxsize, thresh=thresh)
-    return tree.root
+    return tree
 
 import threading
 try:

@@ -18,7 +18,7 @@ typedef struct KDEnumData {
 
 typedef int (*kd_enum_callback)(void * data, KDEnumData * enumdata);
 
-typedef struct KD2Darray {
+typedef struct KDArray {
     /* the buffer holding array elements required */
     char * buffer; 
     /* number of points. required*/
@@ -33,12 +33,12 @@ typedef struct KD2Darray {
     /* the byte size of each scalar, required */
     ptrdiff_t elsize;
 
-} KD2Darray;
+} KDArray;
 
 typedef struct KDTree {
 
 /* defining the input positions */
-    KD2Darray input;
+    KDArray input;
 
 /* the following defines how the tree is constructed */
 
@@ -52,9 +52,7 @@ typedef struct KDTree {
     /* unused */
     double p;
 
-/* the following defines the datatype of a position scalar */
-
-/* memory allocation */
+/* memory allocation for KDNodes */
     /* allocate memory, NULL to use malloc() */
     kd_mallocfunc malloc;
     /* deallocate memory, size is passed in for a slab allocator,
@@ -70,10 +68,18 @@ typedef struct KDNode {
     struct KDNode * link[2];
     ptrdiff_t start;
     ptrdiff_t size;
-    int dim;
+    int dim; /* -1 for leaf */
     double split;
     char ext[];
 } KDNode;
+
+typedef struct KDAttr {
+    KDTree * tree;
+    KDArray input;
+
+/* internal storage for cumulative weight on the nodes */
+    double * buffer;
+} KDAttr;
 
 static void * kd_malloc(KDTree * tree, size_t size) {
     if(tree->malloc != NULL) {
@@ -101,7 +107,7 @@ static inline double * kd_node_min(KDNode * node) {
     /* lower limit of the node */
     return kd_node_max(node) + node->tree->input.dims[1];
 }
-static inline double kd_array_get(KD2Darray * array, ptrdiff_t i, ptrdiff_t d) {
+static inline double kd_array_get(KDArray * array, ptrdiff_t i, ptrdiff_t d) {
     char * ptr = & array->buffer[
                         i * array->strides[0] + 
                         d * array->strides[1]];
@@ -312,6 +318,38 @@ void kd_free(KDNode * node) {
             node);
 }
 
+double kd_attr_get_node(KDAttr * attr, KDNode * node) {
+    return attr->buffer[node->index];
+}
+
+double kd_attr_get(KDAttr * attr, ptrdiff_t i) {
+    return kd_array_get(&attr->input, attr->tree->ind[i], 0);
+}
+
+static double kd_attr_init_r(KDAttr * attr, KDNode * node) {
+    if (node->dim < 0) {
+        double rt = 0;
+        ptrdiff_t i;
+        for(i = node->start; i < node->start + node->size; i ++) {
+            rt += kd_attr_get(attr, i);
+        }
+        attr->buffer[node->index] = rt;
+        return rt;
+    }
+     
+    double rt = kd_attr_init_r(attr, node->link[0]) 
+              + kd_attr_init_r(attr, node->link[1]);
+    attr->buffer[node->index] = rt;
+    return rt;
+}
+void kd_attr_init(KDAttr * attr, KDNode * root) {
+    attr->buffer = kd_malloc(attr->tree, sizeof(double) * attr->tree->size);
+    kd_attr_init_r(attr, root); 
+}
+void kd_attr_destroy(KDAttr * attr) {
+    kd_free0(attr->tree, sizeof(double) * attr->tree->size, attr->buffer);
+}
+
 static void kd_realdiff(KDTree * tree, double min, double max, double * realmin, double * realmax, int d) {
     if(tree->boxsize) {
         double full = tree->boxsize[d];
@@ -375,7 +413,7 @@ static inline void kd_collect(KDNode * node, double * buffer) {
     /* collect all positions into a double array, 
      * so that they can be paired quickly (cache locality!)*/
     KDTree * t = node->tree;
-    KD2Darray * array = &t->input;
+    KDArray * array = &t->input;
     double * ptr = buffer;
     int Nd = array->dims[1];
     char * base = array->buffer;
