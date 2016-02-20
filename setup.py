@@ -4,11 +4,10 @@ import numpy
 from Cython.Build import cythonize
 from distutils.extension import Extension
 
-def myext(*args):
-    return Extension(*args, include_dirs=["kdcount/", numpy.get_include()])
-
 extensions = [
-        myext("kdcount.pykdcount", ["kdcount/pykdcount.pyx"])
+        Extension("kdcount.pykdcount", ["kdcount/pykdcount.pyx"], 
+            depends=['kdcount/kd_fof.h', 'kdcount/kd_enum.h', 'kdcount/kd_count.h'],
+            include_dirs=["kdcount/", numpy.get_include()])
         ]
 
 setup(name="kdcount", version="0.3.2",
