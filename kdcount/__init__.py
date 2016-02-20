@@ -1,7 +1,7 @@
 import numpy
 from heapq import heappush, heappop
 
-import pykdcount as _core
+from . import pykdcount as _core
 
 class KDNode(_core.KDNode):
     def __repr__(self):
@@ -91,3 +91,8 @@ def makeiter(feeder):
             if len(item) == 1: item = item[0]
             yield item
             q.task_done()
+
+from numpy.testing import Tester
+test = Tester().test
+bench = Tester().bench
+
