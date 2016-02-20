@@ -141,18 +141,17 @@ cdef class KDNode:
     def __repr__(self):
         return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
 
-    def count(self, KDNode other, numpy.ndarray r, attrs=None):
+    def count(self, KDNode other, r, attrs=None):
         cdef:
             numpy.ndarray r2, count, weight
             KDAttr a1, a2
             cKDNode * cnodes[2]
             cKDAttr * cattrs[2]
 
-        shape = (<object>r).shape
+        r = numpy.array(r)
 
-        r2 = numpy.empty(shape, dtype='f8')
-        count = numpy.zeros(shape, dtype='u8')
-
+        r2 = numpy.empty(r.shape, dtype='f8')
+        count = numpy.zeros(r.shape, dtype='u8')
         cnodes[0] = self.ref
         cnodes[1] = other.ref
 
@@ -165,7 +164,7 @@ cdef class KDNode:
                     <double*>r2.data, 
                     <npy_uint64*>count.data,
                     NULL, 
-                    len(r))
+                    r.size)
 
             return count
         else:
@@ -178,13 +177,13 @@ cdef class KDNode:
 
             cattrs[0] = a1.ref
             cattrs[1] = a2.ref
-            weight = numpy.zeros(shape, dtype=('f8', a1.ndims))
+            weight = numpy.zeros(r.shape, dtype=('f8', a1.ndims))
 
             kd_count(cnodes, cattrs, 
                     <double*>r2.data, 
                     <npy_uint64*>count.data,
                     <double*>weight.data, 
-                    len(r))
+                    r.size)
 
             return count, weight
 

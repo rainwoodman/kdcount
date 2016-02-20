@@ -117,9 +117,12 @@ static void kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2],
         distmax += realmax * realmax;
     }
 
-    start = bisect_left(distmin, kdcd->edges, kdcd->nedges);
-    end = bisect_left(distmax, kdcd->edges, kdcd->nedges);
-
+    start = bisect_left(distmin, &kdcd->edges[start], end - start) + start;
+    end = bisect_left(distmax, &kdcd->edges[start], end - start) + start;
+    if(start >= kdcd->nedges) {
+        /* too far! skip */
+        return;
+    }
     if(start == end) {
         /* all bins are quickly counted no need to open*/
         kdcd->count[start] += nodes[0]->size * nodes[1]->size;
@@ -155,6 +158,11 @@ void kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         double * edges, uint64_t * count, double * weight, 
         int nedges) {
     double * edges2 = alloca(sizeof(double) * nedges);
+    int Nw;
+    if (attrs[0]) 
+        Nw = attrs[0]->input.dims[1];
+    else
+        Nw = 0;
 
     KDCountData kdcd = {
         .attrs = {attrs[0], attrs[1]},
@@ -162,12 +170,8 @@ void kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         .edges = edges2,
         .count = count,
         .weight = weight,
+        .Nw = Nw,
     };
-    int Nw;
-    if (attrs[0]) 
-        Nw = attrs[0]->input.dims[1];
-    else
-        Nw = 0;
 
     int d;
     int i;
