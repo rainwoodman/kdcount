@@ -64,8 +64,6 @@ cdef extern from "kdtree.h":
     void kd_attr_init(cKDAttr * attr, cKDNode * root)
     double kd_attr_get_node(cKDAttr * attr, cKDNode * node) 
     double kd_attr_get(cKDAttr * attr, ptrdiff_t i)
-    void kd_attr_destroy(cKDAttr * attr)
-
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -285,12 +283,26 @@ cdef class KDAttr:
 
     def __init__(self, KDTree tree, numpy.ndarray input):
         self.tree = tree
+        assert input.ndim == 1
+        input = input.reshape(-1, 1) 
         self.input = input
         self.ref = <cKDAttr*>PyMem_Malloc(sizeof(cKDAttr))
+        self.ref.tree = tree.ref
+        self.ref.input.buffer = input.data
+        self.ref.input.dims[0] = input.shape[0]
+        self.ref.input.dims[1] = input.shape[1]
+        self.ref.input.strides[0] = input.strides[0]
+        self.ref.input.strides[1] = input.strides[1]
+        self.ref.input.elsize = input.dtype.itemsize
+        if input.dtype.char == 'f':
+            self.ref.input.cast = <kd_castfunc>fcast
+        if input.dtype.char == 'd':
+            self.ref.input.cast = <kd_castfunc>dcast
+
+        self.buffer = numpy.empty(tree.ref.size, dtype='f8')
+        self.ref.buffer = <double *> self.buffer.data 
+
         kd_attr_init(self.ref, tree._root);
-        cdef npy_intp size =tree.ref.size
-        cdef double [:] buffer = <double [:size]> self.ref.buffer
-        self.buffer = numpy.array(buffer)
 
     def __getitem__(self, node):
         cdef KDNode _node
@@ -301,7 +313,6 @@ cdef class KDAttr:
         else:
             raise KeyError("Only node can be used.")
     def __dealloc__(self): 
-        kd_attr_destroy(self.ref)
         PyMem_Free(self.ref)
         
 cdef class KDTree:
@@ -392,11 +403,6 @@ cdef class KDTree:
         # self.buffers will be freed by cython
         # no need to call kd_free !
         PyMem_Free(self.ref)
-
-def build(numpy.ndarray data, boxsize=None,
-        thresh=10):
-    tree = KDTree(data, boxsize=boxsize, thresh=thresh)
-    return tree
 
 import threading
 try:

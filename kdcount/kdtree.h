@@ -342,12 +342,9 @@ static double kd_attr_init_r(KDAttr * attr, KDNode * node) {
     attr->buffer[node->index] = rt;
     return rt;
 }
+
 void kd_attr_init(KDAttr * attr, KDNode * root) {
-    attr->buffer = kd_malloc(attr->tree, sizeof(double) * attr->tree->size);
     kd_attr_init_r(attr, root); 
-}
-void kd_attr_destroy(KDAttr * attr) {
-    kd_free0(attr->tree, sizeof(double) * attr->tree->size, attr->buffer);
 }
 
 static void kd_realdiff(KDTree * tree, double min, double max, double * realmin, double * realmax, int d) {
