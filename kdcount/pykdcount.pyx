@@ -55,12 +55,18 @@ cdef extern from "kdtree.h":
     double * kd_node_min(cKDNode * node) nogil
     void kd_free(cKDNode * node) nogil
     void kd_free0(cKDTree * tree, npy_intp size, void * ptr) nogil
-    int kd_enum(cKDNode * node[2], double maxr,
+
+    int kd_enum(cKDNode * nodes[2], double maxr,
             kd_enum_callback callback, void * data) except -1
 
-    int kd_fof(cKDNode * tree, double linklength, npy_intp * head)
+    int kd_fof(cKDNode * tree, double linklength, npy_intp * head) nogil
 
-    void kd_attr_init(cKDAttr * attr, cKDNode * root)
+    void kd_attr_init(cKDAttr * attr, cKDNode * root) nogil
+    void kd_count(cKDNode * nodes[2], 
+            cKDAttr * attrs[2], 
+            double * edges, npy_uint64 * count, 
+            double * weight, 
+            int nedges) nogil
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -135,19 +141,52 @@ cdef class KDNode:
     def __repr__(self):
         return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
 
-    def count(self, KDNode other, r):
-        r = numpy.atleast_1d(r).ravel()
-        cdef numpy.ndarray r2 = numpy.empty(r.shape, dtype='f8')
-        cdef numpy.ndarray count = numpy.zeros(r.shape, dtype='u8')
-        cdef cKDNode * node[2]
-        node[0] = self.ref
-        node[1] = other.ref
-        r2[:] = r * r
+    def count(self, KDNode other, numpy.ndarray r, attrs=None):
+        cdef:
+            numpy.ndarray r2, count, weight
+            KDAttr a1, a2
+            cKDNode * cnodes[2]
+            cKDAttr * cattrs[2]
 
-#        kd_count(node, <double*>r2.data, 
-#                <npy_uint64*>count.data,
-#                <double*>weight.data, len(r))
-#        return count, weight
+        shape = (<object>r).shape
+
+        r2 = numpy.empty(shape, dtype='f8')
+        count = numpy.zeros(shape, dtype='u8')
+
+        cnodes[0] = self.ref
+        cnodes[1] = other.ref
+
+        r2[...] = r * r
+
+        if attrs is None:
+            cattrs[0] = NULL
+            cattrs[1] = NULL
+            kd_count(cnodes, cattrs, 
+                    <double*>r2.data, 
+                    <npy_uint64*>count.data,
+                    NULL, 
+                    len(r))
+
+            return count
+        else:
+            if isinstance(attrs, tuple):
+                a1, a2 = attrs
+            else:
+                if self.tree != other.tree:
+                    raise ValueError("Must be the same tree if one weight is used")
+                a1 = a2 = attrs
+
+            cattrs[0] = a1.ref
+            cattrs[1] = a2.ref
+            weight = numpy.zeros(shape, dtype=('f8', a1.ndims))
+
+            kd_count(cnodes, cattrs, 
+                    <double*>r2.data, 
+                    <npy_uint64*>count.data,
+                    <double*>weight.data, 
+                    len(r))
+
+            return count, weight
 
     def fof(self, double linkinglength, out=None):
         cdef numpy.ndarray buf
@@ -175,12 +214,15 @@ cdef class KDNode:
             input array index of the data. arbitrary args can be passed
             to process via kwargs.
         """
-        cdef numpy.ndarray r = numpy.empty(bunch, 'f8')
-        cdef numpy.ndarray i = numpy.empty(bunch, 'intp')
-        cdef numpy.ndarray j = numpy.empty(bunch, 'intp')
+        cdef:
+             numpy.ndarray r, i, j
+             cKDNode * node[2]
+             CBData cbdata
 
-        cdef cKDNode * node[2]
-        cdef CBData cbdata
+        r = numpy.empty(bunch, 'f8')
+        i = numpy.empty(bunch, 'intp')
+        j = numpy.empty(bunch, 'intp')
+
         rall = None
         if process is None:
             rall = [numpy.empty(0, 'f8')]
