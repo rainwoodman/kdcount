@@ -79,7 +79,7 @@ cdef class KDNode:
 
     property less:
         def __get__(self):
-            cdef KDNode rt = KDNode(self.tree)
+            cdef KDNode rt = type(self)(self.tree)
             if self.ref.link[0]:
                 rt.bind(self.ref.link[0])
                 return rt
@@ -88,7 +88,7 @@ cdef class KDNode:
 
     property greater:
         def __get__(self):
-            cdef KDNode rt = KDNode(self.tree)
+            cdef KDNode rt = type(self)(self.tree)
             if self.ref.link[1]:
                 rt.bind(self.ref.link[1])
                 return rt
@@ -305,12 +305,15 @@ cdef class KDTree:
     cdef readonly numpy.ndarray input
     cdef readonly numpy.ndarray ind
     cdef readonly numpy.ndarray boxsize
+    
+    __nodeclass__ = KDNode
+
     property strides:
         def __get__(self):
             return [self.ref.input.strides[i] for i in range(2)]
     property root:
         def __get__(self):
-            cdef KDNode rt = KDNode(self)
+            cdef KDNode rt = type(self).__nodeclass__(self)
             rt.bind(self._root)
             return rt
     property size:
@@ -354,7 +357,7 @@ cdef class KDTree:
         if input.ndim != 2:
             raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
-
+        self.thresh = thresh
         self.ref = <cKDTree*>PyMem_Malloc(sizeof(cKDTree))
         self.ref.input.buffer = input.data
         self.ref.input.dims[0] = input.shape[0]
