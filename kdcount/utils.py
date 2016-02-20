@@ -30,23 +30,3 @@ def bincount(dig, weight, minlength):
     else:
         return numpy.bincount(dig, weight, minlength)
 
-from heapq import heappush, heappop
-
-def toforest(root, chunksize):
-    """ Divide a tree branch to a forest, 
-        each subtree of size at most chunksize """
-    heap = []
-    heappush(heap, (-root.size, root))
-    while True:
-        w, x = heappop(heap)
-        if w == 0: 
-            heappush(heap, (0, x))
-            break
-        if x.less is None \
-        or (x.size < chunksize):
-            heappush(heap, (0, x))
-            continue
-        heappush(heap, (x.less.size, x.less))
-        heappush(heap, (x.greater.size, x.greater))
-    for w, x in heap:
-        yield x

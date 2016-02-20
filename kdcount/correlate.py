@@ -689,7 +689,7 @@ class paircount_worker(object):
         if tree1.size > tree2.size:
             tree1, tree2 = tree2, tree1
         if self.np != 0:
-            self.p = [(t, tree2) for t in utils.toforest(tree1, 10000)]
+            self.p = [(t, tree2) for t in tree1.make_forest(10000)]
         else:
             self.p = [(tree1, tree2)]
         self.size = len(self.p)

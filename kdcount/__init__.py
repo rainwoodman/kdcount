@@ -1,4 +1,5 @@
 import numpy
+from heapq import heappush, heappop
 
 import pykdcount as _core
 
@@ -23,6 +24,25 @@ class KDNode(_core.KDNode):
             self.enum(other, rmax, process, bunch)
         for r, i, j in makeiter(feeder):
             yield r, i, j
+
+    def make_forest(self, chunksize):
+        """ Divide a tree branch to a forest, 
+            each subtree of size at most chunksize """
+        heap = []
+        heappush(heap, (-self.size, self))
+        while True:
+            w, x = heappop(heap)
+            if w == 0: 
+                heappush(heap, (0, x))
+                break
+            if x.less is None \
+            or (x.size < chunksize):
+                heappush(heap, (0, x))
+                continue
+            heappush(heap, (x.less.size, x.less))
+            heappush(heap, (x.greater.size, x.greater))
+        for w, x in heap:
+            yield x
 
 class KDTree(_core.KDTree):
     __nodeclass__ = KDNode
