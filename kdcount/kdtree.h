@@ -35,7 +35,7 @@ typedef struct KD2Darray {
 
 } KD2Darray;
 
-typedef struct KDStore {
+typedef struct KDTree {
 
 /* defining the input positions */
     KD2Darray input;
@@ -62,10 +62,10 @@ typedef struct KDStore {
     kd_freefunc free;
     void * userdata;
     ptrdiff_t total_nodes;
-} KDStore;
+} KDTree;
 
 typedef struct KDNode {
-    KDStore * store;
+    KDTree * tree;
     struct KDNode * link[2];
     ptrdiff_t start;
     ptrdiff_t size;
@@ -74,22 +74,22 @@ typedef struct KDNode {
     char ext[];
 } KDNode;
 
-static void * kd_malloc(KDStore * store, size_t size) {
-    if(store->malloc != NULL) {
-        return store->malloc(store->userdata, size);
+static void * kd_malloc(KDTree * tree, size_t size) {
+    if(tree->malloc != NULL) {
+        return tree->malloc(tree->userdata, size);
     } else {
         return malloc(size);
     }
 }
 
-static KDNode * kd_alloc(KDStore * store) {
-    KDNode * ptr = kd_malloc(store, sizeof(KDNode) + 
-            sizeof(double) * 2 * store->input.dims[1]
+static KDNode * kd_alloc(KDTree * tree) {
+    KDNode * ptr = kd_malloc(tree, sizeof(KDNode) + 
+            sizeof(double) * 2 * tree->input.dims[1]
             );
     ptr->link[0] = NULL;
     ptr->link[1] = NULL;
-    ptr->store = store;
-    store->total_nodes ++;
+    ptr->tree = tree;
+    tree->total_nodes ++;
     return ptr;
 }
 
@@ -99,7 +99,7 @@ static inline double * kd_node_max(KDNode * node) {
 }
 static inline double * kd_node_min(KDNode * node) {
     /* lower limit of the node */
-    return kd_node_max(node) + node->store->input.dims[1];
+    return kd_node_max(node) + node->tree->input.dims[1];
 }
 static inline double kd_array_get(KD2Darray * array, ptrdiff_t i, ptrdiff_t d) {
     char * ptr = & array->buffer[
@@ -112,21 +112,21 @@ static inline double kd_array_get(KD2Darray * array, ptrdiff_t i, ptrdiff_t d) {
     }
 }
 
-static inline double kd_input(KDStore * store, ptrdiff_t i, ptrdiff_t d) {
-    i = store->ind[i];
-    return kd_array_get(&store->input, i, d);
+static inline double kd_input(KDTree * tree, ptrdiff_t i, ptrdiff_t d) {
+    i = tree->ind[i];
+    return kd_array_get(&tree->input, i, d);
 }
-static inline void kd_swap(KDStore * store, ptrdiff_t i, ptrdiff_t j) {
-    ptrdiff_t t = store->ind[i];
-    store->ind[i] = store->ind[j];
-    store->ind[j] = t;
+static inline void kd_swap(KDTree * tree, ptrdiff_t i, ptrdiff_t j) {
+    ptrdiff_t t = tree->ind[i];
+    tree->ind[i] = tree->ind[j];
+    tree->ind[j] = t;
 }
 
 static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
-    KDStore * store = node->store;
+    KDTree * tree = node->tree;
     ptrdiff_t p, q, j;
     int d;
-    int Nd = store->input.dims[1];
+    int Nd = tree->input.dims[1];
     double * max = kd_node_max(node);
     double * min = kd_node_min(node);
     for(d = 0; d < Nd; d++) {
@@ -134,16 +134,16 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
         min[d] = minhint[d];
     }
 
-    if(node->size <= store->thresh) {
+    if(node->size <= tree->thresh) {
         int i;
         node->dim = -1;
         for(d = 0; d < Nd; d++) {
-            max[d] = kd_input(node->store, node->start + 0, d);
+            max[d] = kd_input(node->tree, node->start + 0, d);
             min[d] = max[d];
         }
         for(i = 0; i < node->size; i++) {
             for (d = 0; d < Nd; d++) {
-                double x = kd_input(node->store, node->start + i, d);
+                double x = kd_input(node->tree, node->start + i, d);
                 if (max[d] < x) max[d] = x;
                 if (min[d] > x) min[d] = x;
             }
@@ -177,12 +177,12 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     p = node->start;
     q = node->start + node->size - 1;
     while(p <= q) {
-        if(kd_input(store, p, node->dim) < node->split) {
+        if(kd_input(tree, p, node->dim) < node->split) {
             p ++;
-        } else if(kd_input(store, q, node->dim) >= node->split) {
+        } else if(kd_input(tree, q, node->dim) >= node->split) {
             q --;
         } else {
-            kd_swap(store, p, q); 
+            kd_swap(tree, p, q); 
             p ++;
             q --;
         }
@@ -208,30 +208,30 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     if(p == node->start) {
         q = node->start;
         for(j = node->start + 1; j < node->start + node->size; j++) {
-            if (kd_input(store, j, node->dim) <
-                kd_input(store, node->start, node->dim)) {
-                kd_swap(store, j, node->start);
+            if (kd_input(tree, j, node->dim) <
+                kd_input(tree, node->start, node->dim)) {
+                kd_swap(tree, j, node->start);
             }
         }
-        node->split = kd_input(store, node->start, node->dim);
+        node->split = kd_input(tree, node->start, node->dim);
         p = q + 1;
     }
     if(p == node->start + node->size) {
         p = node->start + node->size - 1;
         for(j = node->start; j < node->start + node->size- 1; j++) {
-            if (kd_input(store, j, node->dim) > 
-                kd_input(store, node->start + node->size - 1, node->dim)) {
-                kd_swap(store, j, node->start + node->size - 1);
+            if (kd_input(tree, j, node->dim) > 
+                kd_input(tree, node->start + node->size - 1, node->dim)) {
+                kd_swap(tree, j, node->start + node->size - 1);
             }
         }
-        node->split = kd_input(store, node->start + node->size - 1, node->dim);
+        node->split = kd_input(tree, node->start + node->size - 1, node->dim);
         q = p - 1;
     }
 
-    node->link[0] = kd_alloc(store);
+    node->link[0] = kd_alloc(tree);
     node->link[0]->start = node->start;
     node->link[0]->size = p - node->start;
-    node->link[1] = kd_alloc(store);
+    node->link[1] = kd_alloc(tree);
     node->link[1]->start = p;
     node->link[1]->size = node->size - (p - node->start);
 /*
@@ -265,59 +265,59 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
 }
 
 /* 
- * create a KD tree based on input data specified in KDStore 
+ * create a KD tree based on input data specified in KDTree 
  * free it with kd_free
  * */
-KDNode * kd_build(KDStore * store) {
+KDNode * kd_build(KDTree * tree) {
     ptrdiff_t i;
-    int Nd = store->input.dims[1];
+    int Nd = tree->input.dims[1];
     double min[Nd];
     double max[Nd];    
     int d;
-    store->total_nodes = 0;
-    store->ind[0] = 0;
+    tree->total_nodes = 0;
+    tree->ind[0] = 0;
     for(d = 0; d < Nd; d++) {
-        min[d] = kd_input(store, 0, d);
-        max[d] = kd_input(store, 0, d);
+        min[d] = kd_input(tree, 0, d);
+        max[d] = kd_input(tree, 0, d);
     }
-    for(i = 0; i < store->input.dims[0]; i++) {
-        store->ind[i] = i;
+    for(i = 0; i < tree->input.dims[0]; i++) {
+        tree->ind[i] = i;
         for(d = 0; d < Nd; d++) {
-            double data = kd_input(store, i, d);
+            double data = kd_input(tree, i, d);
             if(min[d] > data) { min[d] = data; }
             if(max[d] < data) { max[d] = data; }
         }
     }
-    KDNode * tree = kd_alloc(store);
-    tree->start = 0;
-    tree->size = store->input.dims[0];
-    kd_build_split(tree, min, max);
-    return tree;
+    KDNode * root = kd_alloc(tree);
+    root->start = 0;
+    root->size = tree->input.dims[0];
+    kd_build_split(root, min, max);
+    return root;
 }
 /**
  * free a tree
  * this is recursive
  * */
-void kd_free0(KDStore * store, size_t size, void * ptr) {
-    if(store->free == NULL) {
+void kd_free0(KDTree * tree, size_t size, void * ptr) {
+    if(tree->free == NULL) {
         free(ptr);
     } else {
-        store->free(store->userdata, size, ptr);
+        tree->free(tree->userdata, size, ptr);
     }
 }
 void kd_free(KDNode * node) {
     if(node->link[0]) kd_free(node->link[0]);
     if(node->link[1]) kd_free(node->link[1]);
-    node->store->total_nodes --;
-    kd_free0(node->store, 
+    node->tree->total_nodes --;
+    kd_free0(node->tree, 
             sizeof(KDNode) +
-            sizeof(double) * 2 * node->store->input.dims[1],
+            sizeof(double) * 2 * node->tree->input.dims[1],
             node);
 }
 
-static void kd_realdiff(KDStore * store, double min, double max, double * realmin, double * realmax, int d) {
-    if(store->boxsize) {
-        double full = store->boxsize[d];
+static void kd_realdiff(KDTree * tree, double min, double max, double * realmin, double * realmax, int d) {
+    if(tree->boxsize) {
+        double full = tree->boxsize[d];
         double half = full * 0.5;
         /* periodic */
         /* /\/\ */
@@ -377,7 +377,7 @@ static void kd_realdiff(KDStore * store, double min, double max, double * realmi
 static inline void kd_collect(KDNode * node, double * buffer) {
     /* collect all positions into a double array, 
      * so that they can be paired quickly (cache locality!)*/
-    KDStore * t = node->store;
+    KDTree * t = node->tree;
     KD2Darray * array = &t->input;
     double * ptr = buffer;
     int Nd = array->dims[1];

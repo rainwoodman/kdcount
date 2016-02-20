@@ -10,7 +10,7 @@ static int kd_enum_check(KDNode * node[2], double rmax2,
  * */
 int kd_enum(KDNode * node[2], double maxr,
         kd_enum_callback callback, void * data) {
-    int Nd = node[0]->store->input.dims[1];
+    int Nd = node[0]->tree->input.dims[1];
     double distmax = 0, distmin = 0;
     double rmax2 = maxr * maxr;
     int d;
@@ -23,7 +23,7 @@ int kd_enum(KDNode * node[2], double maxr,
         double realmin, realmax;
         min = min0[d] - max1[d];
         max = max0[d] - min1[d];
-        kd_realdiff(node[0]->store, min, max, &realmin, &realmax, d);
+        kd_realdiff(node[0]->tree, min, max, &realmin, &realmax, d);
         distmin += realmin * realmin;
         distmax += realmax * realmax;
     }
@@ -71,8 +71,8 @@ static int kd_enum_check(KDNode * node[2], double rmax2,
     int rt = 0;
     ptrdiff_t i, j;
     int d;
-    KDStore * t0 = node[0]->store;
-    KDStore * t1 = node[1]->store;
+    KDTree * t0 = node[0]->tree;
+    KDTree * t1 = node[1]->tree;
     int Nd = t0->input.dims[1];
 
     double * p0base = malloc(node[0]->size * sizeof(double) * Nd);

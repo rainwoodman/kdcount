@@ -26,7 +26,7 @@ cdef extern from "kdtree.h":
         npy_intp elsize
         double (* cast)(void * p1)
     
-    struct cKDStore "KDStore":
+    struct cKDTree "KDTree":
         cKDArray input
         cKDArray weight
         int thresh
@@ -39,18 +39,18 @@ cdef extern from "kdtree.h":
         npy_intp total_nodes
 
     struct cKDNode "KDNode":
-        cKDStore * store
+        cKDTree * tree
         cKDNode * link[2]
         npy_intp start
         npy_intp size
         int dim
         double split
 
-    cKDNode * kd_build(cKDStore * store) nogil
+    cKDNode * kd_build(cKDTree * tree) nogil
     double * kd_node_max(cKDNode * node) nogil
     double * kd_node_min(cKDNode * node) nogil
     void kd_free(cKDNode * node) nogil
-    void kd_free0(cKDStore * store, npy_intp size, void * ptr) nogil
+    void kd_free0(cKDTree * tree, npy_intp size, void * ptr) nogil
     cKDNode ** kd_tearoff(cKDNode * node, npy_intp thresh, npy_intp * length) nogil
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
@@ -62,16 +62,16 @@ cdef extern from "kdtree.h":
 
 cdef class KDNode:
     cdef cKDNode * ref
-    cdef readonly KDStore store 
-    def __init__(self, store):
-        self.store = store
+    cdef readonly KDTree tree 
+    def __init__(self, tree):
+        self.tree = tree
     
     cdef void bind(self, cKDNode * ref) nogil:
         self.ref = ref
 
     property less:
         def __get__(self):
-            cdef KDNode rt = KDNode(self.store)
+            cdef KDNode rt = KDNode(self.tree)
             if self.ref.link[0]:
                 rt.bind(self.ref.link[0])
                 return rt
@@ -80,7 +80,7 @@ cdef class KDNode:
 
     property greater:
         def __get__(self):
-            cdef KDNode rt = KDNode(self.store)
+            cdef KDNode rt = KDNode(self.tree)
             if self.ref.link[1]:
                 rt.bind(self.ref.link[1])
                 return rt
@@ -107,13 +107,13 @@ cdef class KDNode:
         def __get__(self):
             cdef double * max = kd_node_max(self.ref)
             return numpy.array([max[d] for d in
-                range(self.ref.store.input.dims[1])])
+                range(self.ref.tree.input.dims[1])])
 
     property min:
         def __get__(self):
             cdef double * min = kd_node_min(self.ref)
             return numpy.array([min[d] for d in
-                range(self.ref.store.input.dims[1])])
+                range(self.ref.tree.input.dims[1])])
 
     def __richcmp__(self, other, int op):
         if op == 0: return False
@@ -135,10 +135,10 @@ cdef class KDNode:
         cdef npy_intp len
         list = kd_tearoff(self.ref, thresh, &len)
         cdef npy_intp i
-        ret = [KDNode(self.store) for i in range(len)]
+        ret = [KDNode(self.tree) for i in range(len)]
         for i in range(len):
             (<KDNode>(ret[i])).bind(list[i])
-        kd_free0(self.store.ref, len * sizeof(cKDNode*), list)
+        kd_free0(self.tree.ref, len * sizeof(cKDNode*), list)
         return ret
 
     def count(self, KDNode other, r):
@@ -197,7 +197,7 @@ cdef class KDNode:
             input array index of the data. arbitrary args can be passed
             to process via kwargs.
         """
-        cdef int Nd = self.ref.store.input.dims[1]
+        cdef int Nd = self.ref.tree.input.dims[1]
         cdef numpy.ndarray r = numpy.empty(bunch, 'f8')
         cdef numpy.ndarray i = numpy.empty(bunch, 'intp')
         cdef numpy.ndarray j = numpy.empty(bunch, 'intp')
@@ -266,8 +266,8 @@ cdef int callback(CBData * data, KDEnumData * endata) except -1:
     data.length = data.length + 1
     return 0
 
-cdef class KDStore:
-    cdef cKDStore * ref
+cdef class KDTree:
+    cdef cKDTree * ref
     cdef cKDNode * tree
     cdef readonly numpy.ndarray input
     cdef readonly numpy.ndarray ind
@@ -322,7 +322,7 @@ cdef class KDStore:
             raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
 
-        self.ref = <cKDStore*>PyMem_Malloc(sizeof(cKDStore))
+        self.ref = <cKDTree*>PyMem_Malloc(sizeof(cKDTree))
         self.ref.input.buffer = input.data
         self.ref.input.dims[0] = input.shape[0]
         self.ref.input.dims[1] = input.shape[1]
@@ -358,8 +358,8 @@ cdef class KDStore:
 
 def build(numpy.ndarray data, boxsize=None,
         thresh=10):
-    store = KDStore(data, boxsize=boxsize, thresh=thresh)
-    return store.root
+    tree = KDTree(data, boxsize=boxsize, thresh=thresh)
+    return tree.root
 
 import threading
 try:
