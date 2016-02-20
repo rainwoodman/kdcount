@@ -15,7 +15,6 @@ cdef extern from "kdtree.h":
 
     ctypedef double (*kd_castfunc)(void * p)
     ctypedef int (*kd_enum_callback)(void * data, KDEnumData * endata)
-    ctypedef int (*kd_gravity_func)(double distance, void * data)
     ctypedef void (*kd_freefunc)(void* data, npy_intp size, void * ptr) nogil
     ctypedef void * (*kd_mallocfunc)(void* data, npy_intp size) nogil
 
@@ -49,20 +48,14 @@ cdef extern from "kdtree.h":
 
     cKDNode * kd_build(cKDStore * store) nogil
     double * kd_node_max(cKDNode * node) nogil
-    double * kd_node_weight(cKDNode * node) nogil
     double * kd_node_min(cKDNode * node) nogil
-    double * kd_node_cm(cKDNode * node) nogil
     void kd_free(cKDNode * node) nogil
     void kd_free0(cKDStore * store, npy_intp size, void * ptr) nogil
     cKDNode ** kd_tearoff(cKDNode * node, npy_intp thresh, npy_intp * length) nogil
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
-    int kd_count(cKDNode * node[2], double * r2,
-            npy_uint64 * count, double * weight, npy_intp Nbins) except -1
 
     int kd_fof(cKDNode * tree, double linklength, npy_intp * head)
-
-    double kd_grav(cKDNode * node, double * pos, double openangle, kd_gravity_func gravity, void * data)
 
 
 # register_handler()
@@ -116,17 +109,6 @@ cdef class KDNode:
             return numpy.array([max[d] for d in
                 range(self.ref.store.input.dims[1])])
 
-    property weight:
-        def __get__(self):
-            cdef double * weight = kd_node_weight(self.ref)
-            return numpy.array([weight[d] for d in
-                range(self.ref.store.weight.dims[1])])
-    property cm:
-        def __get__(self):
-            cdef double * cm = kd_node_cm(self.ref)
-            return numpy.array([cm[d] for d in
-                range(self.ref.store.input.dims[1])])
-
     property min:
         def __get__(self):
             cdef double * min = kd_node_min(self.ref)
@@ -161,19 +143,17 @@ cdef class KDNode:
 
     def count(self, KDNode other, r):
         r = numpy.atleast_1d(r).ravel()
-        cdef int Nw = self.ref.store.weight.dims[1]
         cdef numpy.ndarray r2 = numpy.empty(r.shape, dtype='f8')
         cdef numpy.ndarray count = numpy.zeros(r.shape, dtype='u8')
-        cdef numpy.ndarray weight = numpy.zeros((r.size, Nw), dtype='f8')
         cdef cKDNode * node[2]
         node[0] = self.ref
         node[1] = other.ref
         r2[:] = r * r
 
-        kd_count(node, <double*>r2.data, 
-                <npy_uint64*>count.data,
-                <double*>weight.data, len(r))
-        return count, weight
+#        kd_count(node, <double*>r2.data, 
+#                <npy_uint64*>count.data,
+#                <double*>weight.data, len(r))
+#        return count, weight
 
     def fof(self, double linkinglength, out=None):
         cdef numpy.ndarray buf
@@ -258,40 +238,6 @@ cdef class KDNode:
         else:
             return None
 
-    def gravity(self, pos, smoothing, openangle=0.01):
-        """ gravitational potential """
-        cdef double dsm = smoothing
-        cdef int Nd = self.ref.store.input.dims[1]
-        cdef numpy.ndarray dpos = numpy.array(pos, dtype='f8', copy=True, order='C')
-
-        spos = dpos.reshape(-1, Nd)
-        cdef numpy.ndarray output = numpy.ones(len(spos), dtype='f8')
-        cdef int i
-        cdef double dopenangle = openangle
-        for i in range(len(output)):
-            (<double*>output.data) [i] = \
-                    kd_grav(self.ref, (<double*>dpos.data) + Nd * i, dopenangle,
-                            <kd_gravity_func> volker_gravity, &dsm)
-        if dpos.ndim == 1:
-            return output.reshape(())
-        return output
-
-    
-cdef double volker_gravity(double r, double * smoothing) nogil:
-    cdef double h = smoothing[0]
-    cdef double pot = 0
-    cdef double u
-    if r >= h : pot = -1.0 / r
-    else:
-        u = r / h
-        if u < 0.5:
-            wp = -2.8 + u * u * (5.333333333333 + u * u * (6.4 * u - 9.6))
-        else:
-            wp = -3.2 + 0.066666666667 / u + u * u * (10.666666666667 +
-                           u * (-16.0 + u * (9.6 - 2.133333333333 * u)))
-        pot = wp / h
-    return pot
-
 cdef double dcast(double * p1) nogil:
     return p1[0]
 cdef double fcast(float * p1) nogil:
@@ -324,7 +270,6 @@ cdef class KDStore:
     cdef cKDStore * ref
     cdef cKDNode * tree
     cdef readonly numpy.ndarray input
-    cdef readonly numpy.ndarray weight
     cdef readonly numpy.ndarray ind
     cdef readonly numpy.ndarray boxsize
     property strides:
@@ -342,10 +287,6 @@ cdef class KDStore:
     property Nd:
         def __get__(self):
             return self.input.shape[1]
-
-    property Nw:
-        def __get__(self):
-            return self.weight.shape[1]
 
     # memory management:
 
@@ -376,21 +317,10 @@ cdef class KDStore:
     def __cinit__ (self):
         self.buffers = []
     
-    def __init__(self, numpy.ndarray input, numpy.ndarray weight=None,
-            boxsize=None, thresh=10):
+    def __init__(self, numpy.ndarray input, boxsize=None, thresh=10):
         if input.ndim != 2:
             raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
-        if weight is not None:
-            if weight.ndim == 1:
-                weight = weight.reshape(-1, 1)
-            if weight.ndim != 2:
-                raise ValueError("weigth needs to be a 1D/2D array of (N, Nw)")
-            self.weight = weight
-            if weight.shape[0] != input.shape[0]:
-                raise ValueError("input and weight shape mismatch")
-        else:
-            self.weight = numpy.empty((self.input.shape[0], 0), dtype='f8')
 
         self.ref = <cKDStore*>PyMem_Malloc(sizeof(cKDStore))
         self.ref.input.buffer = input.data
@@ -403,17 +333,6 @@ cdef class KDStore:
             self.ref.input.cast = <kd_castfunc>fcast
         if input.dtype.char == 'd':
             self.ref.input.cast = <kd_castfunc>dcast
-
-        self.ref.weight.buffer = self.weight.data
-        self.ref.weight.dims[0] = self.weight.shape[0]
-        self.ref.weight.dims[1] = self.weight.shape[1]
-        self.ref.weight.strides[0] = self.weight.strides[0]
-        self.ref.weight.strides[1] = self.weight.strides[1]
-        self.ref.weight.elsize = self.weight.dtype.itemsize
-        if self.weight.dtype.char == 'f':
-            self.ref.weight.cast = <kd_castfunc>fcast
-        if self.weight.dtype.char == 'd':
-            self.ref.weight.cast = <kd_castfunc>dcast
 
         self.ref.thresh = thresh
         self.ind = numpy.empty(self.ref.input.dims[0], dtype='intp')
@@ -437,9 +356,9 @@ cdef class KDStore:
 #            kd_free(self.tree)
         PyMem_Free(self.ref)
 
-def build(numpy.ndarray data, numpy.ndarray weights=None, boxsize=None,
+def build(numpy.ndarray data, boxsize=None,
         thresh=10):
-    store = KDStore(data, weight=weights, boxsize=boxsize, thresh=thresh)
+    store = KDStore(data, boxsize=boxsize, thresh=thresh)
     return store.root
 
 import threading
