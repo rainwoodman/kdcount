@@ -658,7 +658,7 @@ class paircount_worker(object):
             self.bins(r, i, j, self.data[0], self.data[1], sum1, sum2)
                             
         if self.dofast:
-            counts, weights = self.data[0].tree.count(self.data[1].tree, self.bins.edges)
+            counts, weights = self.data[0].tree.root.count(self.data[1].tree.root, self.bins.edges)
             d = numpy.diff(counts)
             sum1[0, 0] = counts[0]
             sum1[0, 1:-1] += d
@@ -684,10 +684,12 @@ class paircount_worker(object):
         """
         Initialize and setup the various arrays needed to do the work
         """
-        tree1 = self.data[0].tree
-        tree2 = self.data[1].tree
+        tree1 = self.data[0].tree.root
+        tree2 = self.data[1].tree.root
+        if tree1.size > tree2.size:
+            tree1, tree2 = tree2, tree1
         if self.np != 0:
-            self.p = list(utils.divide_and_conquer(tree1, tree2, 10000))
+            self.p = [(t, tree2) for t in utils.toforest(tree1, 10000)]
         else:
             self.p = [(tree1, tree2)]
         self.size = len(self.p)

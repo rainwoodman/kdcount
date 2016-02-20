@@ -33,7 +33,7 @@ class dataset(object):
         """
         self.pos = pos
         self.boxsize = boxsize
-        self.tree = kdcount.KDTree(self.pos, boxsize=boxsize).root
+        self.tree = kdcount.KDTree(self.pos, boxsize=boxsize)
         self.extra = extra
         self._weights = weights
 
