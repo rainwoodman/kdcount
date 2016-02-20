@@ -7,7 +7,7 @@ from libc.stdint cimport intptr_t as npy_intp
 from libc.stdint cimport uint64_t as npy_uint64
 numpy.import_array()
 
-cdef extern from "kdcount.h":
+cdef extern from "kdtree.h":
     struct KDEnumData:
         double r 
         npy_intp i
