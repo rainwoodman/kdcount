@@ -61,11 +61,12 @@ typedef struct KDTree {
      * NULL to use free() */
     kd_freefunc free;
     void * userdata;
-    ptrdiff_t total_nodes;
+    size_t size;
 } KDTree;
 
 typedef struct KDNode {
     KDTree * tree;
+    ptrdiff_t index;
     struct KDNode * link[2];
     ptrdiff_t start;
     ptrdiff_t size;
@@ -89,7 +90,6 @@ static KDNode * kd_alloc(KDTree * tree) {
     ptr->link[0] = NULL;
     ptr->link[1] = NULL;
     ptr->tree = tree;
-    tree->total_nodes ++;
     return ptr;
 }
 
@@ -122,7 +122,7 @@ static inline void kd_swap(KDTree * tree, ptrdiff_t i, ptrdiff_t j) {
     tree->ind[j] = t;
 }
 
-static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
+static ptrdiff_t kd_build_split(KDNode * node, double minhint[], double maxhint[], ptrdiff_t next) {
     KDTree * tree = node->tree;
     ptrdiff_t p, q, j;
     int d;
@@ -148,7 +148,7 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
                 if (min[d] > x) min[d] = x;
             }
         }
-        return;
+        return next;
     }
 
     node->dim = 0;
@@ -166,12 +166,7 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     /*
     printf("trysplit @ %g (%g %g %g %g %g %g) dim = %d, %td %td\n",
             node->split, 
-            max[0], 
-            max[1], 
-            max[2], 
-            min[0],  
-            min[1],  
-            min[2],  
+            max[0], max[1], max[2], min[0],  min[1],  min[2],  
             node->dim, node->start, node->size);
     */
     p = node->start;
@@ -229,9 +224,11 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
     }
 
     node->link[0] = kd_alloc(tree);
+    node->link[0]->index = next++;
     node->link[0]->start = node->start;
     node->link[0]->size = p - node->start;
     node->link[1] = kd_alloc(tree);
+    node->link[1]->index = next++;
     node->link[1]->start = p;
     node->link[1]->size = node->size - (p - node->start);
 /*
@@ -245,13 +242,13 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
         midhint[d] = maxhint[d];
     }
     midhint[node->dim] = node->split;
-    kd_build_split(node->link[0], minhint, midhint);
+    next = kd_build_split(node->link[0], minhint, midhint, next);
 
     for(d = 0; d < Nd; d++) {
         midhint[d] = minhint[d];
     }
     midhint[node->dim] = node->split;
-    kd_build_split(node->link[1], midhint, maxhint);
+    next = kd_build_split(node->link[1], midhint, maxhint, next);
 
     for(d = 0; d < Nd; d++) {
         double * max1 = kd_node_max(node->link[1]);
@@ -261,11 +258,11 @@ static void kd_build_split(KDNode * node, double minhint[], double maxhint[]) {
         min[d] = kd_node_min(node->link[0])[d];
         if(min[d] > min1[d]) min[d] = min1[d];
     }
-    return;
+    return next;
 }
 
 /* 
- * create a KD tree based on input data specified in KDTree 
+ * create a root KDNode based on input data specified in KDTree 
  * free it with kd_free
  * */
 KDNode * kd_build(KDTree * tree) {
@@ -274,7 +271,6 @@ KDNode * kd_build(KDTree * tree) {
     double min[Nd];
     double max[Nd];    
     int d;
-    tree->total_nodes = 0;
     tree->ind[0] = 0;
     for(d = 0; d < Nd; d++) {
         min[d] = kd_input(tree, 0, d);
@@ -290,8 +286,9 @@ KDNode * kd_build(KDTree * tree) {
     }
     KDNode * root = kd_alloc(tree);
     root->start = 0;
+    root->index = 0;
     root->size = tree->input.dims[0];
-    kd_build_split(root, min, max);
+    tree->size = kd_build_split(root, min, max, 1);
     return root;
 }
 /**
@@ -308,7 +305,7 @@ void kd_free0(KDTree * tree, size_t size, void * ptr) {
 void kd_free(KDNode * node) {
     if(node->link[0]) kd_free(node->link[0]);
     if(node->link[1]) kd_free(node->link[1]);
-    node->tree->total_nodes --;
+    node->tree->size --;
     kd_free0(node->tree, 
             sizeof(KDNode) +
             sizeof(double) * 2 * node->tree->input.dims[1],

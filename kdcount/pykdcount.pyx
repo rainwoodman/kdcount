@@ -36,7 +36,7 @@ cdef extern from "kdtree.h":
         kd_mallocfunc malloc
         kd_freefunc  free
         void * userdata
-        npy_intp total_nodes
+        npy_intp size 
 
     struct cKDNode "KDNode":
         cKDTree * tree
@@ -282,7 +282,7 @@ cdef class KDTree:
             return rt
     property size:
         def __get__(self):
-            return self.ref.total_nodes
+            return self.ref.size
 
     property Nd:
         def __get__(self):
