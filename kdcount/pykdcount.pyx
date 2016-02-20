@@ -251,8 +251,12 @@ cdef class KDAttr:
 
     def __init__(self, KDTree tree, numpy.ndarray input):
         self.tree = tree
-        assert input.ndim == 1
-        input = input.reshape(-1, 1) 
+        if input.ndim == 1:
+            input = input.reshape(-1, 1) 
+            self.buffer = numpy.empty(tree.ref.size, dtype='f8')
+        else:
+            self.buffer = numpy.empty(tree.ref.size, dtype=('f8', (<object>input).shape[1:]))
+
         self.input = input
         self.ref = <cKDAttr*>PyMem_Malloc(sizeof(cKDAttr))
         self.ref.tree = tree.ref
@@ -267,7 +271,6 @@ cdef class KDAttr:
         if input.dtype.char == 'd':
             self.ref.input.cast = <kd_castfunc>dcast
 
-        self.buffer = numpy.empty(tree.ref.size, dtype='f8')
         self.ref.buffer = <double *> self.buffer.data 
 
         kd_attr_init(self.ref, tree._root);

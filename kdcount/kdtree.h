@@ -318,32 +318,40 @@ void kd_free(KDNode * node) {
             node);
 }
 
-double kd_attr_get_node(KDAttr * attr, KDNode * node) {
-    return attr->buffer[node->index];
+double kd_attr_get_node(KDAttr * attr, KDNode * node, ptrdiff_t d) {
+    return attr->buffer[node->index * attr->input.dims[1] + d];
 }
 
-double kd_attr_get(KDAttr * attr, ptrdiff_t i) {
-    return kd_array_get(&attr->input, attr->tree->ind[i], 0);
+double kd_attr_get(KDAttr * attr, ptrdiff_t i, ptrdiff_t d) {
+    return kd_array_get(&attr->input, attr->tree->ind[i], d);
 }
 
-static double kd_attr_init_r(KDAttr * attr, KDNode * node) {
+static double * kd_attr_init_r(KDAttr * attr, KDNode * node) {
+    double * rt = &attr->buffer[node->index * attr->input.dims[1]];
+    ptrdiff_t d;
+    for(d = 0; d < attr->input.dims[1]; d++) {
+        rt[d] = 0;
+    }
     if (node->dim < 0) {
-        double rt = 0;
         ptrdiff_t i;
         for(i = node->start; i < node->start + node->size; i ++) {
-            rt += kd_attr_get(attr, i);
+            for(d = 0; d < attr->input.dims[1]; d++) {
+                rt[d] += kd_attr_get(attr, i, d);
+            }
         }
-        attr->buffer[node->index] = rt;
         return rt;
     }
      
-    double rt = kd_attr_init_r(attr, node->link[0]) 
-              + kd_attr_init_r(attr, node->link[1]);
-    attr->buffer[node->index] = rt;
+    double * left = kd_attr_init_r(attr, node->link[0]);
+    double * right = kd_attr_init_r(attr, node->link[1]);
+    for(d = 0; d < attr->input.dims[1]; d++) {
+        rt[d] = left[d] + right[d];
+    }
     return rt;
 }
 
 void kd_attr_init(KDAttr * attr, KDNode * root) {
+    
     kd_attr_init_r(attr, root); 
 }
 
