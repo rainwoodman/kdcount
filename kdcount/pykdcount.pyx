@@ -67,9 +67,12 @@ cdef extern from "kdtree.h":
 cdef class KDNode:
     cdef cKDNode * ref
     cdef readonly KDTree tree 
-    def __init__(self, tree):
+    cdef readonly npy_intp ndims
+
+    def __init__(self, KDTree tree):
         self.tree = tree
-    
+        self.ndims = tree.ndims    
+
     cdef void bind(self, cKDNode * ref) nogil:
         self.ref = ref
 
@@ -174,7 +177,6 @@ cdef class KDNode:
             input array index of the data. arbitrary args can be passed
             to process via kwargs.
         """
-        cdef int Nd = self.ref.tree.input.dims[1]
         cdef numpy.ndarray r = numpy.empty(bunch, 'f8')
         cdef numpy.ndarray i = numpy.empty(bunch, 'intp')
         cdef numpy.ndarray j = numpy.empty(bunch, 'intp')
@@ -199,7 +201,7 @@ cdef class KDNode:
         node[0] = self.ref
         node[1] = other.ref
         cbdata.notify = <void*>func
-        cbdata.Nd = Nd
+        cbdata.ndims = self.ndims
         cbdata.r = <double*>r.data
         cbdata.i = <npy_intp*>i.data
         cbdata.j = <npy_intp*>j.data
@@ -229,7 +231,7 @@ cdef struct CBData:
     npy_intp size
     npy_intp length
     void * notify
-    int Nd
+    int ndims
 
 cdef int callback(CBData * data, KDEnumData * endata) except -1:
     if data.length == data.size:
@@ -254,8 +256,10 @@ cdef class KDAttr:
         if input.ndim == 1:
             input = input.reshape(-1, 1) 
             self.buffer = numpy.empty(tree.ref.size, dtype='f8')
-        else:
+        elif input.ndim == 2:
             self.buffer = numpy.empty(tree.ref.size, dtype=('f8', (<object>input).shape[1:]))
+        else:
+            raise ValueError("Only at most 2d attribute array is supported")
 
         self.input = input
         self.ref = <cKDAttr*>PyMem_Malloc(sizeof(cKDAttr))
@@ -292,12 +296,10 @@ cdef class KDTree:
     cdef readonly numpy.ndarray input
     cdef readonly numpy.ndarray ind
     cdef readonly numpy.ndarray boxsize
-    
+    cdef readonly npy_intp ndims
+ 
     __nodeclass__ = KDNode
 
-    property strides:
-        def __get__(self):
-            return [self.ref.input.strides[i] for i in range(2)]
     property root:
         def __get__(self):
             cdef KDNode rt = type(self).__nodeclass__(self)
@@ -306,10 +308,6 @@ cdef class KDTree:
     property size:
         def __get__(self):
             return self.ref.size
-
-    property Nd:
-        def __get__(self):
-            return self.input.shape[1]
 
     # memory management:
 
@@ -356,6 +354,8 @@ cdef class KDTree:
             self.ref.input.cast = <kd_castfunc>fcast
         if input.dtype.char == 'd':
             self.ref.input.cast = <kd_castfunc>dcast
+
+        self.ndims = self.input.shape[1]
 
         self.ref.thresh = thresh
         self.ind = numpy.empty(self.ref.input.dims[0], dtype='intp')
