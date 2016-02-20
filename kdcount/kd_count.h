@@ -82,10 +82,12 @@ static void kd_count_check(KDCountData * kdcd, KDNode * nodes[2],
                 }
                 rr += dx * dx;
             }
-            int start = bisect_left(rr, kdcd->edges, kdcd->nedges);
-            kdcd->count[start] += 1;
-            for(d = 0; d < Nw; d++) {
-                kdcd->weight[start * Nw + d] += w0[d] * w1[d];
+            int b = bisect_left(rr, &kdcd->edges[start], end - start) + start;
+            if (b < kdcd->nedges) {
+                kdcd->count[b] += 1;
+                for(d = 0; d < Nw; d++) {
+                    kdcd->weight[b * Nw + d] += w0[d] * w1[d];
+                }
             }
             w1 += Nw;
             p1 += Nd;
