@@ -1,6 +1,6 @@
 from kdcount import KDTree, KDAttr
 import numpy
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, run_module_suite
 
 def test_build():
     numpy.random.seed(1000)
@@ -55,3 +55,5 @@ def test_attr():
         assert_equal(attr.buffer.shape[1:], shape)
         assert_equal(attr[tree.root], data.sum(axis=0))
 
+if __name__ == "__main__":
+    run_module_suite()
