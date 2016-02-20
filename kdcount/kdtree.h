@@ -414,16 +414,15 @@ static void kd_realdiff(KDTree * tree, double min, double max, double * realmin,
     }
 
 }
-static inline void kd_collect(KDTree * tree, KDArray * input, 
-    ptrdiff_t start, ptrdiff_t end, double * ptr) {
+static inline void kd_collect(KDNode * node, KDArray * input, double * ptr) {
 
     /* collect permuted elements into a double array, 
      * so that they can be paired quickly (cache locality!)*/
-    ptrdiff_t * ind = tree->ind;
+    ptrdiff_t * ind = node->tree->ind;
     int Nd = input->dims[1];
     char * base = input->buffer;
     ptrdiff_t j;
-    for (j = start; j < end; j++) {
+    for (j = node->start; j < node->start + node->size; j++) {
         int d;
         char * item = base + ind[j] * input->strides[0];
         if(input->cast) {

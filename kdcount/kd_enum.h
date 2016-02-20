@@ -91,8 +91,8 @@ static int kd_enum_check(KDNode * node[2], double rmax2,
     }
 
     /* no need to collect weight */
-    kd_collect(t0, &t0->input, node[0]->start, node[0]->size + node[0]->start, p0base);
-    kd_collect(t1, &t1->input, node[1]->start, node[1]->size + node[1]->start, p1base);
+    kd_collect(node[0], &t0->input, p0base);
+    kd_collect(node[1], &t1->input, p1base);
 
     for (p0 = p0base, i = node[0]->start; 
         i < node[0]->start + node[0]->size; i++) {
