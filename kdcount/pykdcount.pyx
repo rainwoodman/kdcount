@@ -61,8 +61,6 @@ cdef extern from "kdtree.h":
     int kd_fof(cKDNode * tree, double linklength, npy_intp * head)
 
     void kd_attr_init(cKDAttr * attr, cKDNode * root)
-    double kd_attr_get_node(cKDAttr * attr, cKDNode * node) 
-    double kd_attr_get(cKDAttr * attr, ptrdiff_t i)
 
 cdef class KDNode:
     cdef cKDNode * ref

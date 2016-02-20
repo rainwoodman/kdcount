@@ -318,8 +318,8 @@ void kd_free(KDNode * node) {
             node);
 }
 
-double kd_attr_get_node(KDAttr * attr, KDNode * node, ptrdiff_t d) {
-    return attr->buffer[node->index * attr->input.dims[1] + d];
+double * kd_attr_get_node(KDAttr * attr, KDNode * node) {
+    return &attr->buffer[node->index * attr->input.dims[1]];
 }
 
 double kd_attr_get(KDAttr * attr, ptrdiff_t i, ptrdiff_t d) {
@@ -414,29 +414,29 @@ static void kd_realdiff(KDTree * tree, double min, double max, double * realmin,
     }
 
 }
-static inline void kd_collect(KDNode * node, double * buffer) {
-    /* collect all positions into a double array, 
+static inline void kd_collect(KDTree * tree, KDArray * input, 
+    ptrdiff_t start, ptrdiff_t end, double * ptr) {
+
+    /* collect permuted elements into a double array, 
      * so that they can be paired quickly (cache locality!)*/
-    KDTree * t = node->tree;
-    KDArray * array = &t->input;
-    double * ptr = buffer;
-    int Nd = array->dims[1];
-    char * base = array->buffer;
-    int d;
+    ptrdiff_t * ind = tree->ind;
+    int Nd = input->dims[1];
+    char * base = input->buffer;
     ptrdiff_t j;
-    for (j = 0; j < node->size; j++) {
-        char * item = base + t->ind[j + node->start] * array->strides[0];
-        if(array->cast) {
+    for (j = start; j < end; j++) {
+        int d;
+        char * item = base + ind[j] * input->strides[0];
+        if(input->cast) {
             for(d = 0; d < Nd; d++) {
-                *ptr = array->cast(item);
+                *ptr = input->cast(item);
                 ptr++;
-                item += array->strides[1];
+                item += input->strides[1];
             }
         } else {
             for(d = 0; d < Nd; d++) {
-                memcpy(ptr, item, array->elsize);
+                memcpy(ptr, item, input->elsize);
                 ptr++;
-                item += array->strides[1];
+                item += input->strides[1];
             }
         }
     }
