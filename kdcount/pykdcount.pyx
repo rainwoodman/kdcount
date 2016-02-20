@@ -55,7 +55,6 @@ cdef extern from "kdtree.h":
     double * kd_node_min(cKDNode * node) nogil
     void kd_free(cKDNode * node) nogil
     void kd_free0(cKDTree * tree, npy_intp size, void * ptr) nogil
-    cKDNode ** kd_tearoff(cKDNode * node, npy_intp thresh, npy_intp * length) nogil
     int kd_enum(cKDNode * node[2], double maxr,
             kd_enum_callback callback, void * data) except -1
 
@@ -134,21 +133,6 @@ cdef class KDNode:
 
     def __repr__(self):
         return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
-
-    def tearoff(self, thresh):
-        """
-            tearoff a tree so that each returned 
-            subtree is no bigger than thresh.
-        """
-        cdef cKDNode ** list
-        cdef npy_intp len
-        list = kd_tearoff(self.ref, thresh, &len)
-        cdef npy_intp i
-        ret = [KDNode(self.tree) for i in range(len)]
-        for i in range(len):
-            (<KDNode>(ret[i])).bind(list[i])
-        kd_free0(self.tree.ref, len * sizeof(cKDNode*), list)
-        return ret
 
     def count(self, KDNode other, r):
         r = numpy.atleast_1d(r).ravel()

@@ -435,5 +435,4 @@ static inline void kd_collect(KDNode * node, double * buffer) {
 }
 
 #include "kd_enum.h"
-#include "kd_tearoff.h"
 #include "kd_fof.h"
