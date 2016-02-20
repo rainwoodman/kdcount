@@ -441,5 +441,6 @@ static inline void kd_collect(KDNode * node, KDArray * input, double * ptr) {
     }
 }
 
+#include "kd_count.h"
 #include "kd_enum.h"
 #include "kd_fof.h"
