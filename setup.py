@@ -10,7 +10,7 @@ extensions = [
             include_dirs=["kdcount/", numpy.get_include()])
         ]
 
-setup(name="kdcount", version="0.3.2",
+setup(name="kdcount", version="0.3.3",
       author="Yu Feng",
       author_email="rainwoodman@gmail.com",
       description="A slower KDTree cross correlator",
