@@ -1,4 +1,7 @@
-static int kd_enum_check(KDNode * nodes[2], double rmax2,
+#include "kdtree.h"
+
+static int 
+kd_enum_check(KDNode * nodes[2], double rmax2,
         kd_enum_callback callback, void * data);
 /*
  * enumerate two KDNode trees, up to radius max.
@@ -8,8 +11,10 @@ static int kd_enum_check(KDNode * nodes[2], double rmax2,
  * call callback.
  * if callback returns nonzero, terminate and return the value
  * */
-int kd_enum(KDNode * nodes[2], double maxr,
-        kd_enum_callback callback, void * data) {
+int 
+kd_enum(KDNode * nodes[2], double maxr,
+        kd_enum_callback callback, void * data) 
+{
     int Nd = nodes[0]->tree->input.dims[1];
     double distmax = 0, distmin = 0;
     double rmax2 = maxr * maxr;
@@ -66,8 +71,10 @@ int kd_enum(KDNode * nodes[2], double maxr,
     return kd_enum_check(nodes, rmax2, callback, data);
 }
 
-static int kd_enum_check(KDNode * nodes[2], double rmax2,
-        kd_enum_callback callback, void * data) {
+static int 
+kd_enum_check(KDNode * nodes[2], double rmax2,
+        kd_enum_callback callback, void * data) 
+{
     int rt = 0;
     ptrdiff_t i, j;
     int d;

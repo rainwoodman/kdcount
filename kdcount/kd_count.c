@@ -1,3 +1,5 @@
+#include "kdtree.h"
+
 typedef struct KDCountData {
     KDAttr *attrs[2];
     int nedges;
@@ -8,7 +10,9 @@ typedef struct KDCountData {
     int Nw;
 } KDCountData;
 
-static int bisect_left(double key, double * r2, int N) {
+static inline int 
+bisect_left(double key, double * r2, int N) 
+{
     int left = 0, right = N;
     if(N == 0) return 0;
     if(key < r2[0]) return 0;
@@ -40,8 +44,10 @@ static int bisect_right(double key, double * r2, int N) {
     return left;
 }
 #endif
-static void kd_count_check(KDCountData * kdcd, KDNode * nodes[2], 
-        int start, int end) {
+static void 
+kd_count_check(KDCountData * kdcd, KDNode * nodes[2], 
+        int start, int end) 
+{
 
     ptrdiff_t i, j;
     int d;
@@ -100,8 +106,10 @@ static void kd_count_check(KDCountData * kdcd, KDNode * nodes[2],
 }
 
 
-static void kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2], 
-        int start, int end) {
+static void 
+kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2], 
+        int start, int end) 
+{
     int Nd = nodes[0]->tree->input.dims[1];
     int Nw = kdcd->Nw;
     double distmax = 0, distmin = 0;
@@ -157,9 +165,11 @@ static void kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2],
     } 
 }
 
-void kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
+void 
+kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
         double * edges, uint64_t * count, double * weight, 
-        int nedges) {
+        int nedges) 
+{
     double * edges2 = alloca(sizeof(double) * nedges);
     int Nw;
     if (attrs[0]) 

@@ -1,3 +1,5 @@
+#include "kdtree.h"
+
 typedef struct KDIntegrateData {
     KDAttr * attr;
     uint64_t* count;
@@ -7,7 +9,9 @@ typedef struct KDIntegrateData {
     int Nw;
 } KDIntegrateData;
 
-static void kd_integrate_check(KDIntegrateData * kdid, KDNode * node) {
+static void 
+kd_integrate_check(KDIntegrateData * kdid, KDNode * node) 
+{
 
     ptrdiff_t i, j;
     int d;
@@ -45,7 +49,9 @@ static void kd_integrate_check(KDIntegrateData * kdid, KDNode * node) {
 }
 
 
-static void kd_integrate_traverse(KDIntegrateData * kdid, KDNode * node) {
+static void 
+kd_integrate_traverse(KDIntegrateData * kdid, KDNode * node) 
+{
     int Nd = node->tree->input.dims[1];
     int Nw = kdid->Nw;
     int d;
@@ -86,9 +92,11 @@ static void kd_integrate_traverse(KDIntegrateData * kdid, KDNode * node) {
     } 
 }
 
-void kd_integrate(KDNode * node, KDAttr * attr, 
+void 
+kd_integrate(KDNode * node, KDAttr * attr, 
         uint64_t * count, double * weight, 
-        double * min, double * max) {
+        double * min, double * max) 
+{
     int Nw;
     int d;
 

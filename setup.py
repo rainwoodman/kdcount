@@ -5,9 +5,11 @@ from Cython.Build import cythonize
 from distutils.extension import Extension
 
 extensions = [
-        Extension("kdcount.pykdcount", ["kdcount/pykdcount.pyx"], 
-            depends=['kdcount/kd_fof.h', 'kdcount/kd_enum.h', 
-                     'kdcount/kd_count.h', 'kdcount/kd_integrate.h'],
+        Extension("kdcount.pykdcount", [
+            "kdcount/pykdcount.pyx",  
+            'kdcount/kdtree.c',
+            'kdcount/kd_fof.c', 'kdcount/kd_enum.c', 
+            'kdcount/kd_count.c', 'kdcount/kd_integrate.c'],
             include_dirs=["kdcount/", numpy.get_include()])
         ]
 

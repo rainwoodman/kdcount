@@ -1,3 +1,5 @@
+#include "kdtree.h"
+
 typedef struct KDFOFData {
     ptrdiff_t * head;
     ptrdiff_t * next;
@@ -6,7 +8,9 @@ typedef struct KDFOFData {
     ptrdiff_t merged;
 } KDFOFData;
 
-static int _kd_fof_callback(void * data, KDEnumData * enumdata) {
+static int 
+_kd_fof_callback(void * data, KDEnumData * enumdata) 
+{
     KDFOFData * fof = (KDFOFData*) data;
     ptrdiff_t i = enumdata->i;
     ptrdiff_t j = enumdata->j;
@@ -46,7 +50,9 @@ static int _kd_fof_callback(void * data, KDEnumData * enumdata) {
     return 0;
 }
 
-int kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head) {
+int 
+kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head) 
+{
     KDNode * nodes[2] = {tree, tree};
     KDFOFData * fof = & (KDFOFData) {};
 
