@@ -658,10 +658,15 @@ class paircount_worker(object):
             self.bins(r, i, j, self.data[0], self.data[1], sum1, sum2)
                             
         if self.dofast:
-            counts, weights = self.data[0].tree.root.count(self.data[1].tree.root, self.bins.edges)
-            d = numpy.diff(counts)
-            sum1[0, 0] = counts[0]
-            sum1[0, 1:-1] += d
+            # field x points is not supported.
+            # because it is more likely need to deal
+            # with broadcasting 
+            sum1attrs = [ d.attr for d in self.data ]
+
+            counts, sum1c = n1.count(n2, self.bins.edges,
+                                attrs=sum1attrs)
+            sum1[..., :-1] = sum1c
+            sum1[..., -1] = 0
         else:
             n1.enum(n2, self.bins.Rmax, process=callback)
 
@@ -686,17 +691,17 @@ class paircount_worker(object):
         """
         tree1 = self.data[0].tree.root
         tree2 = self.data[1].tree.root
-        if tree1.size > tree2.size:
-            tree1, tree2 = tree2, tree1
         if self.np != 0:
-            self.p = [(t, tree2) for t in tree1.make_forest(10000)]
+            if tree1.size > tree2.size:
+                self.p = [(tree1, t) for t in tree2.make_forest(10000)]
+            else:
+                self.p = [(t, tree2) for t in tree1.make_forest(10000)]
         else:
             self.p = [(tree1, tree2)]
         self.size = len(self.p)
         
         self.pts_only = isinstance(self.data[0], points) and isinstance(self.data[1], points)
         self.dofast = self.usefast and type(self.bins) is RBinning and self.pts_only 
-        self.dofast = False 
 
         # initialize arrays to hold total sum1 and sum2
         # grabbing the desired shapes from the binning instance

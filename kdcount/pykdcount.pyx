@@ -143,47 +143,49 @@ cdef class KDNode:
 
     def count(self, KDNode other, r, attrs=None):
         cdef:
-            numpy.ndarray r2, count, weight
+            numpy.ndarray r1, count, weight
             KDAttr a1, a2
             cKDNode * cnodes[2]
             cKDAttr * cattrs[2]
 
         r = numpy.array(r)
 
-        r2 = numpy.empty(r.shape, dtype='f8')
+        r1 = numpy.empty(r.shape, dtype='f8')
         count = numpy.zeros(r.shape, dtype='u8')
         cnodes[0] = self.ref
         cnodes[1] = other.ref
 
-        r2[...] = r * r
-
+        r1[...] = r
         if attrs is None:
             cattrs[0] = NULL
             cattrs[1] = NULL
             kd_count(cnodes, cattrs, 
-                    <double*>r2.data, 
+                    <double*>r1.data, 
                     <npy_uint64*>count.data,
                     NULL, 
-                    r.size)
+                    r1.size)
 
             return count
         else:
-            if isinstance(attrs, tuple):
+            if isinstance(attrs, (tuple, list)):
                 a1, a2 = attrs
             else:
                 if self.tree != other.tree:
                     raise ValueError("Must be the same tree if one weight is used")
                 a1 = a2 = attrs
 
+            if a1.ndims != a2.ndims:
+                raise ValueError("Two attributes must have the same dimensions")
+
             cattrs[0] = a1.ref
             cattrs[1] = a2.ref
             weight = numpy.zeros(r.shape, dtype=('f8', a1.ndims))
 
             kd_count(cnodes, cattrs, 
-                    <double*>r2.data, 
+                    <double*>r1.data, 
                     <npy_uint64*>count.data,
                     <double*>weight.data, 
-                    r.size)
+                    r1.size)
 
             return count, weight
 
@@ -288,6 +290,7 @@ cdef class KDAttr:
     cdef cKDAttr * ref
     cdef readonly numpy.ndarray input
     cdef readonly KDTree tree
+    cdef readonly npy_intp ndims
     cdef readonly numpy.ndarray buffer
 
     def __init__(self, KDTree tree, numpy.ndarray input):
@@ -299,6 +302,8 @@ cdef class KDAttr:
             self.buffer = numpy.empty(tree.ref.size, dtype=('f8', (<object>input).shape[1:]))
         else:
             raise ValueError("Only at most 2d attribute array is supported")
+
+        self.ndims = input.shape[1]
 
         self.input = input
         self.ref = <cKDAttr*>PyMem_Malloc(sizeof(cKDAttr))

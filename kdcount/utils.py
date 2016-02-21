@@ -38,7 +38,8 @@ class constant_array(numpy.ndarray):
         if numpy.isscalar(shape):
             shape = (shape,)
         foo = numpy.empty((), dtype=dtype)
-        self = as_strided(foo, shape, [0] * len(shape)).view(type=constant_array)
+        self = as_strided(foo, list(shape) + list(foo.shape), 
+                [0] * len(shape) + list(foo.strides)).view(type=constant_array)
         self.value = foo
         return self
 

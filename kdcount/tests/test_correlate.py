@@ -22,18 +22,18 @@ def test_unweighted():
     dist[dist > 0.5] -= 1.0
     dist[dist < -0.5] += 1.0
     dist = numpy.einsum('ijk,ijk->ij', dist, dist) ** 0.5
-    
+
     dataset = correlate.points(pos, boxsize=1.0)
     binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    r = correlate.paircount(dataset, dataset, binning, np=0)
 
-    dig = r.edges.searchsorted(dist.flat, side='left')
+    dig = binning.edges.searchsorted(dist.flat, side='left')
     truth = numpy.bincount(dig)
+    
+    r = correlate.paircount(dataset, dataset, binning, usefast=False, np=0)
+    assert_equal( r.sum1, truth[1:-1])
 
     r1 = correlate.paircount(dataset, dataset, binning, usefast=True, np=0)
-    assert_equal( r.sum1, r1.sum1)
-
-    assert_almost_equal(r.sum1, truth[1:-1])
+    assert_equal(r1.sum1, truth[1:-1])
 
 
 

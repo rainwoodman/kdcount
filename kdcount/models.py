@@ -81,3 +81,4 @@ class field(dataset):
         dataset.__init__(self, pos, weights, boxsize, extra)
         self.wvalue = self.weights * value
         self.subshape = value.shape[1:]
+        self.wvattr = kdcount.KDAttr(self.tree, self.wvalue)
