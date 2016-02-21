@@ -53,7 +53,7 @@ class fof(object):
 
         # this will set the head to a particle index 
         # need to convert this to a feature id with unique.
-        data.tree.fof(linking_length, head)
+        data.tree.root.fof(linking_length, head)
 
         u, labels = numpy.unique(head, return_inverse=True)
         self.N = len(u)
@@ -82,17 +82,13 @@ class fof(object):
     def sum(self, weights=None):
         """ return the sum of weights of each object """
         if weights is None:
-            weights = self.data._weights
-        if weights is None:
-            weights = 1.0
+            weights = self.data.weights
         return utils.bincount(self.labels, weights, self.N)
 
     def center(self, weights=None):
         """ return the center of each object """
         if weights is None:
-            weights = self.data._weights
-        if weights is None:
-            weights = 1.0
+            weights = self.data.weights
         mass = utils.bincount(self.labels, weights, self.N)
         cp = numpy.empty((len(mass), self.data.pos.shape[-1]), 'f8')
         for d in range(self.data.pos.shape[-1]):

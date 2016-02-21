@@ -1,4 +1,3 @@
-from heapq import heappush, heappop
 import numpy
 
 try:
@@ -23,29 +22,6 @@ except ImportError:
             else:
                 callreduce = lambda r: r
             return [callreduce(work(i)) for i in items]
-def divide_and_conquer(tree1, tree2, chunksize):
-    """ lets try to always divide the smaller tree """
-    def e(tree1, tree2):
-        return -min(tree1.size, tree2.size), tree1, tree2
-    heap = []
-    heappush(heap, e(tree1, tree2))
-    while True:
-        w, x, y = heappop(heap)
-        if w == 0: 
-            heappush(heap, (0, x, y))
-            break
-        if x.less is None or y.less is None \
-        or (x.size < chunksize or y.size < chunksize):
-            heappush(heap, (0, x, y))
-            continue
-        if x.size < y.size:
-            heappush(heap, e(x.less, y))
-            heappush(heap, e(x.greater, y))
-        else:
-            heappush(heap, e(x, y.less))
-            heappush(heap, e(x, y.greater))
-    for w, x, y in heap:
-        yield x, y
 
 def bincount(dig, weight, minlength):
     """ bincount supporting scalar and vector weight """
@@ -53,3 +29,38 @@ def bincount(dig, weight, minlength):
         return numpy.bincount(dig, minlength=minlength) * weight
     else:
         return numpy.bincount(dig, weight, minlength)
+
+# for creating dummy '1.0' arrays
+from numpy.lib.stride_tricks import as_strided
+
+class constant_array(numpy.ndarray):
+    def __new__(kls, shape, dtype='f8'):
+        if numpy.isscalar(shape):
+            shape = (shape,)
+        foo = numpy.empty((), dtype=dtype)
+        self = as_strided(foo, list(shape) + list(foo.shape), 
+                [0] * len(shape) + list(foo.strides)).view(type=constant_array)
+        self.value = foo
+        return self
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            start, end, step = key.indices(len(self))
+            N = (end - start) // step
+        elif isinstance(key, (list,)):
+            N = len(key)
+        elif isinstance(key, (numpy.ndarray,)):
+            if key.dtype == numpy.dtype('?'):
+                N = key.sum()
+            else:
+                N = len(key)
+        else:
+            N = None
+        if N is None:
+            return numpy.ndarray.__getitem__(self, key)
+        else:
+            shape = [N] + list(self.shape[1:])
+            r = constant_array(shape, self.dtype)
+            r.value[...] = self.value[...]
+            return r
+
