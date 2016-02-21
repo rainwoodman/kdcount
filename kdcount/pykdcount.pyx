@@ -146,29 +146,26 @@ cdef class KDNode:
     def __repr__(self):
         return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
 
-    def count(self, KDNode other, r, attrs=None):
+    def count(self, KDNode other, numpy.ndarray r, attrs):
         cdef:
-            numpy.ndarray r1, count, weight
+            numpy.ndarray count, weight
             KDAttr a1, a2
             cKDNode * cnodes[2]
             cKDAttr * cattrs[2]
 
-        r = numpy.array(r)
-
-        r1 = numpy.empty(r.shape, dtype='f8')
-        count = numpy.zeros(r.shape, dtype='u8')
+        assert r.dtype == numpy.dtype('f8')
+        count = numpy.zeros((<object>r).shape, dtype='u8')
         cnodes[0] = self.ref
         cnodes[1] = other.ref
 
-        r1[...] = r
         if attrs is None:
             cattrs[0] = NULL
             cattrs[1] = NULL
             kd_count(cnodes, cattrs, 
-                    <double*>r1.data, 
+                    <double*>r.data, 
                     <npy_uint64*>count.data,
                     NULL, 
-                    r1.size)
+                    r.size)
 
             return count
         else:
@@ -184,26 +181,22 @@ cdef class KDNode:
 
             cattrs[0] = a1.ref
             cattrs[1] = a2.ref
-            weight = numpy.zeros(r.shape, dtype=('f8', a1.ndims))
+            weight = numpy.zeros((<object>r).shape, dtype=('f8', a1.ndims))
 
             kd_count(cnodes, cattrs, 
-                    <double*>r1.data, 
+                    <double*>r.data, 
                     <npy_uint64*>count.data,
                     <double*>weight.data, 
-                    r1.size)
+                    r.size)
 
             return count, weight
 
-    def fof(self, double linkinglength, out=None):
-        cdef numpy.ndarray buf
-        if out is not None:
-            assert out.dtype == numpy.dtype('intp')
-            buf = out
-        else:
-            buf = numpy.empty(self.size, dtype='intp')
-        if -1 == kd_fof(self.ref, linkinglength, <npy_intp*> buf.data):
-            raise RuntimeError("Too many friend of friend iterations. This is likely a bug.");
-        return buf
+    def fof(self, double linkinglength, numpy.ndarray out):
+        assert out.dtype == numpy.dtype('intp')
+
+        if -1 == kd_fof(self.ref, linkinglength, <npy_intp*> out.data):
+            raise RuntimeError("Too many friend of friend iterations. This is likely a bug.")
+        return out
 
     def integrate(self, numpy.ndarray min, numpy.ndarray max, KDAttr attr):
         cdef:
@@ -227,27 +220,15 @@ cdef class KDNode:
             cattr = attr.ref
             weight = numpy.zeros(shape, dtype=('f8', attr.ndims)) 
 
-            kd_integrate(self.ref, cattr,
-                    (<npy_uint64*> count.data) + i, 
-                    (<double*> weight.data) + i * attr.ndims, 
-                    (<double*> min.data) + i * min.strides[0] // 8, 
-                    (<double*> max.data) + i * max.strides[0] // 8)
+            for i in range(len(min)):
+                kd_integrate(self.ref, cattr,
+                        (<npy_uint64*> count.data) + i, 
+                        (<double*> weight.data) + i * attr.ndims, 
+                        (<double*> min.data) + i * min.strides[0] // 8, 
+                        (<double*> max.data) + i * max.strides[0] // 8)
             return count, weight
 
-    def enum(self, KDNode other, rmax, process=None, bunch=100000, **kwargs):
-        """ cross correlate with other, for all pairs
-            closer than rmax, iterate.
-
-            >>> def process(r, i, j, **kwargs):
-            >>>    ...
-
-            >>> A.enum(... process, **kwargs):
-            >>>   ...
-
-            where r is the distance, i and j are the original
-            input array index of the data. arbitrary args can be passed
-            to process via kwargs.
-        """
+    def enum(self, KDNode other, rmax, process, bunch, **kwargs):
         cdef:
              numpy.ndarray r, i, j
              cKDNode * node[2]
@@ -256,16 +237,6 @@ cdef class KDNode:
         r = numpy.empty(bunch, 'f8')
         i = numpy.empty(bunch, 'intp')
         j = numpy.empty(bunch, 'intp')
-
-        rall = None
-        if process is None:
-            rall = [numpy.empty(0, 'f8')]
-            iall = [numpy.empty(0, 'intp')]
-            jall = [numpy.empty(0, 'intp')]
-            def process(r1, i1, j1, **kwargs):
-                rall[0] = numpy.append(rall[0], r1)
-                iall[0] = numpy.append(iall[0], i1)
-                jall[0] = numpy.append(jall[0], j1)
 
         def func():
             process(r[:cbdata.length].copy(), 
@@ -286,10 +257,6 @@ cdef class KDNode:
         if cbdata.length > 0:
             func()
 
-        if rall is not None:
-            return rall[0], iall[0], jall[0]
-        else:
-            return None
 
 cdef double dcast(double * p1) nogil:
     return p1[0]
