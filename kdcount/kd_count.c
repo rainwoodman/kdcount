@@ -1,18 +1,19 @@
 #include "kdtree.h"
 
-typedef struct KDCountData {
+typedef struct TraverseData {
     KDAttr *attrs[2];
     int nedges;
     double * edges;
     uint64_t * count;
     double * weight;
-
-    int Nw;
-} KDCountData;
+    int node_ndims; 
+    int attr_ndims; /* 0 if attrs[...] are NULL */
+} TraverseData;
 
 static inline int 
-bisect_left(double key, double * r2, int N) 
+lower_bound(double key, double * r2, int N) 
 {
+    /* finding the first item that is equal or greater than key. */
     int left = 0, right = N;
     if(N == 0) return 0;
     if(key < r2[0]) return 0;
@@ -45,7 +46,7 @@ static int bisect_right(double key, double * r2, int N) {
 }
 #endif
 static void 
-kd_count_check(KDCountData * kdcd, KDNode * nodes[2], 
+kd_count_check(TraverseData * trav, KDNode * nodes[2], 
         int start, int end) 
 {
 
@@ -53,20 +54,20 @@ kd_count_check(KDCountData * kdcd, KDNode * nodes[2],
     int d;
     KDTree * t0 = nodes[0]->tree;
     KDTree * t1 = nodes[1]->tree;
-    int Nd = t0->input.dims[1];
-    int Nw = kdcd->Nw;
+    int node_ndims = trav->node_ndims;
+    int attr_ndims = trav->attr_ndims;
 
-    double * p0base = alloca(nodes[0]->size * sizeof(double) * Nd);
-    double * p1base = alloca(nodes[1]->size * sizeof(double) * Nd);
-    double * w0base = alloca(nodes[0]->size * sizeof(double) * Nw);
-    double * w1base = alloca(nodes[1]->size * sizeof(double) * Nw);
+    double * p0base = alloca(nodes[0]->size * sizeof(double) * node_ndims);
+    double * p1base = alloca(nodes[1]->size * sizeof(double) * node_ndims);
+    double * w0base = alloca(nodes[0]->size * sizeof(double) * attr_ndims);
+    double * w1base = alloca(nodes[1]->size * sizeof(double) * attr_ndims);
     /* collect all nodes[1] positions to a continue block */
     double * p1, * p0, *w0, *w1;
-    double half[Nd];
-    double full[Nd];
+    double half[node_ndims];
+    double full[node_ndims];
 
     if(t0->boxsize) {
-        for(d = 0; d < Nd; d++) {
+        for(d = 0; d < node_ndims; d++) {
             half[d] = t0->boxsize[d] * 0.5;
             full[d] = t0->boxsize[d];
         }
@@ -74,14 +75,14 @@ kd_count_check(KDCountData * kdcd, KDNode * nodes[2],
 
     kd_collect(nodes[0], &t0->input, p0base);
     kd_collect(nodes[1], &t1->input, p1base);
-    if(Nw > 0) {
-        kd_collect(nodes[0], &kdcd->attrs[0]->input, w0base);
-        kd_collect(nodes[1], &kdcd->attrs[1]->input, w1base);
+    if(attr_ndims > 0) {
+        kd_collect(nodes[0], &trav->attrs[0]->input, w0base);
+        kd_collect(nodes[1], &trav->attrs[1]->input, w1base);
     }
     for (p0 = p0base, w0 = w0base, i = 0; i < nodes[0]->size; i++) {
         for (p1 = p1base, w1 = w1base, j = 0; j < nodes[1]->size; j++) {
             double rr = 0.0;
-            for (d = 0; d < Nd; d++){
+            for (d = 0; d < node_ndims; d++){
                 double dx = p1[d] - p0[d];
                 if (dx < 0) dx = - dx;
                 if (t0->boxsize) {
@@ -89,36 +90,36 @@ kd_count_check(KDCountData * kdcd, KDNode * nodes[2],
                 }
                 rr += dx * dx;
             }
-            int b = bisect_left(rr, &kdcd->edges[start], end - start) + start;
-            if (b < kdcd->nedges) {
-                kdcd->count[b] += 1;
-                for(d = 0; d < Nw; d++) {
-                    kdcd->weight[b * Nw + d] += w0[d] * w1[d];
+            int b = lower_bound(rr, &trav->edges[start], end - start) + start;
+            if (b < trav->nedges) {
+                trav->count[b] += 1;
+                for(d = 0; d < attr_ndims; d++) {
+                    trav->weight[b * attr_ndims + d] += w0[d] * w1[d];
                 }
             }
-            w1 += Nw;
-            p1 += Nd;
+            w1 += attr_ndims;
+            p1 += node_ndims;
         }
-        w0 += Nw;
-        p0 += Nd;
+        w0 += attr_ndims;
+        p0 += node_ndims;
     }
     
 }
 
 
 static void 
-kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2], 
+kd_count_traverse(TraverseData * trav, KDNode * nodes[2], 
         int start, int end) 
 {
-    int Nd = nodes[0]->tree->input.dims[1];
-    int Nw = kdcd->Nw;
+    int node_ndims = trav->node_ndims;
+    int attr_ndims = trav->attr_ndims;
     double distmax = 0, distmin = 0;
     int d;
     double *min0 = kd_node_min(nodes[0]);
     double *min1 = kd_node_min(nodes[1]);
     double *max0 = kd_node_max(nodes[0]);
     double *max1 = kd_node_max(nodes[1]);
-    for(d = 0; d < Nd; d++) {
+    for(d = 0; d < node_ndims; d++) {
         double min, max;
         double realmin, realmax;
         min = min0[d] - max1[d];
@@ -128,20 +129,20 @@ kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2],
         distmax += realmax * realmax;
     }
 
-    start = bisect_left(distmin, &kdcd->edges[start], end - start) + start;
-    end = bisect_left(distmax, &kdcd->edges[start], end - start) + start;
-    if(start >= kdcd->nedges) {
+    start = lower_bound(distmin, &trav->edges[start], end - start) + start;
+    end = lower_bound(distmax, &trav->edges[start], end - start) + start;
+    if(start >= trav->nedges) {
         /* too far! skip */
         return;
     }
     if(start == end) {
         /* all bins are quickly counted no need to open*/
-        kdcd->count[start] += nodes[0]->size * nodes[1]->size;
-        if(Nw > 0) {
-            double * w0 = kd_attr_get_node(kdcd->attrs[0], nodes[0]);
-            double * w1 = kd_attr_get_node(kdcd->attrs[1], nodes[1]);
-            for(d = 0; d < Nw; d++) {
-                kdcd->weight[start * Nw + d] += w0[d] * w1[d]; 
+        trav->count[start] += nodes[0]->size * nodes[1]->size;
+        if(attr_ndims > 0) {
+            double * w0 = kd_attr_get_node(trav->attrs[0], nodes[0]);
+            double * w1 = kd_attr_get_node(trav->attrs[1], nodes[1]);
+            for(d = 0; d < attr_ndims; d++) {
+                trav->weight[start * attr_ndims + d] += w0[d] * w1[d]; 
             }
         }
         return;
@@ -154,13 +155,13 @@ kd_count_traverse(KDCountData * kdcd, KDNode * nodes[2],
     }
     if(nodes[open]->dim < 0) {
         /* can't open the nodes, need to enumerate */
-        kd_count_check(kdcd, nodes, start, end);
+        kd_count_check(trav, nodes, start, end);
     } else {
         KDNode * save = nodes[open];
         nodes[open] = save->link[0];
-        kd_count_traverse(kdcd, nodes, start, end);
+        kd_count_traverse(trav, nodes, start, end);
         nodes[open] = save->link[1];
-        kd_count_traverse(kdcd, nodes, start, end);
+        kd_count_traverse(trav, nodes, start, end);
         nodes[open] = save;
     } 
 }
@@ -171,19 +172,20 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         int nedges) 
 {
     double * edges2 = alloca(sizeof(double) * nedges);
-    int Nw;
+    int attr_ndims;
     if (attrs[0]) 
-        Nw = attrs[0]->input.dims[1];
+        attr_ndims = attrs[0]->input.dims[1];
     else
-        Nw = 0;
+        attr_ndims = 0;
 
-    KDCountData kdcd = {
+    TraverseData trav = {
         .attrs = {attrs[0], attrs[1]},
         .nedges = nedges,
         .edges = edges2,
         .count = count,
         .weight = weight,
-        .Nw = Nw,
+        .attr_ndims = attr_ndims,
+        .node_ndims = nodes[0]->tree->input.dims[1],
     };
 
     int d;
@@ -194,12 +196,12 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         else
             edges2[i] = i - nedges;
         count[i] = 0;
-        if(Nw > 0) {
-            for(d = 0; d < Nw; d++) {
-                weight[i * Nw + d] = 0;
+        if(attr_ndims > 0) {
+            for(d = 0; d < attr_ndims; d++) {
+                weight[i * attr_ndims + d] = 0;
             }
         }
     }
     
-    kd_count_traverse(&kdcd, nodes, 0, nedges);
+    kd_count_traverse(&trav, nodes, 0, nedges);
 }

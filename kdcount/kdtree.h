@@ -208,17 +208,17 @@ void
 kd_attr_init(KDAttr * attr, KDNode * root);
 
 /* x and y points to the double position */
-typedef struct KDEnumData {
+typedef struct KDEnumPair {
     double r;
     ptrdiff_t i;
     ptrdiff_t j;
-} KDEnumData;
+} KDEnumPair;
 
-typedef int (*kd_enum_callback)(void * data, KDEnumData * enumdata);
+typedef int (*kd_enum_callback)(void * userdata, KDEnumPair * pair);
 
 int 
 kd_enum(KDNode * nodes[2], double maxr,
-        kd_enum_callback callback, void * data);
+        kd_enum_callback callback, void * userdata);
 
 int 
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);

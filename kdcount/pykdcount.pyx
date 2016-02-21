@@ -8,13 +8,13 @@ from numpy cimport npy_uint64
 numpy.import_array()
 
 cdef extern from "kdtree.h":
-    struct KDEnumData:
+    struct KDEnumPair:
         double r 
         npy_intp i
         npy_intp j
 
     ctypedef double (*kd_castfunc)(void * p)
-    ctypedef int (*kd_enum_callback)(void * data, KDEnumData * endata)
+    ctypedef int (*kd_enum_callback)(void * userdata, KDEnumPair * pair)
     ctypedef void (*kd_freefunc)(void* data, npy_intp size, void * ptr) nogil
     ctypedef void * (*kd_mallocfunc)(void* data, npy_intp size) nogil
 
@@ -274,14 +274,14 @@ cdef struct CBData:
     void * notify
     int ndims
 
-cdef int callback(CBData * data, KDEnumData * endata) except -1:
+cdef int callback(CBData * data, KDEnumPair * pair) except -1:
     if data.length == data.size:
         (<object>(data.notify)).__call__()
         data.length = 0
     cdef int d
-    data.r[data.length] = endata.r
-    data.i[data.length] = endata.i
-    data.j[data.length] = endata.j
+    data.r[data.length] = pair.r
+    data.i[data.length] = pair.i
+    data.j[data.length] = pair.j
 
     data.length = data.length + 1
     return 0

@@ -1,83 +1,84 @@
 #include "kdtree.h"
 
-typedef struct KDIntegrateData {
+typedef struct TraverseData {
     KDAttr * attr;
     uint64_t* count;
     double * weight;
     double * min;
     double * max;
-    int Nw;
-} KDIntegrateData;
+    int attr_ndims;
+    int node_ndims;
+} TraverseData;
 
 static void 
-kd_integrate_check(KDIntegrateData * kdid, KDNode * node) 
+kd_integrate_check(TraverseData * trav, KDNode * node) 
 {
 
     ptrdiff_t i, j;
     int d;
     KDTree * t0 = node->tree;
-    int Nd = t0->input.dims[1];
-    int Nw = kdid->Nw;
+    int node_ndims = trav->node_ndims;
+    int attr_ndims = trav->attr_ndims;
 
-    double * p0base = alloca(node->size * sizeof(double) * Nd);
-    double * w0base = alloca(node->size * sizeof(double) * Nw);
+    double * p0base = alloca(node->size * sizeof(double) * node_ndims);
+    double * w0base = alloca(node->size * sizeof(double) * attr_ndims);
     /* collect all node positions to a continue block */
     double *p0, *w0;
 
     kd_collect(node, &t0->input, p0base);
-    if(Nw > 0) {
-        kd_collect(node, &kdid->attr->input, w0base);
+    if(attr_ndims > 0) {
+        kd_collect(node, &trav->attr->input, w0base);
     }
 
     for (p0 = p0base, w0 = w0base, i = 0; i < node->size; i++) {
         int inside = 1;
-        for (d = 0; d < Nd; d++){
-            if(p0[d] < kdid->min[d] || p0[d] >= kdid->max[d]) {
+        for (d = 0; d < node_ndims; d++){
+            if(p0[d] < trav->min[d] || p0[d] >= trav->max[d]) {
                 inside = 0;
                 break;
             }
         }
         if(inside) {
-            kdid->count[0] += 1;
-            for(d = 0; d < Nw; d++) {
-                kdid->weight[d] += w0[d];
+            trav->count[0] += 1;
+            for(d = 0; d < attr_ndims; d++) {
+                trav->weight[d] += w0[d];
             }
         }
-        w0 += Nw;
-        p0 += Nd;
+        w0 += attr_ndims;
+        p0 += node_ndims;
     }
 }
 
 
 static void 
-kd_integrate_traverse(KDIntegrateData * kdid, KDNode * node) 
+kd_integrate_traverse(TraverseData * trav, KDNode * node) 
 {
-    int Nd = node->tree->input.dims[1];
-    int Nw = kdid->Nw;
+    int node_ndims = trav->node_ndims;
+    int attr_ndims = trav->attr_ndims;
     int d;
     double *min0 = kd_node_min(node);
     double *max0 = kd_node_max(node);
-    for(d = 0; d < Nd; d++) {
-        if(min0[d] >= kdid->max[d] || max0[d] < kdid->min[d]) {
+    for(d = 0; d < node_ndims; d++) {
+        if(min0[d] >= trav->max[d] || max0[d] < trav->min[d]) {
             /* fully outside, skip this node */
             return;
         }
     }
 
     int inside = 1;
-    for(d = 0; d < Nd; d++) {
-        if(min0[d] < kdid->min[d] || max0[d] >= kdid->max[d]) {
+    for(d = 0; d < node_ndims; d++) {
+        if(min0[d] < trav->min[d] || max0[d] >= trav->max[d]) {
             inside = 0;
             break;
         }
     }
     if(inside) {
         /* node inside integration range */
-        kdid->count[0] += node->size;
-        if(Nw > 0) {
-            double * w0 = kd_attr_get_node(kdid->attr, node);
-            for(d = 0; d < Nw; d++) {
-                kdid->weight[d] += w0[d];
+        trav->count[0] += node->size;
+        if(attr_ndims > 0) {
+            double * w0 = kd_attr_get_node(trav->attr, node);
+            for(d = 0; d < attr_ndims; d++) {
+                trav->weight[d] += w0[d];
             }
         }
         return;
@@ -85,10 +86,10 @@ kd_integrate_traverse(KDIntegrateData * kdid, KDNode * node)
 
     if(node->dim < 0) {
         /* can't open the node, need to enumerate */
-        kd_integrate_check(kdid, node);
+        kd_integrate_check(trav, node);
     } else {
-        kd_integrate_traverse(kdid, node->link[0]);
-        kd_integrate_traverse(kdid, node->link[1]);
+        kd_integrate_traverse(trav, node->link[0]);
+        kd_integrate_traverse(trav, node->link[1]);
     } 
 }
 
@@ -97,29 +98,30 @@ kd_integrate(KDNode * node, KDAttr * attr,
         uint64_t * count, double * weight, 
         double * min, double * max) 
 {
-    int Nw;
+    int attr_ndims;
     int d;
 
     if (attr) 
-        Nw = attr->input.dims[1];
+        attr_ndims = attr->input.dims[1];
     else
-        Nw = 0;
+        attr_ndims = 0;
     
-    KDIntegrateData kdid = {
+    TraverseData trav = {
         .attr = attr,
         .count = count,
         .weight = weight,
-        .Nw = Nw,
+        .attr_ndims = attr_ndims,
+        .node_ndims = node->tree->input.dims[1],
         .min = min,
         .max = max,
     };
 
     count[0] = 0;
-    if(Nw > 0) {
-        for(d = 0; d < Nw; d++) {
+    if(attr_ndims > 0) {
+        for(d = 0; d < attr_ndims; d++) {
             weight[d] = 0;
         }
     }
     
-    kd_integrate_traverse(&kdid, node);
+    kd_integrate_traverse(&trav, node);
 }

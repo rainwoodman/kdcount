@@ -2,7 +2,7 @@
 
 static int 
 kd_enum_check(KDNode * nodes[2], double rmax2,
-        kd_enum_callback callback, void * data);
+        kd_enum_callback callback, void * userdata);
 /*
  * enumerate two KDNode trees, up to radius max.
  *
@@ -13,7 +13,7 @@ kd_enum_check(KDNode * nodes[2], double rmax2,
  * */
 int 
 kd_enum(KDNode * nodes[2], double maxr,
-        kd_enum_callback callback, void * data) 
+        kd_enum_callback callback, void * userdata) 
 {
     int Nd = nodes[0]->tree->input.dims[1];
     double distmax = 0, distmin = 0;
@@ -51,13 +51,13 @@ kd_enum(KDNode * nodes[2], double maxr,
             KDNode * save = nodes[open];
             nodes[open] = save->link[0];
             int rt;
-            rt = kd_enum(nodes, maxr, callback, data);
+            rt = kd_enum(nodes, maxr, callback, userdata);
             if(rt != 0) {
                 nodes[open] = save;
                 return rt;
             }
             nodes[open] = save->link[1];
-            rt = kd_enum(nodes, maxr, callback, data);
+            rt = kd_enum(nodes, maxr, callback, userdata);
             nodes[open] = save;
             return rt;
         } else {
@@ -68,12 +68,12 @@ kd_enum(KDNode * nodes[2], double maxr,
          * and enumerate  */
     }
 
-    return kd_enum_check(nodes, rmax2, callback, data);
+    return kd_enum_check(nodes, rmax2, callback, userdata);
 }
 
 static int 
 kd_enum_check(KDNode * nodes[2], double rmax2,
-        kd_enum_callback callback, void * data) 
+        kd_enum_callback callback, void * userdata) 
 {
     int rt = 0;
     ptrdiff_t i, j;
@@ -88,7 +88,7 @@ kd_enum_check(KDNode * nodes[2], double rmax2,
     double * p1, * p0;
     double half[Nd];
     double full[Nd];
-    KDEnumData endata;
+    KDEnumPair pair;
 
     if(t0->boxsize) {
         for(d = 0; d < Nd; d++) {
@@ -103,7 +103,7 @@ kd_enum_check(KDNode * nodes[2], double rmax2,
 
     for (p0 = p0base, i = nodes[0]->start; 
         i < nodes[0]->start + nodes[0]->size; i++) {
-        endata.i = t0->ind[i];
+        pair.i = t0->ind[i];
         for (p1 = p1base, j = nodes[1]->start; 
              j < nodes[1]->start + nodes[1]->size; j++) {
             double r2 = 0.0;
@@ -116,9 +116,9 @@ kd_enum_check(KDNode * nodes[2], double rmax2,
                 r2 += dx * dx;
             }
             if(r2 <= rmax2) {
-                endata.j = t1->ind[j];
-                endata.r = sqrt(r2);
-                if(0 != callback(data, &endata)) {
+                pair.j = t1->ind[j];
+                pair.r = sqrt(r2);
+                if(0 != callback(userdata, &pair)) {
                     rt = -1;
                     goto exit;
                 }
