@@ -6,7 +6,8 @@ from distutils.extension import Extension
 
 extensions = [
         Extension("kdcount.pykdcount", ["kdcount/pykdcount.pyx"], 
-            depends=['kdcount/kd_fof.h', 'kdcount/kd_enum.h', 'kdcount/kd_count.h'],
+            depends=['kdcount/kd_fof.h', 'kdcount/kd_enum.h', 
+                     'kdcount/kd_count.h', 'kdcount/kd_integrate.h'],
             include_dirs=["kdcount/", numpy.get_include()])
         ]
 

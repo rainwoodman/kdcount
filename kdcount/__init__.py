@@ -2,6 +2,7 @@ import numpy
 from heapq import heappush, heappop
 
 from . import pykdcount as _core
+from numpy.lib.stride_tricks import broadcast_arrays
 
 class KDNode(_core.KDNode):
     def __repr__(self):
@@ -24,6 +25,21 @@ class KDNode(_core.KDNode):
             self.enum(other, rmax, process, bunch)
         for r, i, j in makeiter(feeder):
             yield r, i, j
+    def integrate(self, min, max, attr=None):
+        if numpy.isscalar(min):
+            min = [min for i in range(self.ndims)]
+        if numpy.isscalar(max):
+            max = [max for i in range(self.ndims)]
+
+        min = numpy.array(min, dtype='f8', order='C')
+        max = numpy.array(max, dtype='f8', order='C')
+
+        if (min).shape[-1] != self.ndims:
+            raise ValueError("dimension of min does not match Node")
+        if (max).shape[-1] != self.ndims:
+            raise ValueError("dimension of max does not match Node")
+        min, max = broadcast_arrays(min, max)
+        return _core.KDNode.integrate(self, min, max, attr)
 
     def make_forest(self, chunksize):
         """ Divide a tree branch to a forest, 

@@ -57,6 +57,27 @@ def test_count_symmetric():
     assert_equal(tree2.count(tree1, (0, 0.1, 1.0)),
                  tree1.count(tree2, (0, 0.1, 1.0)))
 
+def test_integrate1d():
+    pos = numpy.arange(1000).astype('f4').reshape(-1, 1)
+    tree = KDTree(pos)
+    root = tree.root
+    assert_equal(root.integrate(-numpy.inf, numpy.inf), 1000)
+
+    assert_equal(root.integrate(0, 1), 1)
+    assert_equal(root.integrate(0, 0), 0)
+    assert_equal(root.integrate(999, 999), 0)
+    assert_equal(root.integrate(0, pos), pos[:, 0])
+
+def test_integrate2d():
+    N = 1000
+    pos = numpy.arange(N).astype('f4').reshape(-1, 1)
+    pos = numpy.concatenate([pos, pos], axis=-1)
+    tree = KDTree(pos)
+    root = tree.root
+    assert_equal(root.integrate(-numpy.inf, numpy.inf), N)
+
+    assert_equal(root.integrate(0, pos), numpy.arange(N))
+         
 def test_attr():
     pos = numpy.arange(1000).astype('f4').reshape(-1, 1)
     shapes = [(), (1,), (2,)]

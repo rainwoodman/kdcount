@@ -67,6 +67,11 @@ cdef extern from "kdtree.h":
             double * edges, npy_uint64 * count, 
             double * weight, 
             int nedges) nogil
+    void kd_integrate(cKDNode * node, 
+            cKDAttr * attr, 
+            npy_uint64 * count, 
+            double * weight, 
+            double * min, double * max) nogil
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -200,6 +205,34 @@ cdef class KDNode:
             raise RuntimeError("Too many friend of friend iterations. This is likely a bug.");
         return buf
 
+    def integrate(self, numpy.ndarray min, numpy.ndarray max, KDAttr attr):
+        cdef:
+            numpy.ndarray count, weight
+            cKDAttr * cattr
+            npy_intp i
+
+        shape = (<object>min).shape[:-1]
+        count = numpy.zeros(shape, dtype='u8') 
+
+        if attr is None:
+            cattr = NULL
+            for i in range(len(min)):
+                kd_integrate(self.ref, cattr,
+                    (<npy_uint64*> count.data) + i, 
+                    NULL, 
+                    (<double*> min.data) + i * min.strides[0] // 8, 
+                    (<double*> max.data) + i * max.strides[0] // 8)
+            return count
+        else:
+            cattr = attr.ref
+            weight = numpy.zeros(shape, dtype=('f8', attr.ndims)) 
+
+            kd_integrate(self.ref, cattr,
+                    (<npy_uint64*> count.data) + i, 
+                    (<double*> weight.data) + i * attr.ndims, 
+                    (<double*> min.data) + i * min.strides[0] // 8, 
+                    (<double*> max.data) + i * max.strides[0] // 8)
+            return count, weight
 
     def enum(self, KDNode other, rmax, process=None, bunch=100000, **kwargs):
         """ cross correlate with other, for all pairs
