@@ -6,14 +6,12 @@
 Welcome to kdcount's documentation!
 ===================================
 
-.. contents::
+.. toctree:: 
 
-
-.. include :: intro.rst
-.. include :: install.rst
-.. include :: correlation.rst
-
-.. include :: modules.rst
+   intro
+   install
+   correlation
+   modules
 
 
 Indices and tables
