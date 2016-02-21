@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="kdcount 0.1 documentation" href="index.html" />
     <link rel="up" title="kdcount package" href="kdcount.html" />
-    <link rel="next" title="kdcount.utils module" href="kdcount.utils.html" />
+    <link rel="next" title="kdcount.sphere module" href="kdcount.sphere.html" />
     <link rel="prev" title="kdcount.models module" href="kdcount.models.html" /> 
   </head>
   <body role="document">
@@ -39,7 +39,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="kdcount.utils.html" title="kdcount.utils module"
+          <a href="kdcount.sphere.html" title="kdcount.sphere module"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="kdcount.models.html" title="kdcount.models module"
@@ -57,17 +57,38 @@
   <div class="section" id="module-kdcount.pykdcount">
 <span id="kdcount-pykdcount-module"></span><h1>kdcount.pykdcount module<a class="headerlink" href="#module-kdcount.pykdcount" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
+<dt id="kdcount.pykdcount.KDAttr">
+<em class="property">class </em><code class="descclassname">kdcount.pykdcount.</code><code class="descname">KDAttr</code><a class="headerlink" href="#kdcount.pykdcount.KDAttr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="kdcount.pykdcount.KDAttr.buffer">
+<code class="descname">buffer</code><a class="headerlink" href="#kdcount.pykdcount.KDAttr.buffer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="kdcount.pykdcount.KDAttr.input">
+<code class="descname">input</code><a class="headerlink" href="#kdcount.pykdcount.KDAttr.input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="kdcount.pykdcount.KDAttr.ndims">
+<code class="descname">ndims</code><a class="headerlink" href="#kdcount.pykdcount.KDAttr.ndims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="kdcount.pykdcount.KDAttr.tree">
+<code class="descname">tree</code><a class="headerlink" href="#kdcount.pykdcount.KDAttr.tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="kdcount.pykdcount.KDNode">
 <em class="property">class </em><code class="descclassname">kdcount.pykdcount.</code><code class="descname">KDNode</code><a class="headerlink" href="#kdcount.pykdcount.KDNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<dl class="attribute">
-<dt id="kdcount.pykdcount.KDNode.cm">
-<code class="descname">cm</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.cm" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="kdcount.pykdcount.KDNode.count">
-<code class="descname">count</code><span class="sig-paren">(</span><em>self</em>, <em>KDNode other</em>, <em>r</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.count" title="Permalink to this definition">¶</a></dt>
+<code class="descname">count</code><span class="sig-paren">(</span><em>self</em>, <em>KDNode other</em>, <em>ndarray r</em>, <em>attrs</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.count" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -77,45 +98,27 @@
 
 <dl class="method">
 <dt id="kdcount.pykdcount.KDNode.enum">
-<code class="descname">enum</code><span class="sig-paren">(</span><em>self</em>, <em>KDNode other</em>, <em>rmax</em>, <em>process=None</em>, <em>bunch=100000</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.enum" title="Permalink to this definition">¶</a></dt>
-<dd><p>cross correlate with other, for all pairs
-closer than rmax, iterate.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="o">...</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">enum</span><span class="p">(</span><span class="o">...</span> <span class="n">process</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="gp">&gt;&gt;&gt; </span>  <span class="o">...</span>
-</pre></div>
-</div>
-<p>where r is the distance, i and j are the original
-input array index of the data. arbitrary args can be passed
-to process via kwargs.</p>
-</dd></dl>
+<code class="descname">enum</code><span class="sig-paren">(</span><em>self</em>, <em>KDNode other</em>, <em>rmax</em>, <em>process</em>, <em>bunch</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.enum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
-<dt id="kdcount.pykdcount.KDNode.enumiter">
-<code class="descname">enumiter</code><span class="sig-paren">(</span><em>self</em>, <em>KDNode other</em>, <em>rmax</em>, <em>bunch=100000</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.enumiter" title="Permalink to this definition">¶</a></dt>
-<dd><p>cross correlate with other, for all pairs
-closer than rmax, iterate.</p>
-<dl class="docutils">
-<dt>for r, i, j in A.enumiter(...):</dt>
-<dd>...</dd>
-</dl>
-<p>where r is the distance, i and j are the original
-input array index of the data.</p>
-<p>This uses a thread to convert from KDNode.enum.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="kdcount.pykdcount.KDNode.gravity">
-<code class="descname">gravity</code><span class="sig-paren">(</span><em>self</em>, <em>pos</em>, <em>smoothing</em>, <em>openangle=0.01</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.gravity" title="Permalink to this definition">¶</a></dt>
-<dd><p>gravitational potential</p>
-</dd></dl>
+<dt id="kdcount.pykdcount.KDNode.fof">
+<code class="descname">fof</code><span class="sig-paren">(</span><em>self</em>, <em>double linkinglength</em>, <em>ndarray out</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.fof" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="attribute">
 <dt id="kdcount.pykdcount.KDNode.greater">
 <code class="descname">greater</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.greater" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="kdcount.pykdcount.KDNode.index">
+<code class="descname">index</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="kdcount.pykdcount.KDNode.integrate">
+<code class="descname">integrate</code><span class="sig-paren">(</span><em>self</em>, <em>ndarray min</em>, <em>ndarray max</em>, <em>KDAttr attr</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.integrate" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -134,6 +137,11 @@ input array index of the data.</p>
 <dd></dd></dl>
 
 <dl class="attribute">
+<dt id="kdcount.pykdcount.KDNode.ndims">
+<code class="descname">ndims</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.ndims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="kdcount.pykdcount.KDNode.size">
 <code class="descname">size</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.size" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -149,89 +157,52 @@ input array index of the data.</p>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDNode.store">
-<code class="descname">store</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.store" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="kdcount.pykdcount.KDNode.tearoff">
-<code class="descname">tearoff</code><span class="sig-paren">(</span><em>self</em>, <em>thresh</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.KDNode.tearoff" title="Permalink to this definition">¶</a></dt>
-<dd><p>tearoff a tree so that each returned 
-subtree is no bigger than thresh.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="kdcount.pykdcount.KDNode.weight">
-<code class="descname">weight</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.weight" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDNode.tree">
+<code class="descname">tree</code><a class="headerlink" href="#kdcount.pykdcount.KDNode.tree" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="kdcount.pykdcount.KDStore">
-<em class="property">class </em><code class="descclassname">kdcount.pykdcount.</code><code class="descname">KDStore</code><a class="headerlink" href="#kdcount.pykdcount.KDStore" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree">
+<em class="property">class </em><code class="descclassname">kdcount.pykdcount.</code><code class="descname">KDTree</code><a class="headerlink" href="#kdcount.pykdcount.KDTree" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.Nd">
-<code class="descname">Nd</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.Nd" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.boxsize">
+<code class="descname">boxsize</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.boxsize" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.Nw">
-<code class="descname">Nw</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.Nw" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.buffers">
+<code class="descname">buffers</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.buffers" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.boxsize">
-<code class="descname">boxsize</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.boxsize" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.ind">
+<code class="descname">ind</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.ind" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.buffers">
-<code class="descname">buffers</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.buffers" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.input">
+<code class="descname">input</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.input" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.ind">
-<code class="descname">ind</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.ind" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.ndims">
+<code class="descname">ndims</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.ndims" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.input">
-<code class="descname">input</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.input" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.root">
+<code class="descname">root</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.root" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.root">
-<code class="descname">root</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.root" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.size">
-<code class="descname">size</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.size" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.strides">
-<code class="descname">strides</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.strides" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="kdcount.pykdcount.KDStore.weight">
-<code class="descname">weight</code><a class="headerlink" href="#kdcount.pykdcount.KDStore.weight" title="Permalink to this definition">¶</a></dt>
+<dt id="kdcount.pykdcount.KDTree.size">
+<code class="descname">size</code><a class="headerlink" href="#kdcount.pykdcount.KDTree.size" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
-
-<dl class="function">
-<dt id="kdcount.pykdcount.build">
-<code class="descclassname">kdcount.pykdcount.</code><code class="descname">build</code><span class="sig-paren">(</span><em>ndarray data</em>, <em>ndarray weights=None</em>, <em>boxsize=None</em>, <em>thresh=10</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.build" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="kdcount.pykdcount.makeiter">
-<code class="descclassname">kdcount.pykdcount.</code><code class="descname">makeiter</code><span class="sig-paren">(</span><em>feeder</em><span class="sig-paren">)</span><a class="headerlink" href="#kdcount.pykdcount.makeiter" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </div>
 
@@ -245,8 +216,8 @@ subtree is no bigger than thresh.</p>
   <p class="topless"><a href="kdcount.models.html"
                         title="previous chapter">kdcount.models module</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="kdcount.utils.html"
-                        title="next chapter">kdcount.utils module</a></p>
+  <p class="topless"><a href="kdcount.sphere.html"
+                        title="next chapter">kdcount.sphere module</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -281,7 +252,7 @@ subtree is no bigger than thresh.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="kdcount.utils.html" title="kdcount.utils module"
+          <a href="kdcount.sphere.html" title="kdcount.sphere module"
              >next</a> |</li>
         <li class="right" >
           <a href="kdcount.models.html" title="kdcount.models module"
@@ -292,7 +263,7 @@ subtree is no bigger than thresh.</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015, Yu Feng.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
     </div>
   </body>
 </html>

@@ -86,12 +86,6 @@ friend-of-friend clustering.</p>
 </tr>
 </tbody>
 </table>
-<dl class="method">
-<dt id="kdcount.models.dataset.w">
-<code class="descname">w</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#dataset.w"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.dataset.w" title="Permalink to this definition">¶</a></dt>
-<dd><p>weight at index ; internal method</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -114,24 +108,18 @@ is the underlying field integrated over some sampling kernel.</p>
 <p class="rubric">Attributes</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="12%" />
-<col width="88%" />
+<col width="13%" />
+<col width="87%" />
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td>pos</td>
 <td>(array_like) sample points</td>
 </tr>
-<tr class="row-even"><td>value</td>
-<td>(array_like) the sample value at pos.</td>
+<tr class="row-even"><td>wvalue</td>
+<td>(array_like) the weighted value at pos.</td>
 </tr>
 </tbody>
 </table>
-<dl class="method">
-<dt id="kdcount.models.field.wv">
-<code class="descname">wv</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/models.html#field.wv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.models.field.wv" title="Permalink to this definition">¶</a></dt>
-<dd><p>the product of weight and value, internal method.</p>
-</dd></dl>
-
 </dd></dl>
 
 </div>
@@ -193,7 +181,7 @@ is the underlying field integrated over some sampling kernel.</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015, Yu Feng.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
     </div>
   </body>
 </html>

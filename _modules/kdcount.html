@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>kdcount &mdash; kdcount 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="kdcount 0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">kdcount 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for kdcount</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">heapq</span> <span class="kn">import</span> <span class="n">heappush</span><span class="p">,</span> <span class="n">heappop</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">pykdcount</span> <span class="k">as</span> <span class="n">_core</span>
+<span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">broadcast_arrays</span>
+
+<div class="viewcode-block" id="KDNode"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode">[docs]</a><span class="k">class</span> <span class="nc">KDNode</span><span class="p">(</span><span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;KDNode(dim=</span><span class="si">%d</span><span class="s">, split=</span><span class="si">%d</span><span class="s">, size=</span><span class="si">%d</span><span class="s">)&#39;</span> <span class="o">%</span> 
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+<div class="viewcode-block" id="KDNode.enumiter"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.enumiter">[docs]</a>    <span class="k">def</span> <span class="nf">enumiter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">bunch</span><span class="o">=</span><span class="mi">100000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; cross correlate with other, for all pairs</span>
+<span class="sd">            closer than rmax, iterate.</span>
+
+<span class="sd">            for r, i, j in A.enumiter(...):</span>
+<span class="sd">                ...</span>
+<span class="sd">            where r is the distance, i and j are the original</span>
+<span class="sd">            input array index of the data.</span>
+
+<span class="sd">            This uses a thread to convert from KDNode.enum.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">feeder</span><span class="p">(</span><span class="n">process</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enum</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">bunch</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">makeiter</span><span class="p">(</span><span class="n">feeder</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">r</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span></div>
+
+<div class="viewcode-block" id="KDNode.enum"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.enum">[docs]</a>    <span class="k">def</span> <span class="nf">enum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">bunch</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; cross correlate with other, for all pairs</span>
+<span class="sd">            closer than rmax, iterate.</span>
+
+<span class="sd">            &gt;&gt;&gt; def process(r, i, j, **kwargs):</span>
+<span class="sd">            &gt;&gt;&gt;    ...</span>
+
+<span class="sd">            &gt;&gt;&gt; A.enum(... process, **kwargs):</span>
+<span class="sd">            &gt;&gt;&gt;   ...</span>
+
+<span class="sd">            where r is the distance, i and j are the original</span>
+<span class="sd">            input array index of the data. arbitrary args can be passed</span>
+<span class="sd">            to process via kwargs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rall</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">process</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">rall</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;f8&#39;</span><span class="p">)]</span>
+            <span class="n">iall</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;intp&#39;</span><span class="p">)]</span>
+            <span class="n">jall</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;intp&#39;</span><span class="p">)]</span>
+            <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">r1</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">j1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="n">rall</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rall</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">r1</span><span class="p">)</span>
+                <span class="n">iall</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iall</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i1</span><span class="p">)</span>
+                <span class="n">jall</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jall</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">j1</span><span class="p">)</span>
+
+        <span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="o">.</span><span class="n">enum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">rmax</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">bunch</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">rall</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">rall</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">iall</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">jall</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="KDNode.count"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gray &amp; Moore based fast dual tree counting.</span>
+
+<span class="sd">            r is the edge of bins:</span>
+
+<span class="sd">            -inf or r[i-1] &lt; count[i] &lt;= r[i]</span>
+
+<span class="sd">            attrs: None or tuple</span>
+<span class="sd">                if tuple, attrs = (attr_self, attr_other)</span>
+
+<span class="sd">            Returns: count, </span>
+<span class="sd">                count, weight of attrs is not None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="KDNode.fof"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.fof">[docs]</a>    <span class="k">def</span> <span class="nf">fof</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkinglength</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Friend-of-Friend clustering with linking length.</span>
+
+<span class="sd">            Returns: the label</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;intp&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="o">.</span><span class="n">fof</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkinglength</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span></div>
+ 
+<div class="viewcode-block" id="KDNode.integrate"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.integrate">[docs]</a>    <span class="k">def</span> <span class="nf">integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Calculate the total number of points between [min, max).</span>
+<span class="sd">            </span>
+<span class="sd">            If attr is given, also calculate the sum of the weight.</span>
+
+<span class="sd">            This is a M log(N) operation, where M is the number of min/max</span>
+<span class="sd">            queries and N is number of points.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="nb">min</span><span class="p">):</span>
+            <span class="nb">min</span> <span class="o">=</span> <span class="p">[</span><span class="nb">min</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ndims</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="nb">max</span><span class="p">):</span>
+            <span class="nb">max</span> <span class="o">=</span> <span class="p">[</span><span class="nb">max</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ndims</span><span class="p">)]</span>
+
+        <span class="nb">min</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+        <span class="nb">max</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">max</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">min</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndims</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;dimension of min does not match Node&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">max</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndims</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;dimension of max does not match Node&quot;</span><span class="p">)</span>
+        <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span> <span class="o">=</span> <span class="n">broadcast_arrays</span><span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="KDNode.make_forest"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.make_forest">[docs]</a>    <span class="k">def</span> <span class="nf">make_forest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunksize</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Divide a tree branch to a forest, </span>
+<span class="sd">            each subtree of size at most chunksize &quot;&quot;&quot;</span>
+        <span class="n">heap</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">heappush</span><span class="p">(</span><span class="n">heap</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">w</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">heappop</span><span class="p">(</span><span class="n">heap</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+                <span class="n">heappush</span><span class="p">(</span><span class="n">heap</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">less</span> <span class="ow">is</span> <span class="bp">None</span> \
+            <span class="ow">or</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="n">chunksize</span><span class="p">):</span>
+                <span class="n">heappush</span><span class="p">(</span><span class="n">heap</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="n">heappush</span><span class="p">(</span><span class="n">heap</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">less</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">less</span><span class="p">))</span>
+            <span class="n">heappush</span><span class="p">(</span><span class="n">heap</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">greater</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">greater</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">heap</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">x</span></div></div>
+
+<div class="viewcode-block" id="KDTree"><a class="viewcode-back" href="../kdcount.html#kdcount.KDTree">[docs]</a><span class="k">class</span> <span class="nc">KDTree</span><span class="p">(</span><span class="n">_core</span><span class="o">.</span><span class="n">KDTree</span><span class="p">):</span>
+    <span class="n">__nodeclass__</span> <span class="o">=</span> <span class="n">KDNode</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;KDTree(size=</span><span class="si">%d</span><span class="s">, thresh=</span><span class="si">%d</span><span class="s">, boxsize=</span><span class="si">%s</span><span class="s">, input=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> 
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">boxsize</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="KDAttr"><a class="viewcode-back" href="../kdcount.html#kdcount.KDAttr">[docs]</a><span class="k">class</span> <span class="nc">KDAttr</span><span class="p">(</span><span class="n">_core</span><span class="o">.</span><span class="n">KDAttr</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;KDAttr(input=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span></div>
+
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">Queue</span> <span class="kn">as</span> <span class="nn">queue</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">queue</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<div class="viewcode-block" id="makeiter"><a class="viewcode-back" href="../kdcount.html#kdcount.makeiter">[docs]</a><span class="k">def</span> <span class="nf">makeiter</span><span class="p">(</span><span class="n">feeder</span><span class="p">):</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="n">process</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">feeder</span><span class="p">(</span><span class="n">process</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="ne">StopIteration</span><span class="p">)</span>
+    <span class="n">old</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">wrap</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">process</span><span class="p">,))</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">old</span><span class="p">)</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="k">break</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="n">item</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">yield</span> <span class="n">item</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span></div>
+
+<span class="kn">from</span> <span class="nn">numpy.testing</span> <span class="kn">import</span> <span class="n">Tester</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">Tester</span><span class="p">()</span><span class="o">.</span><span class="n">test</span>
+<span class="n">bench</span> <span class="o">=</span> <span class="n">Tester</span><span class="p">()</span><span class="o">.</span><span class="n">bench</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">kdcount 0.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Yu Feng.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+    </div>
+  </body>
+</html>

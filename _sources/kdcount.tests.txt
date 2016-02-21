@@ -1,0 +1,21 @@
+kdcount.tests package
+=====================
+
+Submodules
+----------
+
+.. toctree::
+
+   kdcount.tests.test_cluster
+   kdcount.tests.test_correlate
+   kdcount.tests.test_sphere
+   kdcount.tests.test_tree
+   kdcount.tests.test_utils
+
+Module contents
+---------------
+
+.. automodule:: kdcount.tests
+    :members:
+    :undoc-members:
+    :show-inheritance:

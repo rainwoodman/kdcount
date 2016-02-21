@@ -1,0 +1,7 @@
+kdcount.sphere module
+=====================
+
+.. automodule:: kdcount.sphere
+    :members:
+    :undoc-members:
+    :show-inheritance:

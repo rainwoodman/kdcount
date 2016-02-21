@@ -66,6 +66,8 @@ estimator, the binning is modeled by subclasses of <a class="reference internal"
 <li><a class="reference internal" href="#kdcount.correlate.RBinning" title="kdcount.correlate.RBinning"><code class="xref py py-class docutils literal"><span class="pre">RBinning</span></code></a></li>
 <li><a class="reference internal" href="#kdcount.correlate.RmuBinning" title="kdcount.correlate.RmuBinning"><code class="xref py py-class docutils literal"><span class="pre">RmuBinning</span></code></a></li>
 <li><a class="reference internal" href="#kdcount.correlate.XYBinning" title="kdcount.correlate.XYBinning"><code class="xref py py-class docutils literal"><span class="pre">XYBinning</span></code></a></li>
+<li>:py:class: <cite>FlatSkyBinning</cite></li>
+<li>:py:class: <cite>FlatSkyMultipoleBinning</cite></li>
 </ul>
 <p>kdcount takes two types of input data: &#8216;point&#8217; and &#8216;field&#8217;.</p>
 <p><a class="reference internal" href="kdcount.models.html#kdcount.models.points" title="kdcount.models.points"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.points</span></code></a> describes data with position and weight. For example, galaxies and
@@ -84,15 +86,15 @@ separation can be a dimension the same way as the &#8216;x&#8217; separation. Fo
 see <a class="reference internal" href="#kdcount.correlate.RmuBinning" title="kdcount.correlate.RmuBinning"><code class="xref py py-class docutils literal"><span class="pre">RmuBinning</span></code></a>.</p>
 <dl class="class">
 <dt id="kdcount.correlate.Binning">
-<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">Binning</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">Binning</code><span class="sig-paren">(</span><em>dims</em>, <em>edges</em>, <em>compute_mean_coords=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Binning of the correlation function. Pairs whose distance is with-in a bin
-is counted towards the bin.</p>
+<p>Binning of the correlation function. Pairs whose distance is 
+within a bin is counted towards the bin.</p>
 <p class="rubric">Attributes</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="7%" />
-<col width="93%" />
+<col width="14%" />
+<col width="86%" />
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td>dims</td>
@@ -104,11 +106,43 @@ is counted towards the bin.</p>
 <tr class="row-odd"><td>centers</td>
 <td>( array_like) centers of bins per dimension; currently it is the mid point of the edges.</td>
 </tr>
+<tr class="row-even"><td>compute_mean_coords</td>
+<td>(bool, optional) If <cite>True</cite>, store and compute the mean coordinate values in the __call__ function. Default is <cite>False</cite></td>
+</tr>
 </tbody>
 </table>
 <dl class="method">
+<dt id="kdcount.correlate.Binning.digitize">
+<code class="descname">digitize</code><span class="sig-paren">(</span><em>r</em>, <em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.digitize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.digitize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the bin number of pairs separated by distances r, 
+Use <a class="reference internal" href="#kdcount.correlate.Binning.linear" title="kdcount.correlate.Binning.linear"><code class="xref py py-meth docutils literal"><span class="pre">linear()</span></code></a> to convert from multi-dimension bin index to
+linear index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>r</strong> : array_like</p>
+<blockquote>
+<div><p>separation</p>
+</div></blockquote>
+<p><strong>i, j</strong> : array_like</p>
+<blockquote>
+<div><p>index (i, j) of pairs.</p>
+</div></blockquote>
+<p><strong>data1, data2 :</strong></p>
+<blockquote class="last">
+<div><p>The position of first point is data1.pos[i], the position of second point is
+data2.pos[j].</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="kdcount.correlate.Binning.linear">
-<code class="descname">linear</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.linear" title="Permalink to this definition">¶</a></dt>
+<code class="descname">linear</code><span class="sig-paren">(</span><em>**tobin</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.linear" title="Permalink to this definition">¶</a></dt>
 <dd><p>Linearize bin indices.</p>
 <p>This function is called by subclasses. Refer to the source
 code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="kdcount.correlate.RBinning"><code class="xref py py-class docutils literal"><span class="pre">RBinning</span></code></a> for an example.</p>
@@ -129,11 +163,108 @@ code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="kdcount.correlate.Binning.sum_shapes">
+<code class="descname">sum_shapes</code><span class="sig-paren">(</span><em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.sum_shapes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.sum_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the shapes of the summation arrays, 
+given the input data and shape of the bins</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="kdcount.correlate.Binning.update_mean_coords">
+<code class="descname">update_mean_coords</code><span class="sig-paren">(</span><em>dig</em>, <em>**tobin</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#Binning.update_mean_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.Binning.update_mean_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the mean coordinate sums</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="kdcount.correlate.FlatSkyBinning">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">FlatSkyBinning</code><span class="sig-paren">(</span><em>rbins</em>, <em>Nmu</em>, <em>los</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#FlatSkyBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.FlatSkyBinning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+<p>Binning in R and mu, in the flat sky approximation, such 
+that all pairs have the same line-of-sight, which is 
+taken to be the axis specified by the <cite>los</cite> parameter 
+(default is the last dimension)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>rmax</strong> : float</p>
+<blockquote>
+<div><p>the maximum radius to measure to</p>
+</div></blockquote>
+<p><strong>Nr</strong> : int</p>
+<blockquote>
+<div><p>the number of bins in <cite>r</cite> direction.</p>
+</div></blockquote>
+<p><strong>Nmu</strong> : int</p>
+<blockquote>
+<div><p>the number of bins in <cite>mu</cite> direction.</p>
+</div></blockquote>
+<p><strong>los</strong> : int, {0, 1, 2}</p>
+<blockquote class="last">
+<div><p>the axis to treat as the line-of-sight</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="kdcount.correlate.FlatSkyBinning.digitize">
+<code class="descname">digitize</code><span class="sig-paren">(</span><em>r</em>, <em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#FlatSkyBinning.digitize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.FlatSkyBinning.digitize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="kdcount.correlate.FlatSkyMultipoleBinning">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">FlatSkyMultipoleBinning</code><span class="sig-paren">(</span><em>rbins</em>, <em>ells</em>, <em>los</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#FlatSkyMultipoleBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.FlatSkyMultipoleBinning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
+<p>Binning in R and <cite>ell</cite>, the multipole number, in the 
+flat sky approximation, such that all pairs have the 
+same line-of-sight, which is taken to be the axis specified 
+by the <cite>los</cite> parameter (default is the last dimension)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>rmax</strong> : float</p>
+<blockquote>
+<div><p>the maximum radius to measure to</p>
+</div></blockquote>
+<p><strong>Nr</strong> : int</p>
+<blockquote>
+<div><p>the number of bins in <cite>r</cite> direction.</p>
+</div></blockquote>
+<p><strong>ells</strong> : list of int</p>
+<blockquote>
+<div><p>the multipole numbers to compute</p>
+</div></blockquote>
+<p><strong>los</strong> : int, {0, 1, 2}</p>
+<blockquote class="last">
+<div><p>the axis to treat as the line-of-sight</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="kdcount.correlate.FlatSkyMultipoleBinning.digitize">
+<code class="descname">digitize</code><span class="sig-paren">(</span><em>r</em>, <em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#FlatSkyMultipoleBinning.digitize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.FlatSkyMultipoleBinning.digitize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="kdcount.correlate.FlatSkyMultipoleBinning.sum_shapes">
+<code class="descname">sum_shapes</code><span class="sig-paren">(</span><em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#FlatSkyMultipoleBinning.sum_shapes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.FlatSkyMultipoleBinning.sum_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend the shape of <cite>ells</cite> to the summation arrays</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="kdcount.correlate.RBinning">
-<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>logscale=False</em>, <em>Rmin=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RBinning" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RBinning</code><span class="sig-paren">(</span><em>rbins</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
 <p>Binning along radial direction.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -152,11 +283,16 @@ code of <a class="reference internal" href="#kdcount.correlate.RBinning" title="
 </tr>
 </tbody>
 </table>
+<dl class="method">
+<dt id="kdcount.correlate.RBinning.digitize">
+<code class="descname">digitize</code><span class="sig-paren">(</span><em>r</em>, <em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RBinning.digitize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RBinning.digitize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="kdcount.correlate.RmuBinning">
-<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RmuBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>Nmubins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RmuBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RmuBinning" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">RmuBinning</code><span class="sig-paren">(</span><em>rbins</em>, <em>Nmu</em>, <em>observer</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RmuBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RmuBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
 <p>Binning in R and mu (angular along line of sight)
 mu = cos(theta), relative to line of sight from a given observer.</p>
@@ -184,11 +320,16 @@ mu = cos(theta), relative to line of sight from a given observer.</p>
 </tr>
 </tbody>
 </table>
+<dl class="method">
+<dt id="kdcount.correlate.RmuBinning.digitize">
+<code class="descname">digitize</code><span class="sig-paren">(</span><em>r</em>, <em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#RmuBinning.digitize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.RmuBinning.digitize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="kdcount.correlate.XYBinning">
-<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">XYBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#XYBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.XYBinning" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">XYBinning</code><span class="sig-paren">(</span><em>Rmax</em>, <em>Nbins</em>, <em>observer</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#XYBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.XYBinning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#kdcount.correlate.Binning" title="kdcount.correlate.Binning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.Binning</span></code></a></p>
 <p>Binning along Sky-Lineofsight directions.</p>
 <p>The bins are be (sky, los)</p>
@@ -217,6 +358,44 @@ mu = cos(theta), relative to line of sight from a given observer.</p>
 <dt>with numpy imshow , the second axis los, will be vertical</dt>
 <dd>with imshow( ..T,) the sky will be vertical.</dd>
 </dl>
+<dl class="method">
+<dt id="kdcount.correlate.XYBinning.digitize">
+<code class="descname">digitize</code><span class="sig-paren">(</span><em>r</em>, <em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#XYBinning.digitize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.XYBinning.digitize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="kdcount.correlate.compute_sum_values">
+<code class="descclassname">kdcount.correlate.</code><code class="descname">compute_sum_values</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>data1</em>, <em>data2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#compute_sum_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.compute_sum_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the sum1_ij and sum2_ij values given
+the input indices and data instances.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>i,j</strong> : array_like</p>
+<blockquote>
+<div><p>the bin indices for these pairs</p>
+</div></blockquote>
+<p><strong>data1, data2</strong> : <cite>points</cite>, <cite>field</cite> instances</p>
+<blockquote>
+<div><p>the two <cite>points</cite> or <cite>field</cite> objects</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>sum1_ij, sum2_ij</strong> : float, array_like (N,...)</p>
+<blockquote class="last">
+<div><p>contributions to sum1, sum2 &#8211; either a float or array 
+of shape (N, ...) where N is the length of <cite>i</cite>, <cite>j</cite></p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>This is called in <cite>Binning.__call__</cite> to compute
+the <cite>sum1</cite> and <cite>sum2</cite> contributions for indices <cite>(i,j)</cite></p>
 </dd></dl>
 
 <dl class="class">
@@ -288,6 +467,14 @@ for points x points:</p>
 </table>
 </dd></dl>
 
+<dl class="class">
+<dt id="kdcount.correlate.paircount_worker">
+<em class="property">class </em><code class="descclassname">kdcount.correlate.</code><code class="descname">paircount_worker</code><span class="sig-paren">(</span><em>pc</em>, <em>binning</em>, <em>data</em>, <em>np=None</em>, <em>usefast=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/correlate.html#paircount_worker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.correlate.paircount_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Context that runs the actual pair counting, attaching the appropriate 
+attributes to the parent <cite>paircount</cite></p>
+</dd></dl>
+
 </div>
 
 
@@ -347,7 +534,7 @@ for points x points:</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015, Yu Feng.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
     </div>
   </body>
 </html>

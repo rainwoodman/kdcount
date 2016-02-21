@@ -1,0 +1,7 @@
+kdcount.t module
+================
+
+.. automodule:: kdcount.t
+    :members:
+    :undoc-members:
+    :show-inheritance:

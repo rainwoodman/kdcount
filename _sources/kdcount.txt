@@ -1,6 +1,13 @@
 kdcount package
 ===============
 
+Subpackages
+-----------
+
+.. toctree::
+
+    kdcount.tests
+
 Submodules
 ----------
 
@@ -10,6 +17,8 @@ Submodules
    kdcount.correlate
    kdcount.models
    kdcount.pykdcount
+   kdcount.sphere
+   kdcount.t
    kdcount.utils
 
 Module contents

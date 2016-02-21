@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>kdcount.utils module &mdash; kdcount 0.1 documentation</title>
+    <title>kdcount.sphere module &mdash; kdcount 0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -25,7 +25,8 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="kdcount 0.1 documentation" href="index.html" />
     <link rel="up" title="kdcount package" href="kdcount.html" />
-    <link rel="prev" title="kdcount.t module" href="kdcount.t.html" /> 
+    <link rel="next" title="kdcount.t module" href="kdcount.t.html" />
+    <link rel="prev" title="kdcount.pykdcount module" href="kdcount.pykdcount.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -39,6 +40,9 @@
              >modules</a> |</li>
         <li class="right" >
           <a href="kdcount.t.html" title="kdcount.t module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="kdcount.pykdcount.html" title="kdcount.pykdcount module"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">kdcount 0.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="kdcount.html" accesskey="U">kdcount package</a> &raquo;</li> 
@@ -50,18 +54,28 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-kdcount.utils">
-<span id="kdcount-utils-module"></span><h1>kdcount.utils module<a class="headerlink" href="#module-kdcount.utils" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="kdcount.utils.bincount">
-<code class="descclassname">kdcount.utils.</code><code class="descname">bincount</code><span class="sig-paren">(</span><em>dig</em>, <em>weight</em>, <em>minlength</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/utils.html#bincount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.utils.bincount" title="Permalink to this definition">¶</a></dt>
-<dd><p>bincount supporting scalar and vector weight</p>
+  <div class="section" id="module-kdcount.sphere">
+<span id="kdcount-sphere-module"></span><h1>kdcount.sphere module<a class="headerlink" href="#module-kdcount.sphere" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="kdcount.sphere.AngularBinning">
+<em class="property">class </em><code class="descclassname">kdcount.sphere.</code><code class="descname">AngularBinning</code><span class="sig-paren">(</span><em>rbins</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/sphere.html#AngularBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.sphere.AngularBinning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="kdcount.correlate.html#kdcount.correlate.RBinning" title="kdcount.correlate.RBinning"><code class="xref py py-class docutils literal"><span class="pre">kdcount.correlate.RBinning</span></code></a></p>
+<dl class="attribute">
+<dt id="kdcount.sphere.AngularBinning.angular_centers">
+<code class="descname">angular_centers</code><a class="headerlink" href="#kdcount.sphere.AngularBinning.angular_centers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="kdcount.sphere.AngularBinning.angular_edges">
+<code class="descname">angular_edges</code><a class="headerlink" href="#kdcount.sphere.AngularBinning.angular_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
-<dt id="kdcount.utils.constant_array">
-<em class="property">class </em><code class="descclassname">kdcount.utils.</code><code class="descname">constant_array</code><a class="reference internal" href="_modules/kdcount/utils.html#constant_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.utils.constant_array" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code></p>
+<dt id="kdcount.sphere.points">
+<em class="property">class </em><code class="descclassname">kdcount.sphere.</code><code class="descname">points</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>weights=None</em>, <em>boxsize=None</em>, <em>extra={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount/sphere.html#points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.sphere.points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="kdcount.models.html#kdcount.models.points" title="kdcount.models.points"><code class="xref py py-class docutils literal"><span class="pre">kdcount.models.points</span></code></a></p>
 </dd></dl>
 
 </div>
@@ -73,12 +87,15 @@
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
+  <p class="topless"><a href="kdcount.pykdcount.html"
+                        title="previous chapter">kdcount.pykdcount module</a></p>
+  <h4>Next topic</h4>
   <p class="topless"><a href="kdcount.t.html"
-                        title="previous chapter">kdcount.t module</a></p>
+                        title="next chapter">kdcount.t module</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/kdcount.utils.txt"
+      <li><a href="_sources/kdcount.sphere.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -110,6 +127,9 @@
              >modules</a> |</li>
         <li class="right" >
           <a href="kdcount.t.html" title="kdcount.t module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="kdcount.pykdcount.html" title="kdcount.pykdcount module"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">kdcount 0.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="kdcount.html" >kdcount package</a> &raquo;</li> 

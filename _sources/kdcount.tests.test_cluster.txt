@@ -1,0 +1,7 @@
+kdcount.tests.test_cluster module
+=================================
+
+.. automodule:: kdcount.tests.test_cluster
+    :members:
+    :undoc-members:
+    :show-inheritance:
