@@ -18,7 +18,6 @@ Submodules
    kdcount.models
    kdcount.pykdcount
    kdcount.sphere
-   kdcount.t
    kdcount.utils
 
 Module contents
