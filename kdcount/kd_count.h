@@ -10,6 +10,7 @@ typedef struct KDCountData {
 
 static int bisect_left(double key, double * r2, int N) {
     int left = 0, right = N;
+    if(N == 0) return 0;
     if(key < r2[0]) return 0;
     if(key > r2[N-1]) return N;
     while(right > left) {
