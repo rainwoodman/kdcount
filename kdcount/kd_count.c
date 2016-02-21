@@ -63,15 +63,6 @@ kd_count_check(TraverseData * trav, KDNode * nodes[2],
     double * w1base = alloca(nodes[1]->size * sizeof(double) * attr_ndims);
     /* collect all nodes[1] positions to a continue block */
     double * p1, * p0, *w0, *w1;
-    double half[node_ndims];
-    double full[node_ndims];
-
-    if(t0->boxsize) {
-        for(d = 0; d < node_ndims; d++) {
-            half[d] = t0->boxsize[d] * 0.5;
-            full[d] = t0->boxsize[d];
-        }
-    }
 
     kd_collect(nodes[0], &t0->input, p0base);
     kd_collect(nodes[1], &t1->input, p1base);
@@ -83,11 +74,7 @@ kd_count_check(TraverseData * trav, KDNode * nodes[2],
         for (p1 = p1base, w1 = w1base, j = 0; j < nodes[1]->size; j++) {
             double rr = 0.0;
             for (d = 0; d < node_ndims; d++){
-                double dx = p1[d] - p0[d];
-                if (dx < 0) dx = - dx;
-                if (t0->boxsize) {
-                    if (dx > half[d]) dx = full[d] - dx;
-                }
+                double dx = kd_realdiff(nodes[0]->tree, p1[d] - p0[d], d);
                 rr += dx * dx;
             }
             int b = lower_bound(rr, &trav->edges[start], end - start) + start;
@@ -124,7 +111,7 @@ kd_count_traverse(TraverseData * trav, KDNode * nodes[2],
         double realmin, realmax;
         min = min0[d] - max1[d];
         max = max0[d] - min1[d];
-        kd_realdiff(nodes[0]->tree, min, max, &realmin, &realmax, d);
+        kd_realminmax(nodes[0]->tree, min, max, &realmin, &realmax, d);
         distmin += realmin * realmin;
         distmax += realmax * realmax;
     }

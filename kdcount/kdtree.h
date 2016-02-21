@@ -109,7 +109,9 @@ static inline double kd_attr_get(KDAttr * attr, ptrdiff_t i, ptrdiff_t d) {
     return kd_array_get(&attr->input, attr->tree->ind[i], d);
 }
 
-static void kd_realdiff(KDTree * tree, double min, double max, double * realmin, double * realmax, int d) {
+static void 
+kd_realminmax(KDTree * tree, double min, double max, double * realmin, double * realmax, int d) 
+{
     if(tree->boxsize) {
         double full = tree->boxsize[d];
         double half = full * 0.5;
@@ -167,6 +169,16 @@ static void kd_realdiff(KDTree * tree, double min, double max, double * realmin,
         }
     }
 
+}
+static inline double
+kd_realdiff(KDTree * tree, double dx, int d) 
+{
+    if (dx < 0) dx = - dx;
+    if (tree->boxsize) {
+        double half = 0.5 * tree->boxsize[d];
+        if (dx > half) dx = tree->boxsize[d] - dx;
+    }
+    return dx;
 }
 static inline void kd_collect(KDNode * node, KDArray * input, double * ptr) {
 

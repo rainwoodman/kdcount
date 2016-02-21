@@ -28,7 +28,7 @@ kd_enum(KDNode * nodes[2], double maxr,
         double realmin, realmax;
         min = min0[d] - max1[d];
         max = max0[d] - min1[d];
-        kd_realdiff(nodes[0]->tree, min, max, &realmin, &realmax, d);
+        kd_realminmax(nodes[0]->tree, min, max, &realmin, &realmax, d);
         distmin += realmin * realmin;
         distmax += realmax * realmax;
     }
@@ -90,13 +90,6 @@ kd_enum_check(KDNode * nodes[2], double rmax2,
     double full[Nd];
     KDEnumPair pair;
 
-    if(t0->boxsize) {
-        for(d = 0; d < Nd; d++) {
-            half[d] = t0->boxsize[d] * 0.5;
-            full[d] = t0->boxsize[d];
-        }
-    }
-
     /* no need to collect weight */
     kd_collect(nodes[0], &t0->input, p0base);
     kd_collect(nodes[1], &t1->input, p1base);
@@ -109,10 +102,7 @@ kd_enum_check(KDNode * nodes[2], double rmax2,
             double r2 = 0.0;
             for (d = 0; d < Nd; d++){
                 double dx = p1[d] - p0[d];
-                if (dx < 0) dx = - dx;
-                if (t0->boxsize) {
-                    if (dx > half[d]) dx = full[d] - dx;
-                }
+                dx = kd_realdiff(nodes[0]->tree, dx, d);
                 r2 += dx * dx;
             }
             if(r2 <= rmax2) {
