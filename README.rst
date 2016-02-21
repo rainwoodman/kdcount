@@ -8,7 +8,7 @@ function is called; the user-defined callback function does the actual counting.
 
 .. image:: https://api.travis-ci.org/rainwoodman/kdcount.svg
     :alt: Build Status
-    :target: https://travis-ci.org/rainwoodmankdcount/
+    :target: https://travis-ci.org/rainwoodman/kdcount/
 
 Periodic boundary is supported, and it is non-trivial.
 
