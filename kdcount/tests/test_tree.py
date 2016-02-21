@@ -19,7 +19,7 @@ def test_build():
 
     #assert N[0] == N[1]
 
-def test_enum_count():
+def test_enum_count_agree():
     pos1 = numpy.random.uniform(size=(1000, 3)).astype('f4')
     pos2 = numpy.random.uniform(size=(1000, 3)).astype('f4')
     tree1 = KDTree(pos1).root
@@ -31,7 +31,7 @@ def test_enum_count():
     c = tree1.count(tree2, r=1.0)
     assert_equal(N[0], c)
 
-def test_count():
+def test_count_symmetric():
     pos1 = numpy.random.uniform(size=(1000000, 3)).astype('f4')
     pos2 = numpy.array([[0.3, 0.5, 0.1]], dtype='f4')
     tree1 = KDTree(pos1).root

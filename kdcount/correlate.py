@@ -67,11 +67,11 @@ def compute_sum_values(i, j, data1, data2):
     """
     sum1_ij = 1.
     for idx, d in zip([i,j], [data1, data2]):
-        if isinstance(d, field): sum1_ij *= d.wv(idx)
-        elif isinstance(d, points): sum1_ij *= d.w(idx)
+        if isinstance(d, field): sum1_ij *= d.wvalue[idx]
+        elif isinstance(d, points): sum1_ij *= d.weights[idx]
         else:
             raise NotImplementedError("data type not recognized")
-    sum2_ij = data1.w(i) * data2.w(j)
+    sum2_ij = data1.weights[i] * data2.weights[j]
 
     return sum1_ij, sum2_ij
 
@@ -696,8 +696,8 @@ class paircount_worker(object):
         
         self.pts_only = isinstance(self.data[0], points) and isinstance(self.data[1], points)
         self.dofast = self.usefast and type(self.bins) is RBinning and self.pts_only 
-        self.dofast &= False 
-        
+        self.dofast = False 
+
         # initialize arrays to hold total sum1 and sum2
         # grabbing the desired shapes from the binning instance
         linearshape, self.fullshape = self.bins.sum_shapes(*self.data)

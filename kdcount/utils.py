@@ -30,3 +30,36 @@ def bincount(dig, weight, minlength):
     else:
         return numpy.bincount(dig, weight, minlength)
 
+# for creating dummy '1.0' arrays
+from numpy.lib.stride_tricks import as_strided
+
+class constant_array(numpy.ndarray):
+    def __new__(kls, shape, dtype='f8'):
+        if numpy.isscalar(shape):
+            shape = (shape,)
+        foo = numpy.empty((), dtype=dtype)
+        self = as_strided(foo, shape, [0] * len(shape)).view(type=constant_array)
+        self.value = foo
+        return self
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            start, end, step = key.indices(len(self))
+            N = (end - start) // step
+        elif isinstance(key, (list,)):
+            N = len(key)
+        elif isinstance(key, (numpy.ndarray,)):
+            if key.dtype == numpy.dtype('?'):
+                N = key.sum()
+            else:
+                N = len(key)
+        else:
+            N = None
+        if N is None:
+            return numpy.ndarray.__getitem__(self, key)
+        else:
+            shape = [N] + list(self.shape[1:])
+            r = constant_array(shape, self.dtype)
+            r.value[...] = self.value[...]
+            return r
+

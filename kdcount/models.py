@@ -1,5 +1,6 @@
 import numpy
 import kdcount
+from .utils import constant_array
 
 __all__ = ['dataset', 'points', 'field']
 
@@ -35,14 +36,13 @@ class dataset(object):
         self.boxsize = boxsize
         self.tree = kdcount.KDTree(self.pos, boxsize=boxsize)
         self.extra = extra
-        self._weights = weights
 
-    def w(self, index):
-        """ weight at index ; internal method"""
-        if self._weights is None:
-            return 1.0
-        else:
-            return self._weights[index]
+        if weights is None:
+            weights = constant_array(len(self.pos))
+            weights.value[...] = 1
+
+        self.weights = weights
+        self.attr = kdcount.KDAttr(self.tree, weights)
 
     def __len__(self):
         return len(self.pos)
@@ -57,11 +57,8 @@ class points(dataset):
     """
     def __init__(self, pos, weights=None, boxsize=None, extra={}):
         dataset.__init__(self, pos, weights, boxsize, extra)
-        if weights is not None:
-            assert len(weights.shape) == 1
-            self.norm = weights.sum(axis=0)
-        else:
-            self.norm = len(pos) * 1.0
+
+        self.norm = self.weights.sum(axis=0)
         self.subshape = ()
 
 class field(dataset):
@@ -76,17 +73,11 @@ class field(dataset):
     ----------
     pos     : array_like
         sample points
-    value   : array_like
-        the sample value at pos.
+    wvalue   : array_like
+        the weighted value at pos.
 
     """
     def __init__(self, pos, value, weights=None, boxsize=None, extra={}):
         dataset.__init__(self, pos, weights, boxsize, extra)
-        if weights is not None:
-            self._value = value * weights
-        else:
-            self._value = value
+        self.wvalue = self.weights * value
         self.subshape = value.shape[1:]
-    def wv(self, index):
-        """ the product of weight and value, internal method. """
-        return self._value[index]
