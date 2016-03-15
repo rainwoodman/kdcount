@@ -18,6 +18,10 @@ cdef extern from "kdtree.h":
     ctypedef void (*kd_freefunc)(void* data, npy_intp size, void * ptr) nogil
     ctypedef void * (*kd_mallocfunc)(void* data, npy_intp size) nogil
 
+    ctypedef int (*kd_point_point_cullmetric)(void * userdata, int ndims, double * dx, double * dist) nogil
+    ctypedef int (*kd_node_node_cullmetric)(void * userdata, int ndims, double * min, double * max,
+            double * distmin, double * distmax) nogil
+
     struct cKDArray "KDArray":
         char * buffer
         npy_intp dims[2]
@@ -66,7 +70,7 @@ cdef extern from "kdtree.h":
             cKDAttr * attrs[2], 
             double * edges, npy_uint64 * count, 
             double * weight, 
-            int nedges) nogil
+            int nedges, kd_point_point_cullmetric ppcull, kd_node_node_cullmetric nncull, void * userdata) nogil
     void kd_integrate(cKDNode * node, 
             cKDAttr * attr, 
             npy_uint64 * count, 
@@ -165,7 +169,10 @@ cdef class KDNode:
                     <double*>r.data, 
                     <npy_uint64*>count.data,
                     NULL, 
-                    r.size)
+                    r.size, 
+                    <kd_point_point_cullmetric>NULL,
+                    <kd_node_node_cullmetric>NULL,
+                    NULL)
 
             return count
         else:
@@ -187,7 +194,10 @@ cdef class KDNode:
                     <double*>r.data, 
                     <npy_uint64*>count.data,
                     <double*>weight.data, 
-                    r.size)
+                    r.size, 
+                    <kd_point_point_cullmetric>NULL,
+                    <kd_node_node_cullmetric>NULL,
+                    NULL)
 
             return count, weight
 

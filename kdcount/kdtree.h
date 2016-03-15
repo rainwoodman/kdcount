@@ -9,6 +9,13 @@ typedef double (*kd_castfunc)(void * p);
 typedef void (*kd_freefunc)(void* data, size_t size, void * ptr);
 typedef void * (*kd_mallocfunc)(void* data, size_t size);
 
+/* The following functions reutnr cull */
+/* dist is a scalar output*/
+typedef int (*kd_point_point_cullmetric)(void * userdata, int ndims, double * dx, double * dist);
+/* distmin, distmax are scalar outputs*/
+typedef int (*kd_node_node_cullmetric)(void * userdata, int ndims, double * min, double * max,
+            double *distmin, double *distmax);
+
 typedef struct KDArray {
     /* the buffer holding array elements required */
     char * buffer; 
@@ -238,7 +245,11 @@ kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);
 void 
 kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
         double * edges, uint64_t * count, double * weight, 
-        int nedges);
+        int nedges, 
+        kd_point_point_cullmetric ppcull,
+        kd_node_node_cullmetric nncull,
+        void * userdata
+        );
 
 void 
 kd_integrate(KDNode * node, KDAttr * attr, 

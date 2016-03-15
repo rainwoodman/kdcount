@@ -8,6 +8,9 @@ typedef struct TraverseData {
     double * weight;
     int node_ndims; 
     int attr_ndims; /* 0 if attrs[...] are NULL */
+    kd_point_point_cullmetric ppcull;
+    kd_node_node_cullmetric nncull;
+    void * userdata;
 } TraverseData;
 
 static inline int 
@@ -63,6 +66,7 @@ kd_count_check(TraverseData * trav, KDNode * nodes[2],
     double * w1base = alloca(nodes[1]->size * sizeof(double) * attr_ndims);
     /* collect all nodes[1] positions to a continue block */
     double * p1, * p0, *w0, *w1;
+    double * dx = alloca(sizeof(double) * node_ndims);
 
     kd_collect(nodes[0], &t0->input, p0base);
     kd_collect(nodes[1], &t1->input, p1base);
@@ -72,13 +76,13 @@ kd_count_check(TraverseData * trav, KDNode * nodes[2],
     }
     for (p0 = p0base, w0 = w0base, i = 0; i < nodes[0]->size; i++) {
         for (p1 = p1base, w1 = w1base, j = 0; j < nodes[1]->size; j++) {
-            double rr = 0.0;
+            double rr;
             for (d = 0; d < node_ndims; d++){
-                double dx = kd_realdiff(nodes[0]->tree, p1[d] - p0[d], d);
-                rr += dx * dx;
+                dx[d] = kd_realdiff(nodes[0]->tree, p1[d] - p0[d], d);
             }
+            int cull = trav->ppcull(trav->userdata, node_ndims, dx, &rr);
             int b = lower_bound(rr, &trav->edges[start], end - start) + start;
-            if (b < trav->nedges) {
+            if (!cull && b < trav->nedges) {
                 trav->count[b] += 1;
                 for(d = 0; d < attr_ndims; d++) {
                     trav->weight[b * attr_ndims + d] += w0[d] * w1[d];
@@ -93,7 +97,6 @@ kd_count_check(TraverseData * trav, KDNode * nodes[2],
     
 }
 
-
 static void 
 kd_count_traverse(TraverseData * trav, KDNode * nodes[2], 
         int start, int end) 
@@ -106,15 +109,18 @@ kd_count_traverse(TraverseData * trav, KDNode * nodes[2],
     double *min1 = kd_node_min(nodes[1]);
     double *max0 = kd_node_max(nodes[0]);
     double *max1 = kd_node_max(nodes[1]);
+    double *realmin = alloca(sizeof(double) * node_ndims);
+    double *realmax = alloca(sizeof(double) * node_ndims);
     for(d = 0; d < node_ndims; d++) {
-        double min, max;
-        double realmin, realmax;
-        min = min0[d] - max1[d];
-        max = max0[d] - min1[d];
-        kd_realminmax(nodes[0]->tree, min, max, &realmin, &realmax, d);
-        distmin += realmin * realmin;
-        distmax += realmax * realmax;
+        realmin[d] = min0[d] - max1[d];
+        realmax[d] = max0[d] - min1[d];
+        kd_realminmax(nodes[0]->tree, realmin[d], realmax[d], &realmin[d], &realmax[d], d);
     }
+    /* http://docs.cryengine.com/display/SDKDOC4/Culling+Explained */
+    int cull = trav->nncull(trav->userdata, node_ndims, realmin, realmax, &distmin, &distmax);
+
+    /* Two nodes are never going to make it to any binning */
+    if(cull) return;
 
     start = lower_bound(distmin, &trav->edges[start], end - start) + start;
     end = lower_bound(distmax, &trav->edges[start], end - start) + start;
@@ -153,10 +159,45 @@ kd_count_traverse(TraverseData * trav, KDNode * nodes[2],
     } 
 }
 
+static int kd_node_node_euclidean(
+    void * userdata,
+    int ndims,
+    double * realmin,
+    double * realmax,
+    double * distmin, double * distmax)
+{
+    int i;
+    *distmin = 0;
+    *distmax = 0;
+    for(i = 0; i < ndims; i ++) {
+        *distmin += realmin[i] * realmin[i];
+        *distmax += realmax[i] * realmax[i];
+    }
+    return 0;
+}
+
+static int kd_point_point_euclidean(
+    void * userdata,
+    int ndims,
+    double * dx,
+    double * dist)
+{
+    int i;
+    *dist = 0;
+    for(i = 0; i < ndims; i ++) {
+        *dist += dx[i] * dx[i];
+    }
+    return 0;
+}
+
 void 
 kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
         double * edges, uint64_t * count, double * weight, 
-        int nedges) 
+        int nedges,
+        kd_point_point_cullmetric ppcull,
+        kd_node_node_cullmetric nncull,
+        void * userdata
+) 
 {
     double * edges2 = alloca(sizeof(double) * nedges);
     int attr_ndims;
@@ -164,6 +205,13 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         attr_ndims = attrs[0]->input.dims[1];
     else
         attr_ndims = 0;
+
+    if (ppcull == NULL) {
+        ppcull = kd_point_point_euclidean;
+    }
+    if (nncull == NULL) {
+        nncull = kd_node_node_euclidean;
+    }
 
     TraverseData trav = {
         .attrs = {attrs[0], attrs[1]},
@@ -173,6 +221,9 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         .weight = weight,
         .attr_ndims = attr_ndims,
         .node_ndims = nodes[0]->tree->input.dims[1],
+        .ppcull = ppcull,
+        .nncull = nncull,
+        .userdata = userdata,
     };
 
     int d;
