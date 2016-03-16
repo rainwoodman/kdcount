@@ -57,7 +57,7 @@ class KDNode(_core.KDNode):
         else:
             return None
 
-    def count(self, other, r, attrs=None):
+    def count(self, other, r, attrs=None, info={}):
         """ Gray & Moore based fast dual tree counting.
 
             r is the edge of bins:
@@ -73,7 +73,7 @@ class KDNode(_core.KDNode):
 
         r = numpy.array(r, dtype='f8')
 
-        return _core.KDNode.count(self, other, r, attrs)
+        return _core.KDNode.count(self, other, r, attrs, info=info)
 
     def fof(self, linkinglength, out=None):
         """ Friend-of-Friend clustering with linking length.

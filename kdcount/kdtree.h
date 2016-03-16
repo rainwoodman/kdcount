@@ -242,13 +242,15 @@ kd_enum(KDNode * nodes[2], double maxr,
 int 
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);
 
-void 
+void
 kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
         double * edges, uint64_t * count, double * weight, 
         int nedges, 
         kd_point_point_cullmetric ppcull,
         kd_node_node_cullmetric nncull,
-        void * userdata
+        void * userdata,
+        uint64_t * brute_force,
+        uint64_t * node_node
         );
 
 void 

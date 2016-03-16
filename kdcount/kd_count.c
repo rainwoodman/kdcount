@@ -11,6 +11,8 @@ typedef struct TraverseData {
     kd_point_point_cullmetric ppcull;
     kd_node_node_cullmetric nncull;
     void * userdata;
+    uint64_t brute_force;
+    uint64_t node_node;
 } TraverseData;
 
 static inline int 
@@ -84,6 +86,7 @@ kd_count_check(TraverseData * trav, KDNode * nodes[2],
             int b = lower_bound(rr, &trav->edges[start], end - start) + start;
             if (!cull && b < trav->nedges) {
                 trav->count[b] += 1;
+                trav->brute_force ++;
                 for(d = 0; d < attr_ndims; d++) {
                     trav->weight[b * attr_ndims + d] += w0[d] * w1[d];
                 }
@@ -129,6 +132,7 @@ kd_count_traverse(TraverseData * trav, KDNode * nodes[2],
         return;
     }
     if(start == end) {
+        trav->node_node++;
         /* all bins are quickly counted no need to open*/
         trav->count[start] += nodes[0]->size * nodes[1]->size;
         if(attr_ndims > 0) {
@@ -190,13 +194,15 @@ static int kd_point_point_euclidean(
     return 0;
 }
 
-void 
+void
 kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
         double * edges, uint64_t * count, double * weight, 
         int nedges,
         kd_point_point_cullmetric ppcull,
         kd_node_node_cullmetric nncull,
-        void * userdata
+        void * userdata,
+        uint64_t * brute_force,
+        uint64_t * node_node
 ) 
 {
     double * edges2 = alloca(sizeof(double) * nedges);
@@ -224,6 +230,8 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         .ppcull = ppcull,
         .nncull = nncull,
         .userdata = userdata,
+        .brute_force = 0,
+        .node_node = 0,
     };
 
     int d;
@@ -242,4 +250,6 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
     }
     
     kd_count_traverse(&trav, nodes, 0, nedges);
+    *brute_force = trav.brute_force;
+    *node_node = trav.node_node;
 }

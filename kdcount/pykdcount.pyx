@@ -70,7 +70,11 @@ cdef extern from "kdtree.h":
             cKDAttr * attrs[2], 
             double * edges, npy_uint64 * count, 
             double * weight, 
-            int nedges, kd_point_point_cullmetric ppcull, kd_node_node_cullmetric nncull, void * userdata) nogil
+            int nedges, 
+            kd_point_point_cullmetric ppcull, 
+            kd_node_node_cullmetric nncull, void * userdata,
+            npy_uint64 * brute_force,
+            npy_uint64 * node_node) nogil
     void kd_integrate(cKDNode * node, 
             cKDAttr * attr, 
             npy_uint64 * count, 
@@ -150,13 +154,14 @@ cdef class KDNode:
     def __repr__(self):
         return str(('%X' % <npy_intp>self.ref, self.dim, self.split, self.size))
 
-    def count(self, KDNode other, numpy.ndarray r, attrs):
+    def count(self, KDNode other, numpy.ndarray r, attrs, info={}):
         cdef:
             numpy.ndarray count, weight
             KDAttr a1, a2
             cKDNode * cnodes[2]
             cKDAttr * cattrs[2]
-
+            npy_uint64 brute_force
+            npy_uint64 node_node
         assert r.dtype == numpy.dtype('f8')
         count = numpy.zeros((<object>r).shape, dtype='u8')
         cnodes[0] = self.ref
@@ -172,8 +177,9 @@ cdef class KDNode:
                     r.size, 
                     <kd_point_point_cullmetric>NULL,
                     <kd_node_node_cullmetric>NULL,
-                    NULL)
-
+                    NULL, &brute_force, &node_node)
+            info['brute_force'] = brute_force
+            info['node_node'] = node_node
             return count
         else:
             if isinstance(attrs, (tuple, list)):
@@ -197,7 +203,10 @@ cdef class KDNode:
                     r.size, 
                     <kd_point_point_cullmetric>NULL,
                     <kd_node_node_cullmetric>NULL,
-                    NULL)
+                    NULL, &brute_force, &node_node)
+
+            info['brute_force'] = brute_force
+            info['node_node'] = node_node
 
             return count, weight
 

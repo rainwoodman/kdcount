@@ -10,7 +10,9 @@ extensions = [
             'kdcount/kdtree.c',
             'kdcount/kd_fof.c', 'kdcount/kd_enum.c', 
             'kdcount/kd_count.c', 'kdcount/kd_integrate.c'],
-            include_dirs=["kdcount/", numpy.get_include()])
+            include_dirs=["kdcount/", numpy.get_include()],
+            extra_compile_args=['-Ofast'],
+            extra_link_args=['-Ofast'])
         ]
 
 setup(name="kdcount", version="0.3.4",
