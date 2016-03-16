@@ -128,7 +128,26 @@ class KDNode(_core.KDNode):
             yield x
 
 class KDTree(_core.KDTree):
+    """ KDTree
+
+        KDTree.root is the root node. The algorithms are implemented
+        as methods of the node.
+
+        Parameters
+        ----------
+        input : array_like
+            single or double array of shape (N, ndims).
+        boxsize : array_like or scalar
+            If given, the input data is on a torus with periodic boundry.
+            the size of the torus is given by boxsize.
+        thresh : int
+            minimal size of a leaf.
+
+    """
     __nodeclass__ = KDNode
+    def __init__(self, input, boxsize=None, thresh=10):
+        _core.KDTree.__init__(self, input, boxsize, thresh)
+
     def __repr__(self):
         return ('KDTree(size=%d, thresh=%d, boxsize=%s, input=%s)' % 
             (self.size, self.thresh, str(self.boxsize), str(self.input.shape)))
