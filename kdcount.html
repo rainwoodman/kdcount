@@ -102,7 +102,7 @@
 <dd><p>Bases: <a class="reference internal" href="kdcount.pykdcount.html#kdcount.pykdcount.KDNode" title="kdcount.pykdcount.KDNode"><code class="xref py py-class docutils literal"><span class="pre">kdcount.pykdcount.KDNode</span></code></a></p>
 <dl class="method">
 <dt id="kdcount.KDNode.count">
-<code class="descname">count</code><span class="sig-paren">(</span><em>other</em>, <em>r</em>, <em>attrs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount.html#KDNode.count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.KDNode.count" title="Permalink to this definition">¶</a></dt>
+<code class="descname">count</code><span class="sig-paren">(</span><em>other</em>, <em>r</em>, <em>attrs=None</em>, <em>info={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount.html#KDNode.count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.KDNode.count" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gray &amp; Moore based fast dual tree counting.</p>
 <p>r is the edge of bins:</p>
 <p>-inf or r[i-1] &lt; count[i] &lt;= r[i]</p>
@@ -173,8 +173,31 @@ each subtree of size at most chunksize</p>
 
 <dl class="class">
 <dt id="kdcount.KDTree">
-<em class="property">class </em><code class="descclassname">kdcount.</code><code class="descname">KDTree</code><a class="reference internal" href="_modules/kdcount.html#KDTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.KDTree" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kdcount.</code><code class="descname">KDTree</code><span class="sig-paren">(</span><em>input</em>, <em>boxsize=None</em>, <em>thresh=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/kdcount.html#KDTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#kdcount.KDTree" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="kdcount.pykdcount.html#kdcount.pykdcount.KDTree" title="kdcount.pykdcount.KDTree"><code class="xref py py-class docutils literal"><span class="pre">kdcount.pykdcount.KDTree</span></code></a></p>
+<p>KDTree.root is the root node. The algorithms are implemented
+as methods of the node.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>input</strong> : array_like</p>
+<blockquote>
+<div><p>single or double array of shape (N, ndims).</p>
+</div></blockquote>
+<p><strong>boxsize</strong> : array_like or scalar</p>
+<blockquote>
+<div><p>If given, the input data is on a torus with periodic boundry.
+the size of the torus is given by boxsize.</p>
+</div></blockquote>
+<p><strong>thresh</strong> : int</p>
+<blockquote class="last">
+<div><p>minimal size of a leaf.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">

@@ -106,7 +106,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">None</span></div>
 
-<div class="viewcode-block" id="KDNode.count"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="KDNode.count"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="p">{}):</span>
         <span class="sd">&quot;&quot;&quot; Gray &amp; Moore based fast dual tree counting.</span>
 
 <span class="sd">            r is the edge of bins:</span>
@@ -122,7 +122,7 @@
 
         <span class="n">r</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f8&#39;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">_core</span><span class="o">.</span><span class="n">KDNode</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">attrs</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="KDNode.fof"><a class="viewcode-back" href="../kdcount.html#kdcount.KDNode.fof">[docs]</a>    <span class="k">def</span> <span class="nf">fof</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linkinglength</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Friend-of-Friend clustering with linking length.</span>
@@ -177,7 +177,26 @@
             <span class="k">yield</span> <span class="n">x</span></div></div>
 
 <div class="viewcode-block" id="KDTree"><a class="viewcode-back" href="../kdcount.html#kdcount.KDTree">[docs]</a><span class="k">class</span> <span class="nc">KDTree</span><span class="p">(</span><span class="n">_core</span><span class="o">.</span><span class="n">KDTree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; KDTree</span>
+
+<span class="sd">        KDTree.root is the root node. The algorithms are implemented</span>
+<span class="sd">        as methods of the node.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input : array_like</span>
+<span class="sd">            single or double array of shape (N, ndims).</span>
+<span class="sd">        boxsize : array_like or scalar</span>
+<span class="sd">            If given, the input data is on a torus with periodic boundry.</span>
+<span class="sd">            the size of the torus is given by boxsize.</span>
+<span class="sd">        thresh : int</span>
+<span class="sd">            minimal size of a leaf.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">__nodeclass__</span> <span class="o">=</span> <span class="n">KDNode</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">boxsize</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">_core</span><span class="o">.</span><span class="n">KDTree</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">boxsize</span><span class="p">,</span> <span class="n">thresh</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="s">&#39;KDTree(size=</span><span class="si">%d</span><span class="s">, thresh=</span><span class="si">%d</span><span class="s">, boxsize=</span><span class="si">%s</span><span class="s">, input=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> 
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">boxsize</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span></div>
