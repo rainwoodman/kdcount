@@ -235,17 +235,17 @@ typedef struct KDEnumPair {
 
 typedef int (*kd_enum_callback)(void * userdata, KDEnumPair * pair);
 
-int 
+int
 kd_enum(KDNode * nodes[2], double maxr,
         kd_enum_callback callback, void * userdata);
 
-int 
+int
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);
 
 void
-kd_count(KDNode * nodes[2], KDAttr * attrs[2], 
-        double * edges, uint64_t * count, double * weight, 
-        int nedges, 
+kd_count(KDNode * nodes[2], KDAttr * attrs[2],
+        double * edges, uint64_t * count, double * weight,
+        int nedges,
         kd_point_point_cullmetric ppcull,
         kd_node_node_cullmetric nncull,
         void * userdata,
@@ -253,7 +253,10 @@ kd_count(KDNode * nodes[2], KDAttr * attrs[2],
         uint64_t * node_node
         );
 
-void 
-kd_integrate(KDNode * node, KDAttr * attr, 
-        uint64_t * count, double * weight, 
-        double * min, double * max);
+void
+kd_integrate(KDNode * node, KDAttr * attr,
+        uint64_t * count, double * weight,
+        double * min, double * max,
+        uint64_t * brute_force,
+        uint64_t * node_node
+);

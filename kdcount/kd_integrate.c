@@ -8,13 +8,15 @@ typedef struct TraverseData {
     double * max;
     int attr_ndims;
     int node_ndims;
+    uint64_t brute_force;
+    uint64_t node_node;
 } TraverseData;
 
-static void 
-kd_integrate_check(TraverseData * trav, KDNode * node) 
+static void
+kd_integrate_check(TraverseData * trav, KDNode * node)
 {
 
-    ptrdiff_t i, j;
+    ptrdiff_t i;
     int d;
     KDTree * t0 = node->tree;
     int node_ndims = trav->node_ndims;
@@ -40,6 +42,7 @@ kd_integrate_check(TraverseData * trav, KDNode * node)
         }
         if(inside) {
             trav->count[0] += 1;
+            trav->brute_force ++;
             for(d = 0; d < attr_ndims; d++) {
                 trav->weight[d] += w0[d];
             }
@@ -58,6 +61,7 @@ kd_integrate_traverse(TraverseData * trav, KDNode * node)
     int d;
     double *min0 = kd_node_min(node);
     double *max0 = kd_node_max(node);
+
     for(d = 0; d < node_ndims; d++) {
         if(min0[d] >= trav->max[d] || max0[d] < trav->min[d]) {
             /* fully outside, skip this node */
@@ -75,6 +79,7 @@ kd_integrate_traverse(TraverseData * trav, KDNode * node)
     if(inside) {
         /* node inside integration range */
         trav->count[0] += node->size;
+        trav->node_node++;
         if(attr_ndims > 0) {
             double * w0 = kd_attr_get_node(trav->attr, node);
             for(d = 0; d < attr_ndims; d++) {
@@ -94,18 +99,20 @@ kd_integrate_traverse(TraverseData * trav, KDNode * node)
 }
 
 void 
-kd_integrate(KDNode * node, KDAttr * attr, 
-        uint64_t * count, double * weight, 
-        double * min, double * max) 
+kd_integrate(KDNode * node, KDAttr * attr,
+        uint64_t * count, double * weight,
+        double * min, double * max,
+        uint64_t * brute_force,
+        uint64_t * node_node)
 {
     int attr_ndims;
     int d;
 
-    if (attr) 
+    if (attr)
         attr_ndims = attr->input.dims[1];
     else
         attr_ndims = 0;
-    
+
     TraverseData trav = {
         .attr = attr,
         .count = count,
@@ -114,6 +121,8 @@ kd_integrate(KDNode * node, KDAttr * attr,
         .node_ndims = node->tree->input.dims[1],
         .min = min,
         .max = max,
+        .brute_force = 0,
+        .node_node = 0,
     };
 
     count[0] = 0;
@@ -122,6 +131,10 @@ kd_integrate(KDNode * node, KDAttr * attr,
             weight[d] = 0;
         }
     }
-    
+
     kd_integrate_traverse(&trav, node);
+
+    *brute_force = trav.brute_force;
+    *node_node = trav.node_node;
+
 }

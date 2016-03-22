@@ -83,10 +83,10 @@ class KDNode(_core.KDNode):
         if out is None:
             out = numpy.empty(self.size, dtype='intp')
         return _core.KDNode.fof(self, linkinglength, out)
- 
-    def integrate(self, min, max, attr=None):
+
+    def integrate(self, min, max, attr=None, info={}):
         """ Calculate the total number of points between [min, max).
-            
+
             If attr is given, also calculate the sum of the weight.
 
             This is a M log(N) operation, where M is the number of min/max
@@ -106,7 +106,7 @@ class KDNode(_core.KDNode):
         if (max).shape[-1] != self.ndims:
             raise ValueError("dimension of max does not match Node")
         min, max = broadcast_arrays(min, max)
-        return _core.KDNode.integrate(self, min, max, attr)
+        return _core.KDNode.integrate(self, min, max, attr, info)
 
     def make_forest(self, chunksize):
         """ Divide a tree branch to a forest, 

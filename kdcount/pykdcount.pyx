@@ -79,7 +79,9 @@ cdef extern from "kdtree.h":
             cKDAttr * attr, 
             npy_uint64 * count, 
             double * weight, 
-            double * min, double * max) nogil
+            double * min, double * max,
+            npy_uint64 * brute_force,
+            npy_uint64 * node_node) nogil
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -217,35 +219,56 @@ cdef class KDNode:
             raise RuntimeError("Too many friend of friend iterations. This is likely a bug.")
         return out
 
-    def integrate(self, numpy.ndarray min, numpy.ndarray max, KDAttr attr):
+    def integrate(self, numpy.ndarray min, numpy.ndarray max, KDAttr attr, info={}):
         cdef:
             numpy.ndarray count, weight
             cKDAttr * cattr
             npy_intp i
-
+            npy_uint64 brute_force, _brute_force
+            npy_uint64 node_node, _node_node
+            npy_intp N
         shape = (<object>min).shape[:-1]
-        count = numpy.zeros(shape, dtype='u8') 
+        count = numpy.zeros(shape, dtype='u8')
+        if min.ndim == 1:
+            N = 1
+        else:
+            N = len(min)
+        info['brute_force'] = 0
+        info['node_node'] = 0
 
         if attr is None:
             cattr = NULL
-            for i in range(len(min)):
+            for i in range(N):
                 kd_integrate(self.ref, cattr,
-                    (<npy_uint64*> count.data) + i, 
-                    NULL, 
-                    (<double*> min.data) + i * min.strides[0] // 8, 
-                    (<double*> max.data) + i * max.strides[0] // 8)
-            return count
+                    (<npy_uint64*> count.data) + i,
+                    NULL,
+                    (<double*> min.data) + i * min.strides[0] // 8,
+                    (<double*> max.data) + i * max.strides[0] // 8,
+                    &_brute_force, &_node_node)
+                brute_force += _brute_force
+                node_node += _node_node
+
+            result = count
         else:
             cattr = attr.ref
-            weight = numpy.zeros(shape, dtype=('f8', attr.ndims)) 
+            weight = numpy.zeros(shape, dtype=('f8', attr.ndims))
 
-            for i in range(len(min)):
+            for i in range(N):
                 kd_integrate(self.ref, cattr,
-                        (<npy_uint64*> count.data) + i, 
-                        (<double*> weight.data) + i * attr.ndims, 
-                        (<double*> min.data) + i * min.strides[0] // 8, 
-                        (<double*> max.data) + i * max.strides[0] // 8)
-            return count, weight
+                        (<npy_uint64*> count.data) + i,
+                        (<double*> weight.data) + i * attr.ndims,
+                        (<double*> min.data) + i * min.strides[0] // 8,
+                        (<double*> max.data) + i * max.strides[0] // 8,
+                        &_brute_force, &_node_node)
+                brute_force += _brute_force
+                node_node += _node_node
+
+            result = count, weight
+
+        info['brute_force'] = brute_force
+        info['node_node'] = node_node
+
+        return result
 
     def enum(self, KDNode other, rmax, process, bunch, **kwargs):
         cdef:
