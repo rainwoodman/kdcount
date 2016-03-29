@@ -16,7 +16,7 @@ extensions = [
             )
         ]
 
-setup(name="kdcount", version="0.3.4",
+setup(name="kdcount", version="0.3.5",
       author="Yu Feng",
       author_email="rainwoodman@gmail.com",
       description="A slower KDTree cross correlator",
