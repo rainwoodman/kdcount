@@ -701,7 +701,7 @@ class paircount_worker(object):
         self.size = len(self.p)
         
         self.pts_only = isinstance(self.data[0], points) and isinstance(self.data[1], points)
-        self.dofast = self.usefast and type(self.bins) is RBinning and self.pts_only 
+        self.dofast = self.usefast and isinstance(self.bins, RBinning) and self.pts_only 
 
         # initialize arrays to hold total sum1 and sum2
         # grabbing the desired shapes from the binning instance
