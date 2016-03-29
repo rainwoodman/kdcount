@@ -7,8 +7,8 @@ from numpy.testing import assert_equal, assert_allclose
 
 def test_cluster():
     numpy.random.seed(1234)
-    dec = numpy.arcsin(numpy.random.uniform(-1, 1, size=10000)) / numpy.pi * 180
-    ra = numpy.random.uniform(0, 2 * numpy.pi, size=10000) / numpy.pi * 180
+    dec = numpy.arcsin(numpy.random.uniform(-1, 1, size=100000)) / numpy.pi * 180
+    ra = numpy.random.uniform(0, 2 * numpy.pi, size=100000) / numpy.pi * 180
 
     dataset = sphere.points(ra, dec)
 
@@ -17,9 +17,15 @@ def test_cluster():
     assert r.N == len(dataset)
 
     binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
+    binningR = correlate.RBinning(binning.edges)
 
-    r = correlate.paircount(dataset, dataset, binning=binning, usefast=False)
-    assert_allclose( 
-    r.sum1, 
-    0.5 * numpy.diff(-numpy.cos(binning.angular_edges * numpy.pi / 180)) * len(ra) ** 2,
-    rtol=1e-2)
+    r = correlate.paircount(dataset, dataset, binning=binning, usefast=True)
+    r1 = correlate.paircount(dataset, dataset, binning=binning, usefast=False)
+
+    r2 = correlate.paircount(dataset, dataset, binning=binningR, usefast=True)
+
+    assert_equal(r1.sum1, r2.sum1)
+    assert_equal(r1.sum1, r.sum1)
+    assert_allclose(
+    r.sum1,
+    numpy.diff(2 * numpy.pi * (1 - numpy.cos(numpy.radians(binning.angular_edges)))) / ( 4 * numpy.pi) * len(ra) ** 2, rtol=10e-2)
