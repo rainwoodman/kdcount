@@ -684,18 +684,36 @@ class paircount_worker(object):
             self.N[...] += self.bins.pair_counts
             for i in range(self.bins.Ndim):
                 self.centers[i][...] += self.bins.mean_centers_sum[i]
-                
+
+    def _partition(self, tree1, tree2, thresh=10000, np=128):
+        import heapq
+        def makeitem(n1, n2):
+            if n1.size > n2.size:
+                return (-n1.size, n1, n2)
+            else:
+                return (-n2.size, n2, n1)
+        heap = []
+        heapq.heappush(heap, makeitem(tree1, tree2))
+        while len(heap) < np:
+            junk, n1, n2 = heapq.heappop(heap)
+            if n1.size < thresh: break
+            heapq.heappush(heap, makeitem(n1.less, n2))
+            heapq.heappush(heap, makeitem(n1.greater, n2))
+        p = []
+        while heap:
+            junk, n1, n2 = heapq.heappop(heap)
+            p.append((n1, n2))
+        return p
+
     def __enter__(self):
         """
         Initialize and setup the various arrays needed to do the work
         """
         tree1 = self.data[0].tree.root
         tree2 = self.data[1].tree.root
+
         if self.np != 0:
-            if tree1.size > tree2.size:
-                self.p = [(tree1, t) for t in tree2.make_forest(10000)]
-            else:
-                self.p = [(t, tree2) for t in tree1.make_forest(10000)]
+            self.p = self._partition(tree1, tree2)
         else:
             self.p = [(tree1, tree2)]
         self.size = len(self.p)
