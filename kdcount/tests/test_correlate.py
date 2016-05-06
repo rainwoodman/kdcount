@@ -35,7 +35,20 @@ def test_unweighted():
     r1 = correlate.paircount(dataset, dataset, binning, usefast=True, np=0)
     assert_equal(r1.sum1, truth[1:-1])
 
-
+def test_cross():
+    numpy.random.seed(1234)
+    pos1 = numpy.random.uniform(size=(10000, 2))
+    pos2 = numpy.random.uniform(size=(10000, 2)) * 0.3
+    dataset1 = correlate.points(pos1, boxsize=None)
+    dataset2 = correlate.points(pos2, boxsize=None)
+    binning = correlate.RBinning(numpy.linspace(0, 0.1, 10))
+    r1 = correlate.paircount(dataset1, dataset2, binning, np=0, usefast=False)
+    r2 = correlate.paircount(dataset1, dataset2, binning, np=0, usefast=True)
+    assert_equal(r1.sum1, r2.sum1)
+    r3 = correlate.paircount(dataset1, dataset2, binning, np=4, usefast=False)
+    assert_equal(r1.sum1, r3.sum1)
+    r4 = correlate.paircount(dataset1, dataset2, binning, np=4, usefast=True)
+    assert_equal(r1.sum1, r4.sum1)
 
 def test_weighted():
     numpy.random.seed(1234)
