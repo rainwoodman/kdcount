@@ -689,20 +689,23 @@ class paircount_worker(object):
         import heapq
         def makeitem(n1, n2):
             if n1.size > n2.size:
-                return (-n1.size, n1, n2)
+                return (-n1.size, 0, (n1, n2))
             else:
-                return (-n2.size, n2, n1)
+                return (-n2.size, 1, (n1, n2))
         heap = []
         heapq.heappush(heap, makeitem(tree1, tree2))
         while len(heap) < np:
-            junk, n1, n2 = heapq.heappop(heap)
-            if n1.less is None: break
-            heapq.heappush(heap, makeitem(n1.less, n2))
-            heapq.heappush(heap, makeitem(n1.greater, n2))
+            junk, split, n = heapq.heappop(heap)
+            if n[split].less is None: break
+            item = list(n)
+            item[split] = n[split].less
+            heapq.heappush(heap, makeitem(*item))
+            item[split] = n[split].greater
+            heapq.heappush(heap, makeitem(*item))
         p = []
         while heap:
-            junk, n1, n2 = heapq.heappop(heap)
-            p.append((n1, n2))
+            junk, split, n = heapq.heappop(heap)
+            p.append(n)
         return p
 
     def __enter__(self):
