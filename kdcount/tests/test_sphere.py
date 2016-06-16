@@ -10,6 +10,10 @@ def test_cluster():
     dec = numpy.arcsin(numpy.random.uniform(-1, 1, size=100000)) / numpy.pi * 180
     ra = numpy.random.uniform(0, 2 * numpy.pi, size=100000) / numpy.pi * 180
 
+    # testing bootstrap 
+    for area, rand, in sphere.bootstrap(4, (ra, dec), 41252.96 / len(dec)):
+        pass
+
     dataset = sphere.points(ra, dec)
 
     r = cluster.fof(dataset, 0.00001, np=None)
