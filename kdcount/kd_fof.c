@@ -8,7 +8,17 @@ typedef struct TraverseData {
     ptrdiff_t merged;
 } TraverseData;
 
-static int 
+static ptrdiff_t get_root(TraverseData * d, ptrdiff_t i)
+{
+    int r = i;
+    while(d->head[r] != r) {
+        r = d->head[r];
+    }
+    d->head[i] = r;
+    return r;
+}
+
+static int
 _kd_fof_callback(void * data, KDEnumPair * pair) 
 {
     TraverseData * trav = (TraverseData*) data;
@@ -18,35 +28,49 @@ _kd_fof_callback(void * data, KDEnumPair * pair)
     if(pair->r > trav->ll) return 0;
 
     if(i >= j) return 0;
-    if(trav->head[i] == trav->head[j]) return 0;
-    trav->merged ++;
-
     if (trav->len[i] < trav->len[j] ) {
-        /* merge in the shorter list */
+        /* merge in the shorter list, j*/
         ptrdiff_t tmp;
         tmp = i;
         i = j;
         j = tmp;
     }
+    ptrdiff_t root_i = get_root(trav, i);
+    ptrdiff_t root_j = get_root(trav, j);
+
+    if(root_i == root_j) return 0;
+
+    trav->merged ++;
 
     /* update the length */
-    trav->len[trav->head[i]] += trav->len[trav->head[j]];
-    ptrdiff_t oldnext = trav->next[i];
-    //printf("attaching %td to %td, oldnext = %td\n", j, i, oldnext);
-    trav->next[i] = trav->head[j];
+    trav->len[root_i] += trav->len[root_j];
 
-    ptrdiff_t k, kk;
-    kk = trav->head[j]; /* shut-up the compiler, we know the loop will 
-                          run at least once. */
+    if(trav->len[root_j] < 100) {
+        /* merge all as direct children of the root */
+        ptrdiff_t k, kk;
+        kk = 0;
 
-    /* update the head marker of each element of the joined list */
-    for(k = trav->head[j]; k >= 0 ; kk=k, k = trav->next[k]) {
-        trav->head[k] = trav->head[i];
+        /* update the head marker of each element of the joined list */
+        for(k = root_j; k >= 0 ; kk=k, k = trav->next[k]) {
+            trav->head[k] = root_i;
+        }
+
+        /* maintain next array only if the new proto-halo is short */
+        if(trav->len[root_i] < 100) {
+            /* append items after i to the end of the merged list */
+            ptrdiff_t oldnext = trav->next[root_i];
+            //printf("attaching %td to %td, oldnext = %td\n", j, i, oldnext);
+            trav->next[root_i] = root_j;
+            trav->next[kk] = oldnext;
+            //printf("reattaching %td to %td\n", oldnext, kk);
+        }
+    } else {
+        /* We will never need to traverse the children for halos > 10,
+         *  so do not try to maintain it */
+
+        /* merge root_j as direct subtree of the root */
+        trav->head[root_j] = root_i;
     }
-    /* append items after i to the end of the merged list */
-    trav->next[kk] = oldnext;
-    //printf("reattaching %td to %td\n", oldnext, kk);
-
     return 0;
 }
 
@@ -73,6 +97,9 @@ kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head)
         /* I am not sure how many iters we need */
         trav->merged = 0;
         kd_enum(nodes, linking_length, _kd_fof_callback, trav);
+        for(i = 0; i < tree->size; i ++) {
+            trav->head[i] = get_root(trav, i);
+        }
         iter ++;
         //printf("iter = %d, merged = %td\n", iter, trav->merged);
         if(iter > 10) {
