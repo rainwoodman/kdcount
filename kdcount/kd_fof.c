@@ -91,21 +91,12 @@ kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head)
         trav->next[i] = -1;
         trav->len[i] = 1;
     }
-    
-    int iter = 0;
-    do {
-        /* I am not sure how many iters we need */
-        trav->merged = 0;
-        kd_enum(nodes, linking_length, _kd_fof_callback, trav);
-        for(i = 0; i < tree->size; i ++) {
-            trav->head[i] = get_root(trav, i);
-        }
-        iter ++;
-        //printf("iter = %d, merged = %td\n", iter, trav->merged);
-        if(iter > 10) {
-            goto exc_bad;
-        }
-    } while(trav->merged != 0);
+
+    trav->merged = 0;
+    kd_enum(nodes, linking_length, _kd_fof_callback, trav);
+    for(i = 0; i < tree->size; i ++) {
+        trav->head[i] = get_root(trav, i);
+    }
 
     free(trav->next);
     free(trav->len);
