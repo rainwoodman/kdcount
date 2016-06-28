@@ -93,8 +93,8 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
     KDEnumNodePair pair;
     pair.nodes[0] = nodes[0];
     pair.nodes[1] = nodes[1];
-    pair.distmin = distmin;
-    pair.distmax = distmax;
+    pair.distmin2 = distmin;
+    pair.distmax2 = distmax;
     int open = 1;
     if(trav->prune_nodes) {
         if (0 != trav->prune_nodes(trav->userdata, &pair, &open)) {

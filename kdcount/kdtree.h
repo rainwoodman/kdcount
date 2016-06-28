@@ -234,8 +234,8 @@ typedef struct KDEnumPair {
 } KDEnumPair;
 
 typedef struct KDEnumNodePair {
-    double distmax;
-    double distmin;
+    double distmax2;
+    double distmin2;
     KDNode * nodes[2];
 } KDEnumNodePair;
 

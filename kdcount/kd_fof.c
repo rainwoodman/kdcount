@@ -30,6 +30,7 @@
 
 typedef struct TraverseData {
     ptrdiff_t * head;
+    char * node_connected;
     double ll;
     ptrdiff_t merged;
 } TraverseData;
@@ -43,6 +44,43 @@ static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
     /* link the node directly to the root to keep the tree flat */
     d->head[i] = r;
     return r;
+}
+
+static ptrdiff_t connect_node(TraverseData * trav, KDNode * node)
+{
+    KDTree * tree = node->tree;
+    ptrdiff_t r = splay(trav, tree->ind[node->start]);
+    if(node->size == 1) {
+        return r;
+    }
+    if(trav->node_connected[node->index]) {
+        return r;
+    }
+    /* fresh node, connect it */
+    ptrdiff_t i;
+    for(i = node->start + 1; i < node->size + node->start; i ++) {
+        trav->head[tree->ind[i]] = r;
+    }
+    trav->node_connected[node->index] = 1;
+
+    return r;
+}
+
+static int
+_kd_fof_prune_nodes(void * data, KDEnumNodePair * pair, int * open)
+{
+    TraverseData * trav = (TraverseData*) data;
+
+    if(pair->distmax2 > trav->ll * trav->ll) {
+        *open = 1;
+        return 0;
+    }
+
+    *open = 0;
+    ptrdiff_t r1 = connect_node(trav, pair->nodes[0]);
+    ptrdiff_t r2 = connect_node(trav, pair->nodes[1]);
+    trav->head[r2] = r1;
+    return 0;
 }
 
 static int
@@ -70,29 +108,34 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 }
 
 int 
-kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head) 
+kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 {
-    KDNode * nodes[2] = {tree, tree};
+    KDNode * nodes[2] = {node, node};
     TraverseData * trav = & (TraverseData) {};
 
     trav->head = head;
     trav->ll = linking_length;
+    trav->node_connected = malloc(node->tree->size);
 
     ptrdiff_t i;
-    for(i = 0; i < tree->size; i ++) {
+    for(i = 0; i < node->tree->size; i ++) {
+        trav->node_connected = 0;
+    }
+
+    for(i = 0; i < node->size; i ++) {
         trav->head[i] = i;
     }
 
     trav->merged = 0;
 
-    kd_enum(nodes, linking_length, _kd_fof_visit_edge, NULL, trav);
-    for(i = 0; i < tree->size; i ++) {
+    kd_enum(nodes, linking_length, _kd_fof_visit_edge, _kd_fof_prune_nodes, trav);
+
+    for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
 
+    free(trav->node_connected);
     return 0;
 
-exc_bad:
-    return -1;
 }
 
