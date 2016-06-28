@@ -1,25 +1,52 @@
 #include "kdtree.h"
 
+/* Friend of Friend:
+ *
+ * Connected component via edge enumeration.
+ *
+ * The connected components are stored as trees.
+ *
+ * (visit) two vertices i, j connected by an edge.
+ *         if splat(i) differ from splat(j), the components shall be
+ *         merged, call merge(i, j)
+ *
+ * (merge) Join two trees if they are connected by adding the root
+ *         of i as a child of root of j.
+ *
+ * (splat) Move a leaf node to the direct child of the tree root
+ *         and returns the root.
+ *
+ * One can show this algorithm ensures splat(i) is an label of
+ * max connected components in the graph.
+ *
+ * Suitable for application where finding edges of a vertice is more expensive
+ * than enumerating over edges.
+ *
+ * In FOF, we use the dual tree algorithm for edge enumeration.
+ *
+ * The storage is O(N) for the output labels.
+ *
+ * */
+
 typedef struct TraverseData {
     ptrdiff_t * head;
-    ptrdiff_t * next;
-    ptrdiff_t * len;
     double ll;
     ptrdiff_t merged;
 } TraverseData;
 
-static ptrdiff_t get_root(TraverseData * d, ptrdiff_t i)
+static ptrdiff_t splat(TraverseData * d, ptrdiff_t i)
 {
     int r = i;
     while(d->head[r] != r) {
         r = d->head[r];
     }
+    /* link the node directly to the root to keep the tree flat */
     d->head[i] = r;
     return r;
 }
 
 static int
-_kd_fof_callback(void * data, KDEnumPair * pair) 
+_kd_fof_visit_edge(void * data, KDEnumPair * pair) 
 {
     TraverseData * trav = (TraverseData*) data;
     ptrdiff_t i = pair->i;
@@ -28,49 +55,17 @@ _kd_fof_callback(void * data, KDEnumPair * pair)
     if(pair->r > trav->ll) return 0;
 
     if(i >= j) return 0;
-    if (trav->len[i] < trav->len[j] ) {
-        /* merge in the shorter list, j*/
-        ptrdiff_t tmp;
-        tmp = i;
-        i = j;
-        j = tmp;
-    }
-    ptrdiff_t root_i = get_root(trav, i);
-    ptrdiff_t root_j = get_root(trav, j);
+
+    ptrdiff_t root_i = splat(trav, i);
+    ptrdiff_t root_j = splat(trav, j);
 
     if(root_i == root_j) return 0;
 
     trav->merged ++;
 
-    /* update the length */
-    trav->len[root_i] += trav->len[root_j];
+    /* merge root_j as direct subtree of the root */
+    trav->head[root_j] = root_i;
 
-    if(trav->len[root_j] < 100) {
-        /* merge all as direct children of the root */
-        ptrdiff_t k, kk;
-        kk = 0;
-
-        /* update the head marker of each element of the joined list */
-        for(k = root_j; k >= 0 ; kk=k, k = trav->next[k]) {
-            trav->head[k] = root_i;
-        }
-
-        /* maintain next array only if the new proto-halo is short */
-        if(trav->len[root_i] < 100) {
-            /* append items after i to the end of the merged list */
-            ptrdiff_t oldnext = trav->next[root_i];
-            //printf("attaching %td to %td, oldnext = %td\n", j, i, oldnext);
-            trav->next[root_i] = root_j;
-            trav->next[kk] = oldnext;
-            //printf("reattaching %td to %td\n", oldnext, kk);
-        }
-    } else {
-        /* We will never need to traverse the children for halos > 10,
-         *  so do not try to maintain it */
-
-        /* merge root_j as direct subtree of the root */
-        trav->head[root_j] = root_i;
-    }
     return 0;
 }
 
@@ -81,30 +76,23 @@ kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head)
     TraverseData * trav = & (TraverseData) {};
 
     trav->head = head;
-    trav->next = malloc(sizeof(trav->next[0]) * tree->size);
-    trav->len = malloc(sizeof(trav->len[0]) * tree->size);
     trav->ll = linking_length;
 
     ptrdiff_t i;
     for(i = 0; i < tree->size; i ++) {
         trav->head[i] = i;
-        trav->next[i] = -1;
-        trav->len[i] = 1;
     }
 
     trav->merged = 0;
-    kd_enum(nodes, linking_length, _kd_fof_callback, trav);
+
+    kd_enum(nodes, linking_length, _kd_fof_visit_edge, trav);
     for(i = 0; i < tree->size; i ++) {
-        trav->head[i] = get_root(trav, i);
+        trav->head[i] = splat(trav, i);
     }
 
-    free(trav->next);
-    free(trav->len);
     return 0;
 
 exc_bad:
-    free(trav->next);
-    free(trav->len);
     return -1;
 }
 
