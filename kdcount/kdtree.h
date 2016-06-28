@@ -233,11 +233,21 @@ typedef struct KDEnumPair {
     ptrdiff_t j;
 } KDEnumPair;
 
-typedef int (*kd_enum_callback)(void * userdata, KDEnumPair * pair);
+typedef struct KDEnumNodePair {
+    double distmax;
+    double distmin;
+    KDNode * nodes[2];
+} KDEnumNodePair;
+
+typedef int (*kd_enum_visit_edge)(void * userdata, KDEnumPair * pair);
+/* Prune the node pair, set open to 0 if they can be skipped. set open to 1 if they needs to be openned */
+typedef int (*kd_enum_prune_nodes)(void * userdata, KDEnumNodePair * pair, int * open);
 
 int
 kd_enum(KDNode * nodes[2], double maxr,
-        kd_enum_callback callback, void * userdata);
+        kd_enum_visit_edge visit_edge,
+        kd_enum_prune_nodes prune_nodes,
+        void * userdata);
 
 int
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);

@@ -13,8 +13,12 @@ cdef extern from "kdtree.h":
         npy_intp i
         npy_intp j
 
+    struct KDEnumNodePair:
+        pass
+
     ctypedef double (*kd_castfunc)(void * p)
-    ctypedef int (*kd_enum_callback)(void * userdata, KDEnumPair * pair)
+    ctypedef int (*kd_enum_visit_edge)(void * userdata, KDEnumPair * pair)
+    ctypedef int (*kd_enum_prune_nodes)(void * userdata, KDEnumNodePair * pair, int * open)
     ctypedef void (*kd_freefunc)(void* data, npy_intp size, void * ptr) nogil
     ctypedef void * (*kd_mallocfunc)(void* data, npy_intp size) nogil
 
@@ -61,7 +65,9 @@ cdef extern from "kdtree.h":
     void kd_free0(cKDTree * tree, npy_intp size, void * ptr) nogil
 
     int kd_enum(cKDNode * nodes[2], double maxr,
-            kd_enum_callback callback, void * data) except -1
+            kd_enum_visit_edge visit_edge,
+            kd_enum_prune_nodes prune_nodes,
+            void * data) except -1
 
     int kd_fof(cKDNode * tree, double linklength, npy_intp * head) nogil
 
@@ -294,7 +300,7 @@ cdef class KDNode:
         cbdata.j = <npy_intp*>j.data
         cbdata.size = bunch
         cbdata.length = 0
-        kd_enum(node, rmax, <kd_enum_callback>callback, &cbdata)
+        kd_enum(node, rmax, <kd_enum_visit_edge>callback, NULL, &cbdata)
 
         if cbdata.length > 0:
             func()

@@ -85,7 +85,7 @@ kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head)
 
     trav->merged = 0;
 
-    kd_enum(nodes, linking_length, _kd_fof_visit_edge, trav);
+    kd_enum(nodes, linking_length, _kd_fof_visit_edge, NULL, trav);
     for(i = 0; i < tree->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
