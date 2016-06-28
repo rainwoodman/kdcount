@@ -7,16 +7,16 @@
  * The connected components are stored as trees.
  *
  * (visit) two vertices i, j connected by an edge.
- *         if splat(i) differ from splat(j), the components shall be
+ *         if splay(i) differ from splay(j), the components shall be
  *         merged, call merge(i, j)
  *
  * (merge) Join two trees if they are connected by adding the root
  *         of i as a child of root of j.
  *
- * (splat) Move a leaf node to the direct child of the tree root
+ * (splay) Move a leaf node to the direct child of the tree root
  *         and returns the root.
  *
- * One can show this algorithm ensures splat(i) is an label of
+ * One can show this algorithm ensures splay(i) is an label of
  * max connected components in the graph.
  *
  * Suitable for application where finding edges of a vertice is more expensive
@@ -34,7 +34,7 @@ typedef struct TraverseData {
     ptrdiff_t merged;
 } TraverseData;
 
-static ptrdiff_t splat(TraverseData * d, ptrdiff_t i)
+static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
 {
     int r = i;
     while(d->head[r] != r) {
@@ -56,8 +56,8 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 
     if(i >= j) return 0;
 
-    ptrdiff_t root_i = splat(trav, i);
-    ptrdiff_t root_j = splat(trav, j);
+    ptrdiff_t root_i = splay(trav, i);
+    ptrdiff_t root_j = splay(trav, j);
 
     if(root_i == root_j) return 0;
 
@@ -87,7 +87,7 @@ kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head)
 
     kd_enum(nodes, linking_length, _kd_fof_visit_edge, trav);
     for(i = 0; i < tree->size; i ++) {
-        trav->head[i] = splat(trav, i);
+        trav->head[i] = splay(trav, i);
     }
 
     return 0;
