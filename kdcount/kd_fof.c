@@ -78,23 +78,17 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
 {
     TraverseData * trav = (TraverseData*) data;
 
-    if(pair->distmin2 <= trav->ll * trav->ll) {
-        size_t save[2];
-        int i;
-        for(i = 0; i < 2; i ++) {
-            save[i] = pair->nodes[i]->size;
-            if(trav->node_connected[pair->nodes[i]->index])
-                pair->nodes[i]->size = 1;
-        }
-
-        int rt = kd_enum_check(pair->nodes, trav->ll * trav->ll, _kd_fof_visit_edge, data);
-        for(i = 0; i < 2; i ++) {
-            trav->skipped += save[i] * save[i] /(pair->nodes[i]->size * pair->nodes[i]->size);
-            pair->nodes[i]->size = save[i];
-        }
-        return rt;
+    if(trav->node_connected[pair->nodes[0]->index]
+    && trav->node_connected[pair->nodes[1]->index])
+    {
+        /* two fully connected nodes are linked, simply link the first particle.  */
+        KDEnumPair epair;
+        epair.r = 0;
+        epair.i = trav->ind[pair->nodes[0]->start];
+        epair.j = trav->ind[pair->nodes[1]->start];
+        return _kd_fof_visit_edge(data, &epair);
     } else {
-        return 0;
+        return kd_enum_check(pair->nodes, trav->ll * trav->ll, _kd_fof_visit_edge, data);
     }
 
 }
