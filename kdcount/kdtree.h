@@ -240,13 +240,14 @@ typedef struct KDEnumNodePair {
 } KDEnumNodePair;
 
 typedef int (*kd_enum_visit_edge)(void * userdata, KDEnumPair * pair);
-/* Prune the node pair, set open to 0 if they can be skipped. set open to 1 if they needs to be openned */
-typedef int (*kd_enum_prune_nodes)(void * userdata, KDEnumNodePair * pair, int * open);
+typedef int (*kd_enum_check_nodes)(void * userdata, KDEnumNodePair * pair);
+int
+kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata);
 
 int
 kd_enum(KDNode * nodes[2], double maxr,
         kd_enum_visit_edge visit_edge,
-        kd_enum_prune_nodes prune_nodes,
+        kd_enum_check_nodes check_nodes,
         void * userdata);
 
 int

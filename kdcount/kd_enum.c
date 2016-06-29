@@ -6,26 +6,38 @@ struct TraverseData
     double maxr2;
     void * userdata;
     kd_enum_visit_edge visit_edge;
-    kd_enum_prune_nodes prune_nodes;
+    kd_enum_check_nodes check_nodes;
+    void * check_nodes_data;
 };
 
 static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
-static int
-kd_enum_check(struct TraverseData * trav, KDNode * nodes[2]);
+
+static int _kd_enum_check_nodes(void * data, KDEnumNodePair * pair)
+{
+    struct TraverseData * trav = data;
+    return kd_enum_check(pair->nodes, trav->maxr2,
+            trav->visit_edge, trav->userdata);
+}
 
 int
 kd_enum(KDNode * nodes[2], double maxr,
         kd_enum_visit_edge visit_edge,
-        kd_enum_prune_nodes prune_nodes,
+        kd_enum_check_nodes check_nodes,
         void * userdata)
 {
     struct TraverseData trav = {
         .maxr = maxr,
         .maxr2 = maxr * maxr,
-        .prune_nodes = prune_nodes,
+        .check_nodes = check_nodes,
         .visit_edge = visit_edge,
         .userdata = userdata,
     };
+    if(check_nodes == NULL) {
+        trav.check_nodes = _kd_enum_check_nodes;
+        trav.check_nodes_data = &trav;
+    } else {
+        trav.check_nodes_data = userdata;
+    }
     return kd_enum_internal(&trav, nodes);
 }
 
@@ -90,29 +102,19 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
         /* fully inside, fall through,
          * and enumerate  */
     }
-    if(trav->prune_nodes) {
-        int open = 1;
-        KDEnumNodePair pair;
-        pair.nodes[0] = nodes[0];
-        pair.nodes[1] = nodes[1];
-        pair.distmin2 = distmin;
-        pair.distmax2 = distmax;
-    
-        if (0 != trav->prune_nodes(trav->userdata, &pair, &open)) {
-            return -1;
-        }
-        if(open) {
-            return kd_enum_check(trav, nodes);
-        } else {
-            return 0;
-        }
-    } else {
-        return kd_enum_check(trav, nodes);
-    }
+
+    KDEnumNodePair pair;
+    pair.nodes[0] = nodes[0];
+    pair.nodes[1] = nodes[1];
+    pair.distmin2 = distmin;
+    pair.distmax2 = distmax;
+
+    return trav->check_nodes(trav->check_nodes_data, &pair);
 }
 
-static int
-kd_enum_check(struct TraverseData * trav, KDNode * nodes[2])
+
+int
+kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata)
 {
     int rt = 0;
     ptrdiff_t i, j;
@@ -125,8 +127,7 @@ kd_enum_check(struct TraverseData * trav, KDNode * nodes[2])
     double * p1base = malloc(nodes[1]->size * sizeof(double) * Nd);
     /* collect all nodes[1] positions to a continue block */
     double * p1, * p0;
-    double half[Nd];
-    double full[Nd];
+
     KDEnumPair pair;
 
     /* no need to collect weight */
@@ -144,10 +145,10 @@ kd_enum_check(struct TraverseData * trav, KDNode * nodes[2])
                 dx = kd_realdiff(nodes[0]->tree, dx, d);
                 r2 += dx * dx;
             }
-            if(r2 <= trav->maxr2) {
+            if(r2 <= maxr2) {
                 pair.j = t1->ind[j];
                 pair.r = sqrt(r2);
-                if(0 != trav->visit_edge(trav->userdata, &pair)) {
+                if(0 != visit_edge(userdata, &pair)) {
                     rt = -1;
                     goto exit;
                 }
