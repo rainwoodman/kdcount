@@ -127,7 +127,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 
     ptrdiff_t i;
     for(i = 0; i < node->tree->size; i ++) {
-        trav->node_connected = 0;
+        trav->node_connected[i] = 0;
     }
 
     for(i = 0; i < node->size; i ++) {
