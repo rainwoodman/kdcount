@@ -36,9 +36,11 @@
 
 typedef struct TraverseData {
     ptrdiff_t * head;
+    ptrdiff_t * ind; /* tree->ind */
     char * node_connected;
     double ll;
     ptrdiff_t merged;
+    ptrdiff_t skipped;
 } TraverseData;
 
 static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
@@ -54,20 +56,16 @@ static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
 
 static ptrdiff_t connect_node(TraverseData * trav, KDNode * node)
 {
-    KDTree * tree = node->tree;
-    ptrdiff_t r = splay(trav, tree->ind[node->start]);
+    trav->node_connected[node->index] = 1;
+
+    ptrdiff_t r = trav->ind[node->start];
     if(node->size == 1) {
         return r;
     }
-    if(trav->node_connected[node->index]) {
-        return r;
-    }
-    /* fresh node, connect it */
     ptrdiff_t i;
     for(i = node->start + 1; i < node->size + node->start; i ++) {
-        trav->head[tree->ind[i]] = r;
+        trav->head[trav->ind[i]] = r;
     }
-    trav->node_connected[node->index] = 1;
 
     return r;
 }
@@ -77,17 +75,22 @@ _kd_fof_prune_nodes(void * data, KDEnumNodePair * pair, int * open)
 {
     TraverseData * trav = (TraverseData*) data;
 
-    if(pair->distmax2 > trav->ll * trav->ll) {
+    if(pair->distmin2 > trav->ll * trav->ll) {
         *open = 1;
         return 0;
     }
-
-    *open = 0;
-    ptrdiff_t r1 = connect_node(trav, pair->nodes[0]);
-    ptrdiff_t r2 = connect_node(trav, pair->nodes[1]);
-
-    if(r1 != r2)
-        trav->head[r2] = r1;
+    if (trav->node_connected[pair->nodes[0]->index] && 
+        trav->node_connected[pair->nodes[1]->index]) {
+        *open = 0;
+        ptrdiff_t r1 = splay(trav, trav->ind[pair->nodes[0]->start]);
+        ptrdiff_t r2 = splay(trav, trav->ind[pair->nodes[1]->start]);
+        if(r1 != r2)
+            trav->head[r2] = splay(trav, r1);
+        trav->skipped += pair->nodes[0]->size * pair->nodes[0]->size;
+        trav->skipped += pair->nodes[1]->size * pair->nodes[1]->size;
+    } else {
+        *open = 1;
+    }
     return 0;
 }
 
@@ -114,6 +117,25 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 
     return 0;
 }
+static void
+connect_nodes_r(TraverseData * trav, KDNode * node)
+{
+    int d;
+    double dist = 0;
+
+    for(d = 0; d < 3; d ++) {
+        double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
+        dist += dx * dx;
+    }
+    if(dist < trav->ll * trav->ll) {
+        connect_node(trav, node);
+    } else {
+        if(node->dim != -1) {
+            connect_nodes_r(trav, node->link[0]);
+            connect_nodes_r(trav, node->link[1]);
+        }
+    }
+}
 
 int 
 kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
@@ -124,6 +146,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
     trav->head = head;
     trav->ll = linking_length;
     trav->node_connected = malloc(node->tree->size);
+    trav->ind = node->tree->ind;
 
     ptrdiff_t i;
     for(i = 0; i < node->tree->size; i ++) {
@@ -134,13 +157,17 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
         trav->head[i] = i;
     }
 
+    connect_nodes_r(trav, node);
+
     trav->merged = 0;
+    trav->skipped = 0;
 
     kd_enum(nodes, linking_length, _kd_fof_visit_edge, _kd_fof_prune_nodes, trav);
 
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
+    printf("skipped = %td merged = %td\n", trav->skipped, trav->merged);
 
     free(trav->node_connected);
     return 0;

@@ -90,21 +90,25 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
         /* fully inside, fall through,
          * and enumerate  */
     }
-    KDEnumNodePair pair;
-    pair.nodes[0] = nodes[0];
-    pair.nodes[1] = nodes[1];
-    pair.distmin2 = distmin;
-    pair.distmax2 = distmax;
-    int open = 1;
     if(trav->prune_nodes) {
+        int open = 1;
+        KDEnumNodePair pair;
+        pair.nodes[0] = nodes[0];
+        pair.nodes[1] = nodes[1];
+        pair.distmin2 = distmin;
+        pair.distmax2 = distmax;
+    
         if (0 != trav->prune_nodes(trav->userdata, &pair, &open)) {
             return -1;
         }
+        if(open) {
+            return kd_enum_check(trav, nodes);
+        } else {
+            return 0;
+        }
+    } else {
+        return kd_enum_check(trav, nodes);
     }
-    if(open) {
-        return kd_enum_check(trav, pair.nodes);
-    }
-    return 0;
 }
 
 static int
