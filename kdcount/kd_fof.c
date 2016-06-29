@@ -22,7 +22,13 @@
  * Suitable for application where finding edges of a vertice is more expensive
  * than enumerating over edges.
  *
- * In FOF, we use the dual tree algorithm for edge enumeration.
+ * In FOF, we use the dual tree algorithm for edge enumeration. We prune the dual tree
+ * walking algorithm
+ *
+ * (connect) if not connected, connect all points in a node into a tree, returns
+ *           the root.
+ * (prune) if two nodes are maxiumimly separated by linking length, connect(node1) and connect(node2)
+ *         then connect the two subtrees containing node1 and node2. Skip the edge enumeration between node1 and node2.
  *
  * The storage is O(N) for the output labels.
  *
@@ -79,7 +85,9 @@ _kd_fof_prune_nodes(void * data, KDEnumNodePair * pair, int * open)
     *open = 0;
     ptrdiff_t r1 = connect_node(trav, pair->nodes[0]);
     ptrdiff_t r2 = connect_node(trav, pair->nodes[1]);
-    trav->head[r2] = r1;
+
+    if(r1 != r2)
+        trav->head[r2] = r1;
     return 0;
 }
 
