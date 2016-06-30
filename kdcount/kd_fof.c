@@ -22,15 +22,21 @@
  * Suitable for application where finding edges of a vertice is more expensive
  * than enumerating over edges.
  *
- * In FOF, we use the dual tree algorithm for edge enumeration. We prune the dual tree
- * walking algorithm
+ * In KD-Tree implementation we apply optimization for overdense regions
  *
- * (connect) if not connected, connect all points in a node into a tree, returns
- *           the root.
- * (prune) if two nodes are maxiumimly separated by linking length, connect(node1) and connect(node2)
- *         then connect the two subtrees containing node1 and node2. Skip the edge enumeration between node1 and node2.
+ * Before FOF we connect all nodes that are less than linking length in size (internally connected)
+ * 
+ * (connect) connect all points in a node into a tree, the first particle is the root.
+ * 
+ * In FOF, we use the dual tree algorithm for edge enumeration, but if two nodes are minimaly sperated
+ * by linking length and both are internally connected
  *
- * The storage is O(N) for the output labels.
+ *   (nodemerge) merge(node1->first, node2->first)
+ * 
+ * For typically low resolution cosmological simulations this optimization improves speed by a few percent.
+ * The improvement increases for highly clustered data.
+ *
+ * The storage is O(N) for the output labels + O(M) for the connection status of kdtree nodes.
  *
  * */
 
@@ -39,6 +45,7 @@ typedef struct TraverseData {
     ptrdiff_t * ind; /* tree->ind */
     char * node_connected;
     double ll;
+    double ll2;
     ptrdiff_t merged;
     ptrdiff_t skipped;
 } TraverseData;
@@ -83,12 +90,13 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
     {
         /* two fully connected nodes are linked, simply link the first particle.  */
         KDEnumPair epair;
-        epair.r = 0;
+        epair.r = sqrt(pair->distmin2);
         epair.i = trav->ind[pair->nodes[0]->start];
         epair.j = trav->ind[pair->nodes[1]->start];
+        trav->skipped += pair->nodes[0]->size * pair->nodes[1]->size;
         return _kd_fof_visit_edge(data, &epair);
     } else {
-        return kd_enum_check(pair->nodes, trav->ll * trav->ll, _kd_fof_visit_edge, data);
+        return kd_enum_check(pair->nodes, trav->ll2, _kd_fof_visit_edge, data);
     }
 
 }
@@ -102,6 +110,8 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 
     if(pair->r > trav->ll) return 0;
 
+    trav->merged ++;
+
     if(i >= j) return 0;
 
     ptrdiff_t root_i = splay(trav, i);
@@ -109,13 +119,12 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 
     if(root_i == root_j) return 0;
 
-    trav->merged ++;
-
     /* merge root_j as direct subtree of the root */
     trav->head[root_j] = root_i;
 
     return 0;
 }
+
 static void
 connect_nodes_r(TraverseData * trav, KDNode * node)
 {
@@ -126,7 +135,7 @@ connect_nodes_r(TraverseData * trav, KDNode * node)
         double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
         dist += dx * dx;
     }
-    if(dist < trav->ll * trav->ll) {
+    if(dist <= trav->ll2) {
         connect_node(trav, node);
     } else {
         if(node->dim != -1) {
@@ -144,6 +153,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 
     trav->head = head;
     trav->ll = linking_length;
+    trav->ll2 = linking_length * linking_length;
     trav->node_connected = malloc(node->tree->size);
     trav->ind = node->tree->ind;
 
@@ -155,9 +165,13 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = i;
     }
+    size_t connected = 0;
 
     connect_nodes_r(trav, node);
 
+    for(i = 0; i < node->tree->size; i ++) {
+        connected += trav->node_connected[i];
+    }    
     trav->merged = 0;
     trav->skipped = 0;
 
@@ -166,7 +180,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
-    printf("skipped = %td merged = %td\n", trav->skipped, trav->merged);
+    //printf("skipped = %td merged = %td connected = %td size = %td\n", trav->skipped, trav->merged, connected, node->tree->size);
 
     free(trav->node_connected);
     return 0;
