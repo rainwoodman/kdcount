@@ -63,8 +63,6 @@ static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
 
 static ptrdiff_t connect_node(TraverseData * trav, KDNode * node)
 {
-    trav->node_connected[node->index] = 1;
-
     ptrdiff_t r = trav->ind[node->start];
     if(node->size == 1) {
         return r;
@@ -126,22 +124,25 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 }
 
 static void
-connect_nodes_r(TraverseData * trav, KDNode * node)
+connect_nodes_r(TraverseData * trav, KDNode * node, int parent_connected)
 {
     int d;
     double dist = 0;
-
-    for(d = 0; d < 3; d ++) {
-        double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
-        dist += dx * dx;
-    }
-    if(dist <= trav->ll2) {
-        connect_node(trav, node);
-    } else {
-        if(node->dim != -1) {
-            connect_nodes_r(trav, node->link[0]);
-            connect_nodes_r(trav, node->link[1]);
+    if(!parent_connected) {
+        for(d = 0; d < 3; d ++) {
+            double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
+            dist += dx * dx;
         }
+        if(dist <= trav->ll2) {
+            connect_node(trav, node);
+            trav->node_connected[node->index] = 1;
+        }
+    } else {
+        trav->node_connected[node->index] = 1;
+    }
+    if(node->dim != -1) {
+        connect_nodes_r(trav, node->link[0], trav->node_connected[node->index]);
+        connect_nodes_r(trav, node->link[1], trav->node_connected[node->index]);
     }
 }
 
@@ -167,11 +168,12 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
     }
     size_t connected = 0;
 
-    connect_nodes_r(trav, node);
+    connect_nodes_r(trav, node, 0);
 
     for(i = 0; i < node->tree->size; i ++) {
         connected += trav->node_connected[i];
-    }    
+    }
+
     trav->merged = 0;
     trav->skipped = 0;
 
