@@ -46,31 +46,44 @@ typedef struct TraverseData {
     char * node_connected;
     double ll;
     double ll2;
+
+    /* performance counters */
     ptrdiff_t merged;
+    ptrdiff_t connected;
     ptrdiff_t skipped;
+    ptrdiff_t maxdepth;
+    ptrdiff_t nsplay;
+    ptrdiff_t totaldepth;
 } TraverseData;
 
 static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
 {
-    int r = i;
+    ptrdiff_t depth = 0;
+    ptrdiff_t r = i;
+    /* First find the root */
     while(d->head[r] != r) {
+        depth ++;
         r = d->head[r];
     }
-    /* link the node directly to the root to keep the tree flat */
-    d->head[i] = r;
-    return r;
-}
 
-static ptrdiff_t connect_node(TraverseData * trav, KDNode * node)
-{
-    ptrdiff_t r = trav->ind[node->start];
-    if(node->size == 1) {
-        return r;
+#ifdef KD_FOF_UNSAFE
+    /* link the nodes directly to the root to keep the tree flat */
+    d->head[i] = r;
+#else
+    /* safe guard */
+    while(d->head[i] != i) {
+        ptrdiff_t t = d->head[i];
+        d->head[i] = r;
+        i = t;
     }
-    ptrdiff_t i;
-    for(i = node->start + 1; i < node->size + node->start; i ++) {
-        trav->head[trav->ind[i]] = r;
+#endif
+
+    /* update performance counters */
+    if(depth > d->maxdepth) {
+        d->maxdepth = depth;
     }
+    d->totaldepth += depth;
+    d->nsplay ++;
 
     return r;
 }
@@ -91,7 +104,10 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
         epair.r = sqrt(pair->distmin2);
         epair.i = trav->ind[pair->nodes[0]->start];
         epair.j = trav->ind[pair->nodes[1]->start];
+
+        /* update performance counters */
         trav->skipped += pair->nodes[0]->size * pair->nodes[1]->size;
+
         return _kd_fof_visit_edge(data, &epair);
     } else {
         return kd_enum_check(pair->nodes, trav->ll2, _kd_fof_visit_edge, data);
@@ -106,43 +122,53 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
     ptrdiff_t i = pair->i;
     ptrdiff_t j = pair->j;
 
-    if(pair->r > trav->ll) return 0;
-
     trav->merged ++;
 
+    /* do not visit the symmetric edges */
     if(i >= j) return 0;
 
     ptrdiff_t root_i = splay(trav, i);
     ptrdiff_t root_j = splay(trav, j);
 
-    if(root_i == root_j) return 0;
-
     /* merge root_j as direct subtree of the root */
+    /* this is also correct if root_j == root_i */
     trav->head[root_j] = root_i;
 
     return 0;
 }
-
-static void
-connect_nodes_r(TraverseData * trav, KDNode * node, int parent_connected)
+static double kd_node_maxdist2(KDNode * node)
 {
     int d;
     double dist = 0;
-    if(!parent_connected) {
-        for(d = 0; d < 3; d ++) {
-            double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
-            dist += dx * dx;
-        }
-        if(dist <= trav->ll2) {
-            connect_node(trav, node);
-            trav->node_connected[node->index] = 1;
-        }
-    } else {
-        trav->node_connected[node->index] = 1;
+    for(d = 0; d < 3; d ++) {
+        double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
+        dist += dx * dx;
     }
+    return dist;
+}
+
+static void
+connect(TraverseData * trav, KDNode * node, int parent_connected)
+{
+    int c = 0;
+    if(parent_connected) {
+        c = 1;
+    } else {
+        if(kd_node_maxdist2(node) <= trav->ll2) {
+            ptrdiff_t i;
+            ptrdiff_t r = trav->ind[node->start];
+            for(i = node->start + 1; i < node->size + node->start; i ++) {
+                trav->head[trav->ind[i]] = r;
+            }
+            c = 1;
+        }
+    }
+    trav->node_connected[node->index] = c;
+    trav->connected += c;
+
     if(node->dim != -1) {
-        connect_nodes_r(trav, node->link[0], trav->node_connected[node->index]);
-        connect_nodes_r(trav, node->link[1], trav->node_connected[node->index]);
+        connect(trav, node->link[0], c);
+        connect(trav, node->link[1], c);
     }
 }
 
@@ -155,35 +181,32 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
     trav->head = head;
     trav->ll = linking_length;
     trav->ll2 = linking_length * linking_length;
-    trav->node_connected = malloc(node->tree->size);
+    trav->node_connected = calloc(node->tree->size, 1);
     trav->ind = node->tree->ind;
 
     ptrdiff_t i;
-    for(i = 0; i < node->tree->size; i ++) {
-        trav->node_connected[i] = 0;
-    }
-
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = i;
-    }
-    size_t connected = 0;
-
-    connect_nodes_r(trav, node, 0);
-
-    for(i = 0; i < node->tree->size; i ++) {
-        connected += trav->node_connected[i];
     }
 
     trav->merged = 0;
     trav->skipped = 0;
+    trav->maxdepth = 0;
+    trav->totaldepth = 0;
+    trav->nsplay = 0;
+    trav->connected = 0;
+
+    connect(trav, node, 0);
 
     kd_enum(nodes, linking_length, NULL, _kd_fof_check_nodes, trav);
 
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
-    //printf("skipped = %td merged = %td connected = %td size = %td\n", trav->skipped, trav->merged, connected, node->tree->size);
-
+#ifdef KD_FOF_VERBOSE
+    printf("skipped = %td merged = %td connected = %td size = %td maxdepth = %td nsplay = %td meandepth = %g\n", 
+            trav->skipped, trav->merged, trav->connected, node->tree->size, trav->maxdepth, trav->nsplay, 1.0 * trav->totaldepth / trav->nsplay);
+#endif
     free(trav->node_connected);
     return 0;
 
