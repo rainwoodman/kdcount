@@ -27,20 +27,28 @@ class AngularBinning(RBinning):
 
 import heapq
 def bootstrap(nside, rand, nbar, *data):
-    """ This function will boot strap data based on the sky coverage of rand
+    """ This function will bootstrap data based on the sky coverage of rand.
+        It is different from bootstrap in the traditional sense, but for correlation
+        functions it gives the correct answer with less computation.
 
-        nbar : number density of rand
+        nbar : number density of rand, used to estimate the effective area of a pixel
 
         nside : number of healpix pixels per side to use
 
         *data : a list of data -- will be binned on the same regions.
 
         small regions (incomplete pixels) are combined such that the total
-        area is about the same in each returned boot strap sample
+        area is about the same (a healpix pixel) in each returned boot strap sample
 
         Yields: area, random, *data
-       
+
         rand and *data are in (RA, DEC)
+
+        Example:
+
+        >>> for area, ran, data1, data2 in bootstrap(4, ran, 100., data1, data2):
+        >>>    # Do stuff
+        >>>    pass
     """
 
     def split(data, indices, axis):
@@ -54,7 +62,7 @@ def bootstrap(nside, rand, nbar, *data):
         for i in range(len(indices) - 1):
             s.append(slice(indices[i], indices[i+1]))
         s.append(slice(indices[-1], None))
-        
+
         rt = []
         for ss in s:
             ind = [slice(None, None, None) for i in range(len(data.shape))]
