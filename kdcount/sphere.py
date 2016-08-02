@@ -27,20 +27,28 @@ class AngularBinning(RBinning):
 
 import heapq
 def bootstrap(nside, rand, nbar, *data):
-    """ This function will boot strap data based on the sky coverage of rand
+    """ This function will bootstrap data based on the sky coverage of rand.
+        It is different from bootstrap in the traditional sense, but for correlation
+        functions it gives the correct answer with less computation.
 
-        nbar : number density of rand
+        nbar : number density of rand, used to estimate the effective area of a pixel
 
         nside : number of healpix pixels per side to use
 
         *data : a list of data -- will be binned on the same regions.
 
         small regions (incomplete pixels) are combined such that the total
-        area is about the same in each returned boot strap sample
+        area is about the same (a healpix pixel) in each returned boot strap sample
 
         Yields: area, random, *data
-       
+
         rand and *data are in (RA, DEC)
+
+        Example:
+
+        >>> for area, ran, data1, data2 in bootstrap(4, ran, 100., data1, data2):
+        >>>    # Do stuff
+        >>>    pass
     """
 
     def split(data, indices, axis):
@@ -54,7 +62,7 @@ def bootstrap(nside, rand, nbar, *data):
         for i in range(len(indices) - 1):
             s.append(slice(indices[i], indices[i+1]))
         s.append(slice(indices[-1], None))
-        
+
         rt = []
         for ss in s:
             ind = [slice(None, None, None) for i in range(len(data.shape))]
@@ -78,7 +86,7 @@ def bootstrap(nside, rand, nbar, *data):
     Abar =  41252.96 / nside2npix(nside)
     rand = hpsplit(nside, rand)
     if len(data) > 0:
-        data = list(zip(*[hpsplit(nside, d1) for d1 in data]))
+        data = [list(i) for i in zip(*[hpsplit(nside, d1) for d1 in data])]
     else:
         data = [[] for i in range(len(rand))]
 
@@ -101,7 +109,7 @@ def bootstrap(nside, rand, nbar, *data):
                 r0 = numpy.concatenate((r0, r), axis=-1)
             else:
                 heapq.heappush(heap, (a, j, r, d))
-            heapq.heappush(heap, (a0, j, r0, d0))
+            heapq.heappush(heap, (a0, j0, r0, d0))
 
     for i in range(len(heap)):
         area, j, r, d = heapq.heappop(heap)
