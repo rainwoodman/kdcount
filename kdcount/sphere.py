@@ -101,7 +101,7 @@ def bootstrap(nside, rand, nbar, *data):
                 r0 = numpy.concatenate((r0, r), axis=-1)
             else:
                 heapq.heappush(heap, (a, j, r, d))
-            heapq.heappush(heap, (a0, j, r0, d0))
+            heapq.heappush(heap, (a0, j0, r0, d0))
 
     for i in range(len(heap)):
         area, j, r, d = heapq.heappop(heap)
