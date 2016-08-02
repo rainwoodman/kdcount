@@ -78,7 +78,7 @@ def bootstrap(nside, rand, nbar, *data):
     Abar =  41252.96 / nside2npix(nside)
     rand = hpsplit(nside, rand)
     if len(data) > 0:
-        data = list(zip(*[hpsplit(nside, d1) for d1 in data]))
+        data = [list(i) for i in zip(*[hpsplit(nside, d1) for d1 in data])]
     else:
         data = [[] for i in range(len(rand))]
 
