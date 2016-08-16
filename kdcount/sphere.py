@@ -3,7 +3,7 @@ from .correlate import RBinning
 import numpy
 
 class points(models.points):
-    def __init__(self, ra, dec, weights=None, boxsize=None, extra={}):
+    def __init__(self, ra, dec, weights=None, boxsize=None):
         ra = ra * (numpy.pi / 180.)
         dec = dec * (numpy.pi / 180.)
         pos = numpy.empty(len(ra), dtype=(ra.dtype, 3))
@@ -11,8 +11,13 @@ class points(models.points):
         r = numpy.cos(dec)
         pos[:, 0] = numpy.sin(ra) * r
         pos[:, 1] = numpy.cos(ra) * r 
+        self.ra = ra
+        self.dec = dec
 
-        models.points.__init__(self, pos, weights, boxsize, extra)
+        models.points.__init__(self, pos, weights, boxsize)
+
+    def __getitem__(self, index):
+        return points(self.ra[index], self.dec[index], self.weights[index], self.boxsize);
 
 class AngularBinning(RBinning):
     def __init__(self, angbins, **kwargs):

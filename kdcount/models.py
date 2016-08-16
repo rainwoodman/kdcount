@@ -22,20 +22,16 @@ class dataset(object):
         weight of objects, default is 1.0. Not to be confused with :code:`values`.
     boxsize : float
         if not None, a periodic boundary is assumed, and boxsize is the size of periodic box. 
-    extra : dict
-        extra properties.
  
     """
-    def __init__(self, pos, weights=None, boxsize=None, extra={}):
+    def __init__(self, pos, weights=None, boxsize=None):
         """ create a dataset object for points located at pos in a boxsize.
             points is of (Npoints, Ndim)
             boxsize will be broadcasted to the dimension of points. 
-            extra can be accessed as dataset.extra.
         """
         self.pos = pos
         self.boxsize = boxsize
         self.tree = kdcount.KDTree(self.pos, boxsize=boxsize)
-        self.extra = extra
 
         if weights is None:
             weights = constant_array(len(self.pos))
@@ -47,6 +43,12 @@ class dataset(object):
     def __len__(self):
         return len(self.pos)
 
+    def __getitem__(self, index):
+        return dataset(self.pos[index], self.weights[index], self.boxsize)
+
+    def __repr__(self):
+        return "%s %s %s" % (type(self), self.tree, self.attr)
+
 class points(dataset):
     """ 
     Point-wise data set
@@ -55,11 +57,14 @@ class points(dataset):
     weight, and are discrete representation of the underlying density field.
 
     """
-    def __init__(self, pos, weights=None, boxsize=None, extra={}):
-        dataset.__init__(self, pos, weights, boxsize, extra)
+    def __init__(self, pos, weights=None, boxsize=None):
+        dataset.__init__(self, pos, weights, boxsize)
 
         self.norm = self.weights.sum(axis=0)
         self.subshape = ()
+
+    def __getitem__(self, index):
+        return points(self.pos[index], self.weights[index], self.boxsize)
 
 class field(dataset):
     """ 
@@ -77,8 +82,12 @@ class field(dataset):
         the weighted value at pos.
 
     """
-    def __init__(self, pos, value, weights=None, boxsize=None, extra={}):
-        dataset.__init__(self, pos, weights, boxsize, extra)
+    def __init__(self, pos, value, weights=None, boxsize=None):
+        dataset.__init__(self, pos, weights, boxsize)
         self.wvalue = self.weights * value
         self.subshape = value.shape[1:]
         self.wvattr = kdcount.KDAttr(self.tree, self.wvalue)
+        self.value = value
+
+    def __getitem__(self, index):
+        return field(self.pos[index], self.value[index], self.weights[index], self.boxsize)
