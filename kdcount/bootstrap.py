@@ -15,6 +15,29 @@ def binslices(index):
     return [slice(*i) for i in zip(start, end)]
 
 class bpaircount(object):
+    """
+        Parameters
+        ----------
+        bootstrapper: callable(dataset) -> integer array
+           mapping dataset to integer subsample id. The subsamples are assembled into
+            bootstrap samples. Currently we remove 1 subsample to form a bootstrap sample.
+            Is this called jackknife?
+
+        other parameters are passed to paircount
+
+        Returns
+        -------
+        an bpaircount object . Attributes are:
+
+        sum1, sum2, weight: as paircount
+
+        samplesum1, samplesum2: lists of sum1, sum2, per bootstrap sample.
+        sampleweight : the total weight (product of norm or number of points) per sample
+        
+        ddof : delta degrees of freedom in the bootstrap samples. It is close to but not -2.
+            due to the way subsamples are created.
+
+    """
     def __init__(self, data1, data2, binning, bootstrapper, usefast=True, np=None):
         pts_only = isinstance(data1, points) and isinstance(data2, points)
 
@@ -83,6 +106,7 @@ class bpaircount(object):
         self.samplesum1 = self.samplefullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
 
         self.ndof = ndof
+        self.ddof = ndof - Nsample
         if not pts_only:
             self.fullsum2 = (self.samplefullsum2 * self.sampleweight).sum(axis=0) / self.sampleweight.mean() / ndof
             self.sum2 = self.fullsum2[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
