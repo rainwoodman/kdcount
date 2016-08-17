@@ -57,8 +57,6 @@ class bpaircount(object):
 
         bsshape = (len(data1), len(data2))
 
-        print(bnshape, bsshape)
-
         self.bsweight = numpy.zeros(bsshape, ('f8'))
         self.bsfullsum1 = numpy.zeros(bsshape, ('f8', bnshape))
         if not pts_only:
