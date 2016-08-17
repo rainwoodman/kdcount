@@ -22,4 +22,17 @@ install:
     - python setup.py install
     - python setup.py build_ext --inplace
 
-script: python ./runtests.py
+script:
+    - python ./runtests.py
+    - bash check_tag.sh kdcount/version.py
+
+deploy:
+    - provider: pypi
+      distributions: sdist
+      server: https://pypi.python.org/pypi
+      user: "rainwoodman"
+      password:
+          secure: "ymvhC9sArTgGROAdqb2bJkkB/szxak/rlSSMVC/mY3FSoees2mJuvlz9Q9sJo6w7yhOodTQe4kTh1j1kAqrLy4CxYqGiyTV9KZ/A6c1Pnj8tRQdOiXGVKdRPpAIqLNHE0RgFDpfDX4NRXo5Wsdd3FzmogLgYeII9Hr0tunoeJXkAnlDL3SWDqs+3Nea6t4F8rGpzHwechhWKMwZV967epR8r83f/3tjnA0L61OByPyl3Va1FhELoVNVobV99M89ApWyf3WhrkDT0HSpFUzAo+eSpo3c4eSqAYRLkvtuHJkZvl0IsMI4yE0jsEubJXpFG1c6X7Md9nZrgod5e1OSW4O/S9mdwdO8kN58k8z/SoDEgMAbkmMeVwxheWUXx+9wEqjvGWnzkQKPdpWlRGzol9Q6PV5VBJD84tE1kAWfYxupioCyKwXslgng1ynr4OsGikwMlWhEKY9MvaWyRXyGyeiBzlhbU7xf2ocaCu60ZeVK5+FY//aAmrGLdJ3LL7AT5M5OP8XSYDITfYzYA10SJ7JqCf3OQw5e6tYIEtRfFsrgmfSWhg8VY9yYxbTlMXImjdHnV6m26H83C/3mx6SFZeG4E8uCy4ovo0PtOIv086tPEEO1bkmDM4u3mNScz6dVHvvFhIDcEn/6EZpLljSv/lSVPCEF3ptHapkkGT4QVtFk="
+      on:
+        tags   : true
+        condition : $TRAVIS_PYTHON_VERSION = "2.7"
