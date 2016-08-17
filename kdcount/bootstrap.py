@@ -58,21 +58,27 @@ class bpaircount(object):
 
         bsshape = (len(data1), len(data2))
 
-        self.bsweights = numpy.zeros(bsshape, ('f8'))
+        self.bsweight = numpy.zeros(bsshape, ('f8'))
         self.bsfullsum1 = numpy.zeros(bsshape, ('f8', bnshape))
         if not pts_only:
             self.bsfullsum2 = numpy.zeros(bsshape, ('f8', bnshape))
 
         for i, j in numpy.ndindex(*bsshape):
             d1, d2 = data1[i], data2[j]
-            if len(d1) > 0 and len(d2) > 0:
-                pc = paircount(d1, d2, binning, usefast, np)
+            if i > j: continue
+            if len(d1) == 0 or len(d2) == 0: continue
 
-                self.bsfullsum1[i, j] = pc.fullsum1
-                if not pts_only:
-                    self.bsfullsum2[i, j] = pc.fullsum2
-                self.bsweights[i, j] = 1.0 * data1[i].norm * data2[j].norm
-            
+            pc = paircount(d1, d2, binning, usefast, np)
+
+            self.bsfullsum1[i, j] = pc.fullsum1
+            self.bsfullsum1[j, i] = pc.fullsum1
+            if not pts_only:
+                self.bsfullsum2[i, j] = pc.fullsum2
+                self.bsfullsum2[j, i] = pc.fullsum2
+
+            self.bsweight[i, j] = 1.0 * data1[i].norm * data2[j].norm
+            self.bsweight[j, i] = 1.0 * data1[i].norm * data2[j].norm
+
         self.edges = binning.edges
         self.centers = binning.centers
 
@@ -86,27 +92,31 @@ class bpaircount(object):
 
         for i in range(Nsamples):
             mask = numpy.ones(list(bsshape) + [1] * len(bnshape))
-            mask[i, :] = 0
-            mask[:, i] = 0
+            mask[i, :, ...] = 0
+            mask[:, i, ...] = 0
+
             self.samplefullsum1[i] = (self.bsfullsum1 * mask).sum(axis=(0, 1))
             if not pts_only:
                 self.samplefullsum2[i] = (self.bsfullsum2 * mask).sum(axis=(0, 1))
-
-            self.sampleweight[i] = (self.bsweights * mask).sum()
+            # hack, reshape to match that of sampleweight;
+            # or broadcasting fuck us up.
+            mask = mask.reshape(bsshape)
+            self.sampleweight[i] = (self.bsweight * mask).sum()
 
         # sample mean
         # I fiddled and -2 + 1.0 / Nsamples gives 'roughly' the correct number.
-        # If we look at the sum of bsweights and wampleweight, the ratio is Nsamples - 2 + 1.0 / Nsamples
+        # If we look at the sum of bsweight and wampleweight, the ratio is Nsamples - 2 + 1.0 / Nsamples
         ndof = (Nsamples - 2 + 1.0 / Nsamples)
-        self.weight = self.sampleweight.sum() / ndof
+        self.ndof = ndof
+        self.ddof = ndof - Nsamples
+
+        self.weight = self.sampleweight.sum() / self.ndof
 
         # I don't really know if we shall weight by the sampels or not.
         self.fullsum1 = (self.samplefullsum1 * self.sampleweight).sum(axis=0) / self.sampleweight.mean() / ndof
         self.sum1 = self.fullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
         self.samplesum1 = self.samplefullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
 
-        self.ndof = ndof
-        self.ddof = ndof - Nsamples
         if not pts_only:
             self.fullsum2 = (self.samplefullsum2 * self.sampleweight).sum(axis=0) / self.sampleweight.mean() / ndof
             self.sum2 = self.fullsum2[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
