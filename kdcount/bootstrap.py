@@ -42,7 +42,6 @@ class bpaircount(object):
         pts_only = isinstance(data1, points) and isinstance(data2, points)
 
         junk, bnshape = binning.sum_shapes(data1, data2)
-
         # chop off the data
         s1 = binslices(bootstrapper(data1))
         s2 = binslices(bootstrapper(data2))
@@ -57,6 +56,8 @@ class bpaircount(object):
         data2 = [ data2[s] for s in s2]
 
         bsshape = (len(data1), len(data2))
+
+        print(bnshape, bsshape)
 
         self.bsweight = numpy.zeros(bsshape, ('f8'))
         self.bsfullsum1 = numpy.zeros(bsshape, ('f8', bnshape))
