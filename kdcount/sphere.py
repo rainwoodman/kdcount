@@ -4,6 +4,8 @@ import numpy
 
 class points(models.points):
     def __init__(self, ra, dec, weights=None, boxsize=None):
+        self.ra = ra
+        self.dec = dec
         ra = ra * (numpy.pi / 180.)
         dec = dec * (numpy.pi / 180.)
         pos = numpy.empty(len(ra), dtype=(ra.dtype, 3))
@@ -11,8 +13,6 @@ class points(models.points):
         r = numpy.cos(dec)
         pos[:, 0] = numpy.sin(ra) * r
         pos[:, 1] = numpy.cos(ra) * r 
-        self.ra = ra
-        self.dec = dec
 
         models.points.__init__(self, pos, weights, boxsize)
 

@@ -609,6 +609,7 @@ class paircount(object):
             with utils.MapReduce(np=worker.np) as pool:
                 pool.map(worker.work, range(worker.size), reduce=worker.reduce)
 
+        self.weight = data1.norm * data2.norm
 
 class paircount_worker(object):
     """
@@ -760,7 +761,7 @@ class paircount_worker(object):
         self.pc.binning = self.bins
         self.pc.edges = self.bins.edges
         self.pc.centers = self.bins.centers
-        
+
         # add the mean centers info
         if self.bins.compute_mean_coords:
             

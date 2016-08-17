@@ -88,6 +88,7 @@ class field(dataset):
         self.subshape = value.shape[1:]
         self.wvattr = kdcount.KDAttr(self.tree, self.wvalue)
         self.value = value
+        self.norm = self.weights.sum(axis=0)
 
     def __getitem__(self, index):
         return field(self.pos[index], self.value[index], self.weights[index], self.boxsize)
