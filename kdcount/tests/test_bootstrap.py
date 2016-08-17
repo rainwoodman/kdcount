@@ -6,7 +6,8 @@ from kdcount import bootstrap
 from numpy.testing import assert_allclose
 
 def test_bootstrap():
-    ra, dec = numpy.random.uniform(size=(2, 10000))
+    numpy.random.seed(1234)
+    ra, dec = numpy.random.uniform(size=(2, 100000))
     ra = ra * 360
     dec = numpy.arcsin((dec - 0.5) * 2) / numpy.pi * 180
     Nbar = len(ra) / (4. * numpy.pi * (180 / numpy.pi) ** 2)
