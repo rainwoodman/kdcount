@@ -106,7 +106,7 @@ class bpaircount(object):
         self.samplesum1 = self.samplefullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
 
         self.ndof = ndof
-        self.ddof = ndof - Nsample
+        self.ddof = ndof - Nsamples
         if not pts_only:
             self.fullsum2 = (self.samplefullsum2 * self.sampleweight).sum(axis=0) / self.sampleweight.mean() / ndof
             self.sum2 = self.fullsum2[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
