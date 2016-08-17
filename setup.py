@@ -16,7 +16,17 @@ extensions = [
             )
         ]
 
-setup(name="kdcount", version="0.3.13",
+def find_version(path):
+    import re
+    # path shall be a plain ascii text file.
+    s = open(path, 'rt').read()
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              s, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Version not found")
+
+setup(name="kdcount", version=find_version("kdcount/version.py"),
       author="Yu Feng",
       author_email="rainwoodman@gmail.com",
       description="A slower KDTree cross correlator",

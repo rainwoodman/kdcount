@@ -1,3 +1,4 @@
+from .version import __version__
 import numpy
 from heapq import heappush, heappop
 
