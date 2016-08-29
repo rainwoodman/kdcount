@@ -15,6 +15,7 @@ def test_bootstrap():
     ds = sphere.points(ra, dec)
 
     bsfun = lambda x: sphere.radec2pix(1, x.ra, x.dec)
+
     policy = bootstrap.policy(bsfun, ds)
     binning = sphere.AngularBinning(numpy.linspace(0, 1, 10))
 
@@ -23,8 +24,8 @@ def test_bootstrap():
     result = policy.run(func, ds)
     print(result.cache, result.sizes)
     for i in range(4):
-        sample = policy.resample()
-        resample = policy.create_resample(result, sample)
+        bs = policy.bootstrap()
+        resample = policy.resample(result, bs)
         print(resample)
 
     def func2(ds1, ds2):
@@ -33,6 +34,6 @@ def test_bootstrap():
 
     print(result.cache, result.sizes)
     for i in range(1):
-        sample = policy.resample()
-        resample = policy.create_resample(result, sample)
+        bs = policy.bootstrap()
+        resample = policy.resample(result, bs)
         print(resample)

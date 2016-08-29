@@ -9,6 +9,7 @@
 
 """
 from itertools import product as outer
+from functools import reduce
 from .models import points
 from .correlate import paircount
 import numpy
@@ -38,16 +39,18 @@ class policy(object):
         self.sizes = N
         self.size = N.sum()
 
-    def resample(self, rng=None):
-        """ create a resample (of strap ids)"""
+    def bootstrap(self, rng=None):
+        """ create a resample (of strap ids), that goes to self.resample"""
         if rng is None:
             rng = numpy.random
         p = 1.0 * self.sizes / self.size
         def inner():
             Nremain = self.size
             # XXX: is this fair?
+            # XXX: the distribution of the total length is not well understood
+            #     but mean is OK.
             while Nremain > 0:
-                ch = rng.choice(self.active_straps, size=1, replace=True, p=p)
+                ch = rng.choice(self.active_straps, size=1, replace=True)
                 accept = rng.uniform() <= Nremain / (1.0 * self.sizes[ch])
                 if accept:
                     Nremain -= self.sizes[ch]
@@ -67,12 +70,15 @@ class policy(object):
         result.sizes = [numpy.array([len(s) for s in v], dtype='intp') for v in vars]
         return result
 
-    def create_resample(self, result, strapids):
+    def resample(self, result, bootstrap=None, operator=lambda x, y : x + y):
+        """
+            bootstrap is a list of strapids returnedy by self.bootstrap.
+        """
         Nargs = len(result.sizes)
         # length for each bootstrapped resample dataset
-        L = [sum(s[strapids]) for s in result.sizes]
+        L = [sum(s[bootstrap]) for s in result.sizes]
         # result is the sum of the submatrix
-        R = sum([result.cache[ind] for ind in outer(*([strapids] * Nargs))])
+        R = reduce(operator, [result.cache[ind] for ind in outer(*([bootstrap] * Nargs))])
         return L, R
 
     def create_straps(self, data):
