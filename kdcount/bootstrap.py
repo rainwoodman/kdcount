@@ -45,10 +45,16 @@ class policy(object):
         p = 1.0 * self.sizes / self.size
         def inner():
             Nremain = self.size
+            # XXX: is this fair?
             while Nremain > 0:
                 ch = rng.choice(self.active_straps, size=1, replace=True, p=p)
-                Nremain -= self.sizes[ch]
-                yield ch
+                accept = rng.uniform() <= Nremain / (1.0 * self.sizes[ch])
+                if accept:
+                    Nremain -= self.sizes[ch]
+                    yield ch
+                else:
+                    # in this case Nremain is less than the size of the chosen chunk.
+                    break
         return numpy.fromiter(inner(), dtype=self.active_straps.dtype)
 
     def run(self, func, *args):

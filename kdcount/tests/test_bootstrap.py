@@ -14,15 +14,16 @@ def test_bootstrap():
 
     ds = sphere.points(ra, dec)
 
-    bsfun = lambda x: sphere.radec2pix(2, x.ra, x.dec)
+    bsfun = lambda x: sphere.radec2pix(1, x.ra, x.dec)
     policy = bootstrap.policy(bsfun, ds)
     binning = sphere.AngularBinning(numpy.linspace(0, 1, 10))
 
     def func(ds):
         return len(ds)
     result = policy.run(func, ds)
-    sample = policy.resample()
-    resample = policy.create_resample(result, sample)
-    print(result.cache, result.sizes)
-    print(resample)
+    for i in range(4):
+        sample = policy.resample()
+        resample = policy.create_resample(result, sample)
+        print(result.cache, result.sizes)
+        print(resample)
 
