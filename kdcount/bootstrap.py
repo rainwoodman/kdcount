@@ -1,123 +1,83 @@
+"""
+
+    Bootstrap / Bagging.
+
+    Data Model:
+        dataset is chopped to active_straps by bsfun: dataset -> id
+
+        bag produces strap ids.
+
+"""
 from itertools import product as outer
 from .models import points
 from .correlate import paircount
 import numpy
 
-def binslices(index):
-    a = numpy.argsort(index)
-    N = numpy.bincount(index)
-
-    end = N.cumsum()
-    start = end.copy()
-    start[1:] = end[:-1]
-    start[0] = 0
-
-    return [slice(*i) for i in zip(start, end)]
-
-class bpaircount(object):
+class policy(object):
     """
-        Parameters
+        Attributes
         ----------
-        bootstrapper: callable(dataset) -> integer array
-           mapping dataset to integer subsample id. The subsamples are assembled into
-            bootstrap samples. Currently we remove 1 subsample to form a bootstrap sample.
-            Is this called jackknife?
-
-        other parameters are passed to paircount
-
-        Returns
-        -------
-        an bpaircount object . Attributes are:
-
-        sum1, sum2, weight: as paircount
-
-        samplesum1, samplesum2: lists of sum1, sum2, per bootstrap sample.
-        sampleweight : the total weight (product of norm or number of points) per sample
-        
-        ddof : delta degrees of freedom in the bootstrap samples. It is close to but not -2.
-            due to the way subsamples are created.
+        active_straps : ID of straps that are non-empty.
+        sizes   : sizes of active_straps, same length of active_straps.
 
     """
-    def __init__(self, data1, data2, binning, bootstrapper, usefast=True, np=None):
-        pts_only = isinstance(data1, points) and isinstance(data2, points)
+    def __init__(self, strapfunc, dataset):
+        """ A bag object that produces equal lengthed samples from bsfun.
 
-        junk, bnshape = binning.sum_shapes(data1, data2)
-        # chop off the data
-        s1 = binslices(bootstrapper(data1))
-        s2 = binslices(bootstrapper(data2))
+            Dataset provides the barebone of the policy.
+            We aim each bootstrap resample to have the same
+            size as of the dataset.
+        """
+        self.strapfunc = strapfunc
+        sid = strapfunc(dataset)
+        N = numpy.bincount(sid)
+        active_straps = N.nonzero()[0]
+        N = N[active_straps]
 
-        # match the length
-        if len(s1) < len(s2):
-            s1.extend([slice(0, 0)] * (len(s2) - len(s1)))
-        if len(s2) < len(s1):
-            s2.extend([slice(0, 0)] * (len(s1) - len(s2)))
+        self.active_straps = active_straps
+        self.sizes = N
+        self.size = N.sum()
 
-        data1 = [ data1[s] for s in s1]
-        data2 = [ data2[s] for s in s2]
+    def resample(self, rng=None):
+        """ create a resample (of strap ids)"""
+        if rng is None:
+            rng = numpy.random
+        p = 1.0 * self.sizes / self.size
+        def inner():
+            Nremain = self.size
+            while Nremain > 0:
+                ch = rng.choice(self.active_straps, size=1, replace=True, p=p)
+                Nremain -= self.sizes[ch]
+                yield ch
+        return numpy.fromiter(inner(), dtype=self.active_straps.dtype)
 
-        bsshape = (len(data1), len(data2))
+    def run(self, func, *args):
+        vars = [self.create_straps(v) for v in args]
+        result = lambda : None
+        result.cache = {}
+        for ind, var in zip(outer(*([self.active_straps]*len(args))),
+                            outer(*vars)):
+            result.cache[ind] = func(*var)
+        result.sizes = [numpy.array([len(s) for s in v], dtype='intp') for v in vars]
+        return result
 
-        self.bsweight = numpy.zeros(bsshape, ('f8'))
-        self.bsfullsum1 = numpy.zeros(bsshape, ('f8', bnshape))
-        if not pts_only:
-            self.bsfullsum2 = numpy.zeros(bsshape, ('f8', bnshape))
+    def create_resample(self, result, strapids):
+        Nargs = len(result.sizes)
+        # length for each bootstrapped resample dataset
+        L = [sum(s[strapids]) for s in result.sizes]
+        # result is the sum of the submatrix
+        R = sum([result.cache[ind] for ind in outer(*([strapids] * Nargs))])
+        return L, R
 
-        for i, j in numpy.ndindex(*bsshape):
-            d1, d2 = data1[i], data2[j]
-            if i > j: continue
-            if len(d1) == 0 or len(d2) == 0: continue
+    def create_straps(self, data):
+        index = self.strapfunc(data)
 
-            pc = paircount(d1, d2, binning, usefast, np)
+        a = numpy.argsort(index)
+        N = numpy.bincount(index, minlength=self.active_straps.max() + 1)
 
-            self.bsfullsum1[i, j] = pc.fullsum1
-            self.bsfullsum1[j, i] = pc.fullsum1
-            if not pts_only:
-                self.bsfullsum2[i, j] = pc.fullsum2
-                self.bsfullsum2[j, i] = pc.fullsum2
+        end = N.cumsum()
+        start = end.copy()
+        start[1:] = end[:-1]
+        start[0] = 0
 
-            self.bsweight[i, j] = 1.0 * data1[i].norm * data2[j].norm
-            self.bsweight[j, i] = 1.0 * data1[i].norm * data2[j].norm
-
-        self.edges = binning.edges
-        self.centers = binning.centers
-
-        # make samples
-        Nsamples = len(data1)
-        self.samplefullsum1 = numpy.zeros(Nsamples, ('f8', bnshape))
-        if not pts_only:
-            self.samplefullsum2 = numpy.zeros(Nsamples, ('f8', bnshape))
-
-        self.sampleweight = numpy.zeros(Nsamples, ('f8', [1] * len(bnshape)))
-
-        for i in range(Nsamples):
-            mask = numpy.ones(list(bsshape) + [1] * len(bnshape))
-            mask[i, :, ...] = 0
-            mask[:, i, ...] = 0
-
-            self.samplefullsum1[i] = (self.bsfullsum1 * mask).sum(axis=(0, 1))
-            if not pts_only:
-                self.samplefullsum2[i] = (self.bsfullsum2 * mask).sum(axis=(0, 1))
-            # hack, reshape to match that of sampleweight;
-            # or broadcasting fuck us up.
-            mask = mask.reshape(bsshape)
-            self.sampleweight[i] = (self.bsweight * mask).sum()
-
-        # sample mean
-        # I fiddled and -2 + 1.0 / Nsamples gives 'roughly' the correct number.
-        # If we look at the sum of bsweight and wampleweight, the ratio is Nsamples - 2 + 1.0 / Nsamples
-        ndof = (Nsamples - 2 + 1.0 / Nsamples)
-        self.ndof = ndof
-        self.ddof = ndof - Nsamples
-
-        self.weight = self.sampleweight.sum() / self.ndof
-
-        # I don't really know if we shall weight by the sampels or not.
-        self.fullsum1 = (self.samplefullsum1 * self.sampleweight).sum(axis=0) / self.sampleweight.mean() / ndof
-        self.sum1 = self.fullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
-        self.samplesum1 = self.samplefullsum1[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
-
-        if not pts_only:
-            self.fullsum2 = (self.samplefullsum2 * self.sampleweight).sum(axis=0) / self.sampleweight.mean() / ndof
-            self.sum2 = self.fullsum2[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
-            self.samplesum2 = self.samplefullsum2[[Ellipsis] + [slice(1, -1)] * binning.Ndim]
-
+        return [data[a[slice(*i)]] for i in zip(start[self.active_straps], end[self.active_straps])]

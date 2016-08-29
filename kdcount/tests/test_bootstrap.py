@@ -14,10 +14,15 @@ def test_bootstrap():
 
     ds = sphere.points(ra, dec)
 
-    bs = lambda x: sphere.radec2pix(2, x.ra, x.dec)
-    bpc = bootstrap.bpaircount(ds, ds, sphere.AngularBinning(numpy.linspace(0, 1, 10)), bootstrapper=bs, np=0)
+    bsfun = lambda x: sphere.radec2pix(2, x.ra, x.dec)
+    policy = bootstrap.policy(bsfun, ds)
+    binning = sphere.AngularBinning(numpy.linspace(0, 1, 10))
 
-    pc = correlate.paircount(ds, ds, sphere.AngularBinning(numpy.linspace(0, 1, 10)), np=0)
+    def func(ds):
+        return len(ds)
+    result = policy.run(func, ds)
+    sample = policy.resample()
+    resample = policy.create_resample(result, sample)
+    print(result.cache, result.sizes)
+    print(resample)
 
-    assert_allclose(pc.weight, bpc.weight, rtol=1e-3)
-    assert_allclose(pc.sum1, bpc.sum1, rtol=1e-3)
