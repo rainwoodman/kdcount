@@ -21,9 +21,18 @@ def test_bootstrap():
     def func(ds):
         return len(ds)
     result = policy.run(func, ds)
+    print(result.cache, result.sizes)
     for i in range(4):
         sample = policy.resample()
         resample = policy.create_resample(result, sample)
-        print(result.cache, result.sizes)
         print(resample)
 
+    def func2(ds1, ds2):
+        return len(ds1) * len(ds2)
+    result = policy.run(func2, ds, ds)
+
+    print(result.cache, result.sizes)
+    for i in range(1):
+        sample = policy.resample()
+        resample = policy.create_resample(result, sample)
+        print(resample)
