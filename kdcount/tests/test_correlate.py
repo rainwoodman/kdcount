@@ -12,7 +12,7 @@ def test_simple():
 
     r1 = correlate.paircount(dataset, dataset, binning, usefast=True, np=0)
     assert_equal( r.sum1, r1.sum1)
-    
+
 def test_unweighted():
     numpy.random.seed(1234)
     pos = numpy.random.uniform(size=(1000, 3))

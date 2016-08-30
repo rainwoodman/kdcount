@@ -14,8 +14,24 @@ from .models import points
 from .correlate import paircount
 import numpy
 
+class StrappedResults(object):
+    def __init__(self, cache, sizes):
+        self.cache = cache
+        self.sizes = sizes
+
 class policy(object):
     """
+        Bootstrap policy for bootstrapping a multi-linear estimator of data.
+
+        multi-linear estimator satisfies
+
+        .. math :
+
+            E(x + y) = E(x) + E(y)
+
+        where :math:`x` :math:`y` are datasets and the sum is extending dataset.
+        :math:`E(\odot)` is the estimator.
+
         Attributes
         ----------
         active_straps : ID of straps that are non-empty.
@@ -25,9 +41,9 @@ class policy(object):
     def __init__(self, strapfunc, dataset):
         """ A bag object that produces equal lengthed samples from bsfun.
 
-            Dataset provides the barebone of the policy.
+            Dataset and strapfunc defines the policy.
             We aim each bootstrap resample to have the same
-            size as of the dataset.
+            size as of the original dataset.
         """
         self.strapfunc = strapfunc
         sid = strapfunc(dataset)
@@ -40,7 +56,7 @@ class policy(object):
         self.size = N.sum()
 
     def bootstrap(self, rng=None):
-        """ create a resample (of strap ids), that goes to self.resample"""
+        """ create a bootstrap (of strap ids), that goes to self.resample"""
         if rng is None:
             rng = numpy.random
         p = 1.0 * self.sizes / self.size
@@ -60,19 +76,33 @@ class policy(object):
                     break
         return numpy.fromiter(inner(), dtype=self.active_straps.dtype)
 
-    def run(self, func, *args):
+    def run(self, estimator, *args):
+        """
+            run estimator on the 'straps'
+
+            Parameters
+            ----------
+            *args : a list of indexable datasets.
+                   the datasets are divided into straps by the strap function.
+            estimator: the estimator `estimator(*args)`.
+
+        """
         vars = [self.create_straps(v) for v in args]
-        result = lambda : None
-        result.cache = {}
+        cache = {}
         for ind, var in zip(outer(*([self.active_straps]*len(args))),
                             outer(*vars)):
-            result.cache[ind] = func(*var)
-        result.sizes = [numpy.array([len(s) for s in v], dtype='intp') for v in vars]
+            cache[ind] = estimator(*var)
+        sizes = [numpy.array([len(s) for s in v], dtype='intp') for v in vars]
+        result = StrappedResults(cache, sizes)
         return result
 
     def resample(self, result, bootstrap=None, operator=lambda x, y : x + y):
         """
             bootstrap is a list of strapids returnedy by self.bootstrap.
+            operator is used to combine the result of straps into the resample.
+            it shall be sort of addition but may have to be different of result
+            of the function does not support the `+` operator.
+
         """
         Nargs = len(result.sizes)
         # length for each bootstrapped resample dataset
