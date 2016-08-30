@@ -7,6 +7,8 @@
 
         bag produces strap ids.
 
+    See the documentation of :class:`policy`
+
 """
 from itertools import product as outer
 from functools import reduce
@@ -21,16 +23,28 @@ class StrappedResults(object):
 
 class policy(object):
     """
-        Bootstrap policy for bootstrapping a multi-linear estimator of data.
+        Bootstrap policy for bootstrapping a multi-distributive estimator of data.
 
-        multi-linear estimator satisfies
+        multi-distributive estimator satisfies
 
         .. math :
 
-            E(x + y) = E(x) + E(y)
+            E(x + y, \dots)= E(x, dots) + E(y, \dots)
 
         where :math:`x` :math:`y` are datasets and the sum is extending dataset.
-        :math:`E(\odot)` is the estimator.
+        :math:`E(\odot)` is the estimator. 
+
+        If an estimator is distributive, bootstraps can be calculated efficiently by combining
+        precomputed estimators of subsamples (straps). [ e.g. Martin White's wcross.cpp ] 
+        This acceleration is implemented here.
+
+        Fun Fact
+        --------
+        The term was coined at AstroHackWeek2016 (astrohackweek.org) by
+        @rainwoodman and @drphilmarshall, after ruling out
+        a few wrongly-suggestive alternatives.
+        (linear, commutitave, or 'Bienaymial'). We yet have
+        to see if statistians have a better name for this attribute.
 
         Attributes
         ----------
@@ -100,7 +114,7 @@ class policy(object):
         """
             bootstrap is a list of strapids returnedy by self.bootstrap.
             operator is used to combine the result of straps into the resample.
-            it shall be sort of addition but may have to be different of result
+            it shall be sort of addition but may have to be different if result
             of the function does not support the `+` operator.
 
         """
