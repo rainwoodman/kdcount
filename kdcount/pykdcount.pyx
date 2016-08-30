@@ -444,8 +444,10 @@ cdef class KDTree:
         self.ref.input.elsize = input.dtype.itemsize
         if input.dtype.char == 'f':
             self.ref.input.cast = <kd_castfunc>fcast
-        if input.dtype.char == 'd':
+        elif input.dtype.char == 'd':
             self.ref.input.cast = <kd_castfunc>dcast
+        else:
+            raise TypeError("input type of %s is unsupported" % input.dtype)
 
         self.ndims = self.input.shape[1]
 

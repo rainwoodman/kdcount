@@ -20,6 +20,14 @@ def test_build():
 
     #assert N[0] == N[1]
 
+def test_dtype():
+    numpy.random.seed(1000)
+    pos = numpy.arange(10).reshape(-1, 1)
+    try:
+        tree = KDTree(pos).root
+        assert True
+    except TypeError:
+        pass
 def test_enum_count_agree():
     pos1 = numpy.random.uniform(size=(1000, 3)).astype('f4')
     pos2 = numpy.random.uniform(size=(1000, 3)).astype('f4')
