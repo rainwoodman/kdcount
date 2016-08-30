@@ -14,6 +14,7 @@ from itertools import product as outer
 from functools import reduce
 from .models import points
 from .correlate import paircount
+from . import utils 
 import numpy
 
 class StrappedResults(object):
@@ -90,7 +91,7 @@ class policy(object):
                     break
         return numpy.fromiter(inner(), dtype=self.active_straps.dtype)
 
-    def run(self, estimator, *args):
+    def run(self, estimator, *args, **kwargs):
         """
             run estimator on the 'straps'
 
@@ -100,12 +101,23 @@ class policy(object):
                    the datasets are divided into straps by the strap function.
             estimator: the estimator `estimator(*args)`.
 
+            np : number of processes to use
         """
+        np = kwargs.pop('np', None)
         vars = [self.create_straps(v) for v in args]
         cache = {}
-        for ind, var in zip(outer(*([self.active_straps]*len(args))),
-                            outer(*vars)):
-            cache[ind] = estimator(*var)
+
+        with utils.MapReduce(np=np) as pool:
+            def work(p):
+                ind, var = p
+                return ind, estimator(*var)
+            def reduce(ind, r):
+                cache[ind] = r
+
+            items = [(ind, var) for ind, var in zip(outer(*([self.active_straps]*len(args))),
+                                outer(*vars))]
+            pool.map(work, items, reduce=reduce)
+
         sizes = [numpy.array([len(s) for s in v], dtype='intp') for v in vars]
         result = StrappedResults(cache, sizes)
         return result

@@ -43,7 +43,7 @@ def test_paircount():
     binning=correlate.RBinning(numpy.linspace(0, 100, 2, endpoint=True))
 
     def estimator( x, y):
-        r = correlate.paircount(x, y, binning, usefast=False, np=1)
+        r = correlate.paircount(x, y, binning, usefast=False, np=0)
         return r.fullsum1
     result = policy.run(estimator, data, data)
     L, R = policy.resample(result, numpy.arange(2))
