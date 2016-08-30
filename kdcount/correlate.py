@@ -670,7 +670,6 @@ class paircount_worker(object):
             sum1[..., -1] = 0
         else:
             n1.enum(n2, self.bins.Rmax, process=callback)
-
         return sum1, sum2
    
     def __reduce__(self, sum1, sum2):
@@ -697,7 +696,10 @@ class paircount_worker(object):
         heapq.heappush(heap, makeitem(tree1, tree2))
         while len(heap) < np:
             junk, split, n = heapq.heappop(heap)
-            if n[split].less is None: break
+            if n[split].less is None:
+                # put it back!
+                heapq.heappush(heap, makeitem(*n))
+                break
             item = list(n)
             item[split] = n[split].less
             heapq.heappush(heap, makeitem(*item))
