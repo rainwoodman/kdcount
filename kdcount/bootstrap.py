@@ -71,7 +71,7 @@ class policy(object):
         self.size = N.sum()
 
     def bootstrap(self, rng=None):
-        """ create a bootstrap (of strap ids), that goes to self.resample"""
+        """ create a bootstrap (of internal strap ids), that goes to self.resample"""
         if rng is None:
             rng = numpy.random
         p = 1.0 * self.sizes / self.size
@@ -81,7 +81,7 @@ class policy(object):
             # XXX: the distribution of the total length is not well understood
             #     but mean is OK.
             while Nremain > 0:
-                ch = rng.choice(self.active_straps, size=1, replace=True)
+                ch = rng.choice(len(self.active_straps), size=1, replace=True)
                 accept = rng.uniform() <= Nremain / (1.0 * self.sizes[ch])
                 if accept:
                     Nremain -= self.sizes[ch]
@@ -89,7 +89,7 @@ class policy(object):
                 else:
                     # in this case Nremain is less than the size of the chosen chunk.
                     break
-        return numpy.fromiter(inner(), dtype=self.active_straps.dtype)
+        return numpy.fromiter(inner(), dtype='i4')
 
     def run(self, estimator, *args, **kwargs):
         """
@@ -114,7 +114,7 @@ class policy(object):
             def reduce(ind, r):
                 cache[ind] = r
 
-            items = [(ind, var) for ind, var in zip(outer(*([self.active_straps]*len(args))),
+            items = [(ind, var) for ind, var in zip(outer(*([range(len(self.active_straps))]*len(args))),
                                 outer(*vars))]
             pool.map(work, items, reduce=reduce)
 
