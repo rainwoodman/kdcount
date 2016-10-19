@@ -8,7 +8,8 @@ class points(models.points):
         self.dec = dec
         ra = ra * (numpy.pi / 180.)
         dec = dec * (numpy.pi / 180.)
-        pos = numpy.empty(len(ra), dtype=(ra.dtype, 3))
+        dtype = numpy.dtype((ra.dtype, 3))
+        pos = numpy.empty(len(ra), dtype=dtype)
         pos[:, 2] = numpy.sin(dec)
         r = numpy.cos(dec)
         pos[:, 0] = numpy.sin(ra) * r

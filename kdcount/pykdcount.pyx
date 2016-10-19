@@ -202,7 +202,8 @@ cdef class KDNode:
 
             cattrs[0] = a1.ref
             cattrs[1] = a2.ref
-            weight = numpy.zeros((<object>r).shape, dtype=('f8', a1.ndims))
+            dtype = numpy.dtype(('f8', a1.ndims))
+            weight = numpy.zeros((<object>r).shape, dtype=dtype)
 
             kd_count(cnodes, cattrs, 
                     <double*>r.data, 
@@ -257,7 +258,8 @@ cdef class KDNode:
             result = count
         else:
             cattr = attr.ref
-            weight = numpy.zeros(shape, dtype=('f8', attr.ndims))
+            dtype = numpy.dtype(('f8', attr.ndims))
+            weight = numpy.zeros(shape, dtype=dtype)
 
             for i in range(N):
                 kd_integrate(self.ref, cattr,
@@ -347,7 +349,8 @@ cdef class KDAttr:
             input = input.reshape(-1, 1) 
             self.buffer = numpy.empty(tree.ref.size, dtype='f8')
         elif input.ndim == 2:
-            self.buffer = numpy.empty(tree.ref.size, dtype=('f8', (<object>input).shape[1:]))
+            dtype = numpy.dtype(('f8', (<object>input).shape[1:]))
+            self.buffer = numpy.empty(tree.ref.size, dtype=dtype)
         else:
             raise ValueError("Only at most 2d attribute array is supported")
 

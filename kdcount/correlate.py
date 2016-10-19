@@ -139,7 +139,7 @@ class Binning(object):
         Setup the binning info we need from the `edges`
         """
         
-        dtype        = [('inv', 'f8'), ('min', 'f8'), ('max', 'f8'),('N', 'i4'), ('spacing','object')]
+        dtype        = numpy.dtype([('inv', 'f8'), ('min', 'f8'), ('max', 'f8'),('N', 'i4'), ('spacing','object')])
         self._info   = numpy.empty(self.Ndim, dtype=dtype)
         self.min     = self._info['min']
         self.max     = self._info['max']
