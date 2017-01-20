@@ -271,20 +271,17 @@ class RmuBinning(Binning):
 
     Parameters
     ----------
-    Rmax     : float
-        max radius to go to
-    Nbins    : int
-        number of bins in R direction.
-    Nmubins    : int
+    rbins : array_like
+        the array of R bin edges
+    Nmu : int
         number of bins in mu direction.
-    observer   : array_like (Ndim)
+    observer : array_like (Ndim)
         location of the observer (for line of sight) 
-
     """
-    def __init__(self, rbins, Nmu, observer, **kwargs):
+    def __init__(self, rbins, Nmu, observer):
         
         mubins = numpy.linspace(-1, 1, Nmu+1)
-        Binning.__init__(self, ['r', 'mu'], [rbins, mubins], **kwargs)
+        Binning.__init__(self, ['r', 'mu'], [rbins, mubins])
         self.observer = numpy.array(observer)
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
@@ -308,7 +305,7 @@ class RmuBinning(Binning):
 
 class XYBinning(Binning):
     """
-    Binning along Sky-Lineofsight directions.
+    Binning along Sky-Line-of-sight directions.
 
     The bins are be (sky, los)
 
@@ -327,11 +324,11 @@ class XYBinning(Binning):
             with imshow( ..T,) the sky will be vertical.
     """
 
-    def __init__(self, Rmax, Nbins, observer, **kwargs):
+    def __init__(self, Rmax, Nbins, observer):
         self.Rmax = Rmax
         sky_bins = np.linspace(0, Rmax, Nbins)
         los_bins = np.linspace(-Rmax, Rmax, 2*Nbins)
-        Binning.__init__(self, ['sky', 'los'], [sky_bins, los_bins], **kwargs)
+        Binning.__init__(self, ['sky', 'los'], [sky_bins, los_bins])
         self.observer = observer
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
@@ -359,14 +356,11 @@ class RBinning(Binning):
 
     Parameters
     ----------
-    Rmax     : float
-        max radius to go to
-    Nbins    : int
-        number of bins in each direction.
-
+    rbins : array_like
+        the R bin edges
     """
-    def __init__(self, rbins, **kwargs):
-        Binning.__init__(self, ['r'], [rbins], **kwargs)
+    def __init__(self, rbins):
+        Binning.__init__(self, ['r'], [rbins])
         
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         
@@ -385,23 +379,27 @@ class MultipoleBinning(Binning):
     flat sky approximation, such that all pairs have the 
     same line-of-sight, which is taken to be the axis specified 
     by the `los` parameter (default is the last dimension)
-    
 
     Parameters
     ----------
-    rmax : float
-        the maximum radius to measure to
-    Nr : int
-        the number of bins in `r` direction.
+    rbins : array_like
+        the array of R bin edges
     ells : list of int
         the multipole numbers to compute
     los : int, {0, 1, 2}
         the axis to treat as the line-of-sight
+    
+    Notes
+    -----
+    This can be slow, especially for a large set of `ells`. It is 
+    likely better to use finely-binned :class:`RmuBinning` and 
+    simply integrate the results against the appropriate Legendre 
+    polynomial to compute multipoles 
     """
-    def __init__(self, rbins, ells, **kwargs):
+    def __init__(self, rbins, ells):
         from scipy.special import legendre 
         
-        Binning.__init__(self, ['r'], [rbins], **kwargs)
+        Binning.__init__(self, ['r'], [rbins])
         
         self.ells = numpy.array(ells)
         self.legendre = [legendre(l) for l in self.ells]
@@ -474,10 +472,8 @@ class FlatSkyMultipoleBinning(Binning):
 
     Parameters
     ----------
-    rmax : float
-        the maximum radius to measure to
-    Nr : int
-        the number of bins in `r` direction.
+    rbins : array_like
+        the array of R bin edges
     ells : list of int
         the multipole numbers to compute
     los : int, {0, 1, 2}
@@ -486,7 +482,7 @@ class FlatSkyMultipoleBinning(Binning):
     def __init__(self, rbins, ells, los, **kwargs):
         from scipy.special import legendre 
         
-        Binning.__init__(self, ['r'], [rbins], **kwargs)
+        Binning.__init__(self, ['r'], [rbins])
         
         self.los = los
         self.ells = numpy.array(ells)
@@ -564,18 +560,16 @@ class FlatSkyBinning(Binning):
 
     Parameters
     ----------
-    rmax : float
-        the maximum radius to measure to
-    Nr : int
-        the number of bins in `r` direction.
+    rbins : array_like
+        the array of R bin edges
     Nmu : int
         the number of bins in `mu` direction.
     los : int, {0, 1, 2}
         the axis to treat as the line-of-sight
     """
-    def __init__(self, rbins, Nmu, los, **kwargs):
+    def __init__(self, rbins, Nmu, los):
         mubins = numpy.linspace(-1, 1, Nmu+1)
-        Binning.__init__(self, ['r','mu'], [rbins, mubins], **kwargs)
+        Binning.__init__(self, ['r','mu'], [rbins, mubins])
         self.los = los
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
