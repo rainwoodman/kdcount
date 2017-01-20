@@ -11,8 +11,8 @@ estimator, the binning is modeled by subclasses of :py:class:`Binning`. For exam
 - :py:class:`RBinning` 
 - :py:class:`RmuBinning`
 - :py:class:`XYBinning`
-- :py:class: `FlatSkyBinning`
-- :py:class: `FlatSkyMultipoleBinning`
+- :py:class:`FlatSkyBinning`
+- :py:class:`FlatSkyMultipoleBinning`
 
 kdcount takes two types of input data: 'point' and 'field'. 
 
@@ -85,16 +85,9 @@ class Binning(object):
     dims    :  array_like
         internal; descriptors of binning dimensions.
     edges   :  array_like
-        edges of bins per dimension
-    centers :  array_like
-        centers of bins per dimension; currently it is the 
-        mid point of the edges.
-    compute_mean_coords : bool, optional
-        If `True`, store and compute the mean coordinate values
-        in the __call__ function. Default is `False`
-    
+        edges of bins per dimension 
     """
-    def __init__(self, dims, edges, compute_mean_coords=False):
+    def __init__(self, dims, edges):
         """
         Parameters
         ----------
@@ -102,9 +95,6 @@ class Binning(object):
             a list specifying the binning dimension names
         edges : list
             a list giving the bin edges for each dimension
-        compute_mean_coords : bool, optional (`False`)
-            If `True`, store and compute the mean coordinate values
-            in each bin. Default is `False`
         """
         if len(dims) != len(edges):
             raise ValueError("size mismatch between number of dimensions and edges supplied")
@@ -112,7 +102,6 @@ class Binning(object):
         self.dims    = dims
         self.Ndim    = len(self.dims)
         self.edges   = edges
-        self.compute_mean_coords = compute_mean_coords
         
         self.centers = []
         for i in range(self.Ndim):
@@ -125,21 +114,13 @@ class Binning(object):
         if self.Ndim == 1:
             self.edges   = self.edges[0]
             self.centers = self.centers[0]
-                            
-        # for storing the mean values in each bin
-        # computed when pair counting
-        if self.compute_mean_coords:
-            self.mean_centers_sum = []
-            for i in range(self.Ndim):
-                self.mean_centers_sum.append(numpy.zeros(self.shape))
-            self.pair_counts = numpy.zeros(self.shape)
-                   
+                                                       
     def _setup(self):
         """
-        Setup the binning info we need from the `edges`
+        Set the binning info we need from the `edges`
         """
-        
-        dtype        = numpy.dtype([('inv', 'f8'), ('min', 'f8'), ('max', 'f8'),('N', 'i4'), ('spacing','object')])
+        dtype = [('inv', 'f8'), ('min', 'f8'), ('max', 'f8'),('N', 'i4'), ('spacing','object')]
+        dtype        = numpy.dtype(dtype)
         self._info   = numpy.empty(self.Ndim, dtype=dtype)
         self.min     = self._info['min']
         self.max     = self._info['max']
@@ -171,7 +152,7 @@ class Binning(object):
         self.Rmax = self.max[0]
         
             
-    def linear(self, **tobin):
+    def linear(self, **paircoords):
         """ 
         Linearize bin indices.
         
@@ -187,25 +168,25 @@ class Binning(object):
         -------
         linearlized bin index
         """ 
-        N = len(tobin[list(tobin.keys())[0]])
+        N = len(paircoords[list(paircoords.keys())[0]])
         integer = numpy.empty(N, ('i8', (self.Ndim,))).T
         
         # do each dimension
         for i, dim in enumerate(self.dims):
             
             if self.spacing[i] == 'linspace':
-                x = tobin[dim] - self.min[i]
+                x = paircoords[dim] - self.min[i]
                 integer[i] = numpy.ceil(x * self.inv[i])
 
             elif self.spacing[i] == 'logspace':
-                x = tobin[dim].copy()
+                x = paircoords[dim].copy()
                 x[x == 0] = self.min[i] * 0.9
                 x = numpy.log10(x / self.min[i])
                 integer[i] = numpy.ceil(x * self.inv[i])
 
             elif self.spacing[i] is None:
                 edge = self.edges if self.Ndim == 1 else self.edges[i]
-                integer[i] = numpy.searchsorted(edge, tobin[dim], side='left')
+                integer[i] = numpy.searchsorted(edge, paircoords[dim], side='left')
         
         return numpy.ravel_multi_index(integer, self.shape, mode='clip')
 
@@ -229,7 +210,7 @@ class Binning(object):
         """
         raise NotImplementedError()
     
-    def __call__(self, r, i, j, data1, data2, sum1, sum2):
+    def __call__(self, r, i, j, data1, data2, sum1, sum2, N=None, centers_sum=None):
         """
         The main function that digitizes the pair counts, 
         calls bincount for the appropriate `sum1` and `sum2`
@@ -239,7 +220,7 @@ class Binning(object):
         sum1_ij, sum2_ij = compute_sum_values(i, j, data1, data2)
         
         # digitize
-        dig = self.digitize(r, i, j, data1, data2)
+        dig = self.digitize(r, i, j, data1, data2, N=N, centers_sum=centers_sum)
         
         # sum 1
         if not numpy.isscalar(sum1_ij) and sum1_ij.ndim > 1:
@@ -272,18 +253,16 @@ class Binning(object):
         
         return linearshape, fullshape
         
-    def update_mean_coords(self, dig, **tobin):
+    def update_mean_coords(self, dig, N, centers_sum, **paircoords):
         """
         Update the mean coordinate sums
-        """
-        if not self.compute_mean_coords:
-            return
-        
-        self.pair_counts.flat[:] += utils.bincount(dig, 1., minlength=self.pair_counts.size)
+        """   
+        if N is None or centers_sum is None: return
+             
+        N.flat[:] += utils.bincount(dig, 1., minlength=N.size)
         for i, dim in enumerate(self.dims):
-            size = self.mean_centers_sum[i].size
-            self.mean_centers_sum[i].flat[:] += utils.bincount(dig, tobin[dim], minlength=size)
-            
+            size = centers_sum[i].size
+            centers_sum[i].flat[:] += utils.bincount(dig, paircoords[dim], minlength=size)
         
 class RmuBinning(Binning):
     """
@@ -292,23 +271,20 @@ class RmuBinning(Binning):
 
     Parameters
     ----------
-    Rmax     : float
-        max radius to go to
-    Nbins    : int
-        number of bins in R direction.
-    Nmubins    : int
+    rbins : array_like
+        the array of R bin edges
+    Nmu : int
         number of bins in mu direction.
-    observer   : array_like (Ndim)
+    observer : array_like (Ndim)
         location of the observer (for line of sight) 
-
     """
-    def __init__(self, rbins, Nmu, observer, **kwargs):
+    def __init__(self, rbins, Nmu, observer):
         
         mubins = numpy.linspace(-1, 1, Nmu+1)
-        Binning.__init__(self, ['r', 'mu'], [rbins, mubins], **kwargs)
+        Binning.__init__(self, ['r', 'mu'], [rbins, mubins])
         self.observer = numpy.array(observer)
 
-    def digitize(self, r, i, j, data1, data2):
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         
         r1 = data1.pos[i]
         r2 = data2.pos[j]
@@ -316,18 +292,20 @@ class RmuBinning(Binning):
         dr = r1 - r2
         dot = numpy.einsum('ij, ij->i', dr, center) 
         center = numpy.einsum('ij, ij->i', center, center) ** 0.5
-        mu = dot / (center * r)
+        
+        with numpy.errstate(invalid='ignore'):
+            mu = dot / (center * r)
         mu[r == 0] = 10.0
         dig = self.linear(r=r, mu=mu)
         
         # update the mean coords
-        self.update_mean_coords(dig, r=r, mu=mu)
+        self.update_mean_coords(dig, N, centers_sum, r=r, mu=mu)
         
         return dig
 
 class XYBinning(Binning):
     """
-    Binning along Sky-Lineofsight directions.
+    Binning along Sky-Line-of-sight directions.
 
     The bins are be (sky, los)
 
@@ -346,14 +324,14 @@ class XYBinning(Binning):
             with imshow( ..T,) the sky will be vertical.
     """
 
-    def __init__(self, Rmax, Nbins, observer, **kwargs):
+    def __init__(self, Rmax, Nbins, observer):
         self.Rmax = Rmax
         sky_bins = np.linspace(0, Rmax, Nbins)
         los_bins = np.linspace(-Rmax, Rmax, 2*Nbins)
-        Binning.__init__(self, ['sky', 'los'], [sky_bins, los_bins], **kwargs)
+        Binning.__init__(self, ['sky', 'los'], [sky_bins, los_bins])
         self.observer = observer
 
-    def digitize(self, r, i, j, data1, data2):
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         r1 = data1.pos[i]
         r2 = data2.pos[j]
         center = 0.5 * (r1 + r2) - self.observer
@@ -368,7 +346,7 @@ class XYBinning(Binning):
         dig = self.linear(sky=sky, los=los)
 
         # update the mean coords
-        self.update_mean_coords(dig, sky=sky, los=los)
+        self.update_mean_coords(dig, N, centers_sum, sky=sky, los=los)
 
         return dig
 
@@ -378,26 +356,112 @@ class RBinning(Binning):
 
     Parameters
     ----------
-    Rmax     : float
-        max radius to go to
-    Nbins    : int
-        number of bins in each direction.
-
+    rbins : array_like
+        the R bin edges
     """
-    def __init__(self, rbins, **kwargs):
-        Binning.__init__(self, ['r'], [rbins], **kwargs)
+    def __init__(self, rbins):
+        Binning.__init__(self, ['r'], [rbins])
         
-    def digitize(self, r, i, j, data1, data2):
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         
         # linear bins
         dig = self.linear(r=r)
         
         # update the mean coords
-        self.update_mean_coords(dig, r=r)
+        self.update_mean_coords(dig, N, centers_sum, r=r)
 
         return dig
         
 
+class MultipoleBinning(Binning):
+    """
+    Binning in R and `ell`, the multipole number, in the 
+    flat sky approximation, such that all pairs have the 
+    same line-of-sight, which is taken to be the axis specified 
+    by the `los` parameter (default is the last dimension)
+
+    Parameters
+    ----------
+    rbins : array_like
+        the array of R bin edges
+    ells : list of int
+        the multipole numbers to compute
+    los : int, {0, 1, 2}
+        the axis to treat as the line-of-sight
+    
+    Notes
+    -----
+    This can be slow, especially for a large set of `ells`. It is 
+    likely better to use finely-binned :class:`RmuBinning` and 
+    simply integrate the results against the appropriate Legendre 
+    polynomial to compute multipoles 
+    """
+    def __init__(self, rbins, ells):
+        from scipy.special import legendre 
+        
+        Binning.__init__(self, ['r'], [rbins])
+        
+        self.ells = numpy.array(ells)
+        self.legendre = [legendre(l) for l in self.ells]
+                
+    
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
+        
+        r1 = data1.pos[i]
+        r2 = data2.pos[j]
+        center = 0.5 * (r1 + r2)
+        dr = r1 - r2
+        dot = numpy.einsum('ij, ij->i', dr, center) 
+        center = numpy.einsum('ij, ij->i', center, center) ** 0.5
+        
+        with numpy.errstate(invalid='ignore'):
+            mu = dot / (center * r)
+            
+        # linear bin index and weights
+        dig = self.linear(r=r)
+        w = numpy.array([leg(mu) for leg in self.legendre]) # shape should be (N_ell, len(r1))
+        w *= (2*self.ells+1)[:,None]
+        
+        # update the mean coords
+        self.update_mean_coords(dig, N, centers_sum, r=r)
+        
+        return dig, w
+        
+    def __call__(self, r, i, j, data1, data2, sum1, sum2, N=None, centers_sum=None):
+        """
+        Overloaded function to compute the sums as a function
+        of `ell` in addition to `r`
+        
+        Notes
+        -----
+        valid only when `data1` and `data2` are both `points` instances
+        """        
+        pts_only = isinstance(data1, points) and isinstance(data2, points)
+        if not pts_only:
+            name = self.__class__.__name__
+            raise NotImplementedError("%s only valid when correlating two `points` instances" %name)
+            
+        # the summation values for this (r,i,j)
+        sum1_ij, sum2_ij = compute_sum_values(i, j, data1, data2)
+        
+        # digitize
+        dig, weights = self.digitize(r, i, j, data1, data2, N=N, centers_sum=centers_sum)
+                
+        # sum 1
+        for iell in range(len(self.ells)):
+            tosum = (weights*sum1_ij)[iell,...]
+            sum1[iell, ...].flat[:] += utils.bincount(dig, tosum, minlength=sum1[iell,...].size)
+                    
+    def sum_shapes(self, data1, data2):
+        """
+        Prepend the shape of `ells` to the summation arrays
+        """
+        linearshape, fullshape = Binning.sum_shapes(self, data1, data2)
+        fullshape = [len(self.ells)] + fullshape
+        
+        return linearshape, fullshape
+        
+        
 class FlatSkyMultipoleBinning(Binning):
     """
     Binning in R and `ell`, the multipole number, in the 
@@ -408,10 +472,8 @@ class FlatSkyMultipoleBinning(Binning):
 
     Parameters
     ----------
-    rmax : float
-        the maximum radius to measure to
-    Nr : int
-        the number of bins in `r` direction.
+    rbins : array_like
+        the array of R bin edges
     ells : list of int
         the multipole numbers to compute
     los : int, {0, 1, 2}
@@ -420,14 +482,14 @@ class FlatSkyMultipoleBinning(Binning):
     def __init__(self, rbins, ells, los, **kwargs):
         from scipy.special import legendre 
         
-        Binning.__init__(self, ['r'], [rbins], **kwargs)
+        Binning.__init__(self, ['r'], [rbins])
         
         self.los = los
         self.ells = numpy.array(ells)
         self.legendre = [legendre(l) for l in self.ells]
                 
     
-    def digitize(self, r, i, j, data1, data2):
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         
         r1 = data1.pos[i]
         r2 = data2.pos[j]
@@ -450,11 +512,11 @@ class FlatSkyMultipoleBinning(Binning):
         w *= (2*self.ells+1)[:,None]
         
         # update the mean coords
-        self.update_mean_coords(dig, r=r)
+        self.update_mean_coords(dig, N, centers_sum, r=r)
         
         return dig, w
         
-    def __call__(self, r, i, j, data1, data2, sum1, sum2):
+    def __call__(self, r, i, j, data1, data2, sum1, sum2, N=None, centers_sum=None):
         """
         Overloaded function to compute the sums as a function
         of `ell` in addition to `r`
@@ -472,7 +534,7 @@ class FlatSkyMultipoleBinning(Binning):
         sum1_ij, sum2_ij = compute_sum_values(i, j, data1, data2)
         
         # digitize
-        dig, weights = self.digitize(r, i, j, data1, data2)
+        dig, weights = self.digitize(r, i, j, data1, data2, N=N, centers_sum=centers_sum)
                 
         # sum 1
         for iell in range(len(self.ells)):
@@ -498,21 +560,19 @@ class FlatSkyBinning(Binning):
 
     Parameters
     ----------
-    rmax : float
-        the maximum radius to measure to
-    Nr : int
-        the number of bins in `r` direction.
+    rbins : array_like
+        the array of R bin edges
     Nmu : int
         the number of bins in `mu` direction.
     los : int, {0, 1, 2}
         the axis to treat as the line-of-sight
     """
-    def __init__(self, rbins, Nmu, los, **kwargs):
+    def __init__(self, rbins, Nmu, los):
         mubins = numpy.linspace(-1, 1, Nmu+1)
-        Binning.__init__(self, ['r','mu'], [rbins, mubins], **kwargs)
+        Binning.__init__(self, ['r','mu'], [rbins, mubins])
         self.los = los
 
-    def digitize(self, r, i, j, data1, data2):
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         r1 = data1.pos[i]
         r2 = data2.pos[j]
         
@@ -533,7 +593,7 @@ class FlatSkyBinning(Binning):
         dig = self.linear(r=r, mu=mu)
         
         # update the mean coords
-        self.update_mean_coords(dig, r=r, mu=mu)
+        self.update_mean_coords(dig, N, centers_sum, r=r, mu=mu)
         
         return dig
 
@@ -589,7 +649,7 @@ class paircount(object):
         with r = sum(wD) / sum(wR)
 
     """
-    def __init__(self, data1, data2, binning, usefast=True, np=None):
+    def __init__(self, data1, data2, binning, compute_mean_coords=False, usefast=True, np=None):
         """
         binning is an instance of Binning, (eg, RBinning, RmuBinning)
 
@@ -597,15 +657,16 @@ class paircount(object):
         -----
         *   if the value has multiple components, return counts with be 'tuple', 
             one item for each component
-        *   if `binning.compute_mean_coords` is `True`, then `meancenters` will hold
+        *   if `compute_mean_coords` is `True`, then `meancenters` will hold
             the mean coordinate value in each bin. Cannot have `usefast = True`
-            and `binning.compute_mean_coords = True`
+            and `compute_mean_coords = True`
         """
-        if usefast and binning.compute_mean_coords:
+        if usefast and compute_mean_coords:
             raise NotImplementedError("cannot currently compute bin centers and use the `fast` algorithm")
         
         # run the work, using a context manager
-        with paircount_worker(self, binning, [data1, data2], np=np, usefast=usefast) as worker:
+        kws = {'np':np, 'usefast':usefast, 'compute_mean_coords':compute_mean_coords}
+        with paircount_worker(self, binning, [data1, data2], **kws) as worker:
             with utils.MapReduce(np=worker.np) as pool:
                 pool.map(worker.work, range(worker.size), reduce=worker.reduce)
 
@@ -616,7 +677,7 @@ class paircount_worker(object):
     Context that runs the actual pair counting, attaching the appropriate 
     attributes to the parent `paircount`
     """                
-    def __init__(self, pc, binning, data, np=None, usefast=True):
+    def __init__(self, pc, binning, data, np=None, usefast=True, compute_mean_coords=False):
         """
         Parameters
         ----------
@@ -630,12 +691,15 @@ class paircount_worker(object):
             the number of parallel processors
         usefast : bool, optional
             whether to use the fast algorithm
+        compute_mean_coords : bool, optional
+            whether to compute the average coordinate value of each pair per bin
         """
         self.pc      = pc
         self.bins    = binning
         self.data    = data
         self.np      = np
         self.usefast = usefast
+        self.compute_mean_coords = compute_mean_coords
         
         # set the wrapped callables that do the work
         self.work = lambda i: self.__work__(i)
@@ -652,11 +716,17 @@ class paircount_worker(object):
         sum2 = 1.
         if not self.pts_only: sum2 = numpy.zeros_like(self.sum2g)
         
+        if self.compute_mean_coords:
+            N = numpy.zeros_like(self.N)
+            centers_sum = [numpy.zeros_like(c) for c in self.centers]
+        else:
+            N = None; centers_sum = None
+        
         def callback(r, i, j):
             
             # just call the binning function, passing the 
             # sum arrays to fill in
-            self.bins(r, i, j, self.data[0], self.data[1], sum1, sum2)
+            self.bins(r, i, j, self.data[0], self.data[1], sum1, sum2, N=N, centers_sum=centers_sum)
                             
         if self.dofast:
             # field x points is not supported.
@@ -670,9 +740,13 @@ class paircount_worker(object):
             sum1[..., -1] = 0
         else:
             n1.enum(n2, self.bins.Rmax, process=callback)
-        return sum1, sum2
+        
+        if not self.compute_mean_coords:
+            return sum1, sum2
+        else:
+            return sum1, sum2, N, centers_sum
    
-    def __reduce__(self, sum1, sum2):
+    def __reduce__(self, sum1, sum2, *args):
         """
         The internal reduce function that sums the results from various 
         processors
@@ -680,10 +754,11 @@ class paircount_worker(object):
         self.sum1g[...] += sum1
         if not self.pts_only: self.sum2g[...] += sum2
         
-        if self.bins.compute_mean_coords:
-            self.N[...] += self.bins.pair_counts
+        if self.compute_mean_coords:
+            N, centers_sum = args
+            self.N[...] += N
             for i in range(self.bins.Ndim):
-                self.centers[i][...] += self.bins.mean_centers_sum[i]
+                self.centers[i][...] += centers_sum[i]
 
     def _partition(self, tree1, tree2, np=128):
         import heapq
@@ -735,9 +810,11 @@ class paircount_worker(object):
             self.sum2g = numpy.zeros(self.bins.shape, dtype='f8').reshape(linearshape)
         
         # initialize arrays for computing mean coords
+        # for storing the mean values in each bin
+        # computed when pair counting        
         self.N = None; self.centers = None
-        if self.bins.compute_mean_coords:
-            self.N = numpy.zeros_like(self.bins.pair_counts)
+        if self.compute_mean_coords:
+            self.N = numpy.zeros(self.bins.shape)
             self.centers = [numpy.zeros(self.bins.shape) for i in range(self.bins.Ndim)]
         
         return self
@@ -765,7 +842,7 @@ class paircount_worker(object):
         self.pc.centers = self.bins.centers
 
         # add the mean centers info
-        if self.bins.compute_mean_coords:
+        if self.compute_mean_coords:
             
             # store the full sum too
             sl = [slice(1, -1)] * self.bins.Ndim
