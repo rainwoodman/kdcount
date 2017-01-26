@@ -36,6 +36,7 @@ setup(name="kdcount", version=find_version("kdcount/version.py"),
       packages = [
         'kdcount', 'kdcount.tests'
       ],
+      license='GPL3',
       requires=['numpy'],
       install_requires=['numpy'],
       ext_modules = cythonize(extensions),
