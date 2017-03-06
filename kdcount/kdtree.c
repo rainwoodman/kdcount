@@ -21,64 +21,38 @@ kd_alloc(KDTree * tree)
     ptr->tree = tree;
     return ptr;
 }
-static ptrdiff_t 
-kd_build_split(KDNode * node, double minhint[], double maxhint[], ptrdiff_t next) 
+static void
+kd_build_update_min_max(KDNode * node, double min[3], double max[3])
 {
-    KDTree * tree = node->tree;
-    ptrdiff_t p, q, j;
+    int Nd = node->tree->input.dims[1];
     int d;
-    int Nd = tree->input.dims[1];
-    double * max = kd_node_max(node);
-    double * min = kd_node_min(node);
+    ptrdiff_t i;
     for(d = 0; d < Nd; d++) {
-        max[d] = maxhint[d];
-        min[d] = minhint[d];
+        max[d] = kd_input(node->tree, node->start + 0, d);
+        min[d] = max[d];
     }
-
-    if(node->size <= tree->thresh) {
-        int i;
-        node->dim = -1;
-        for(d = 0; d < Nd; d++) {
-            max[d] = kd_input(node->tree, node->start + 0, d);
-            min[d] = max[d];
-        }
-        for(i = 0; i < node->size; i++) {
-            for (d = 0; d < Nd; d++) {
-                double x = kd_input(node->tree, node->start + i, d);
-                if (max[d] < x) max[d] = x;
-                if (min[d] > x) min[d] = x;
-            }
-        }
-        return next;
-    }
-
-    node->dim = 0;
-    double longest = maxhint[0] - minhint[0];
-    for(d = 1; d < Nd; d++) {
-        double tmp = maxhint[d] - minhint[d];
-        if(tmp > longest) {
-            node->dim = d;
-            longest = tmp;
+    for(i = 0; i < node->size; i++) {
+        for (d = 0; d < Nd; d++) {
+            double x = kd_input(node->tree, node->start + i, d);
+            if (max[d] < x) max[d] = x;
+            if (min[d] > x) min[d] = x;
         }
     }
 
-    node->split = (max[node->dim] + min[node->dim]) * 0.5;
-
-    /*
-    printf("trysplit @ %g (%g %g %g %g %g %g) dim = %d, %td %td\n",
-            node->split, 
-            max[0], max[1], max[2], min[0],  min[1],  min[2],  
-            node->dim, node->start, node->size);
-    */
+}
+static ptrdiff_t
+kd_build_pivot(KDNode * node, double split)
+{
+    ptrdiff_t p, q;
     p = node->start;
     q = node->start + node->size - 1;
     while(p <= q) {
-        if(kd_input(tree, p, node->dim) < node->split) {
+        if(kd_input(node->tree, p, node->dim) < split) {
             p ++;
-        } else if(kd_input(tree, q, node->dim) >= node->split) {
+        } else if(kd_input(node->tree, q, node->dim) >= split) {
             q --;
         } else {
-            kd_swap(tree, p, q); 
+            kd_swap(node->tree, p, q); 
             p ++;
             q --;
         }
@@ -97,20 +71,87 @@ kd_build_split(KDNode * node, double minhint[], double maxhint[], ptrdiff_t next
      *  left < split
      *  and right >= split
      *  */
+    return p;
+}
+static ptrdiff_t 
+kd_build_split(KDNode * node, double minhint[], double maxhint[], ptrdiff_t next) 
+{
+    KDTree * tree = node->tree;
+    ptrdiff_t p, j;
+    int d;
+    int Nd = tree->input.dims[1];
+    double * max = kd_node_max(node);
+    double * min = kd_node_min(node);
+    for(d = 0; d < Nd; d++) {
+        max[d] = maxhint[d];
+        min[d] = minhint[d];
+    }
 
-    /* the invariance is broken after sliding.
+    if(node->size <= tree->thresh) {
+        node->dim = -1;
+        kd_build_update_min_max(node, min, max);
+        return next;
+    }
+
+    node->dim = 0;
+    double longest = maxhint[0] - minhint[0];
+    for(d = 1; d < Nd; d++) {
+        double tmp = maxhint[d] - minhint[d];
+        if(tmp > longest) {
+            node->dim = d;
+            longest = tmp;
+        }
+    }
+
+    double split;
+
+    /*
+    printf("trysplit @ %g (%g %g %g %g %g %g) dim = %d, %td %td\n",
+            node->split, 
+            max[0], max[1], max[2], min[0],  min[1],  min[2],  
+            node->dim, node->start, node->size);
+    */
+    p = node->start;
+
+    /* recover from an imbalanced split */
+
+    if(p == node->start || p == node->start + node->size) {
+        /* use the middle of the box */
+        split = (max[node->dim] + min[node->dim]) * 0.5;
+        p = kd_build_pivot(node, split);
+    }
+
+    if(p == node->start || p == node->start + node->size) {
+        /* Use the median of three samples as a split */
+        double a = kd_input(tree, node->start, node->dim);
+        double b = kd_input(tree, node->start + node->size / 2, node->dim);
+        double c = kd_input(tree, node->start + node->size - 1, node->dim);
+        /* trick from http://stackoverflow.com/a/19045659 */
+        /* to prove assume a < b without loosing generality. */
+        split = fmax(fmin(a, b), fmin(fmax(a, b), c));
+        p = kd_build_pivot(node, split);
+    }
+    if(p == node->start || p == node->start + node->size) {
+        /* shrink min max and retry */
+        kd_build_update_min_max(node, min, max);
+        split = (max[node->dim] + min[node->dim]) * 0.5;
+        p = kd_build_pivot(node, split);
+    }
+
+    /* 
      * after sliding we have data[0, .... p - 1] <= split
      * and data[q +1.... end] >= split */
+
+    /* Last resort: Now we will split at the first / last item. */
     if(p == node->start) {
-        q = node->start;
         for(j = node->start + 1; j < node->start + node->size; j++) {
             if (kd_input(tree, j, node->dim) <
                 kd_input(tree, node->start, node->dim)) {
                 kd_swap(tree, j, node->start);
             }
         }
-        node->split = kd_input(tree, node->start, node->dim);
-        p = q + 1;
+        split = kd_input(tree, node->start, node->dim);
+        p = node->start + 1;
     }
     if(p == node->start + node->size) {
         p = node->start + node->size - 1;
@@ -120,9 +161,10 @@ kd_build_split(KDNode * node, double minhint[], double maxhint[], ptrdiff_t next
                 kd_swap(tree, j, node->start + node->size - 1);
             }
         }
-        node->split = kd_input(tree, node->start + node->size - 1, node->dim);
-        q = p - 1;
+        split = kd_input(tree, node->start + node->size - 1, node->dim);
     }
+
+    node->split = split;
 
     node->link[0] = kd_alloc(tree);
     node->link[0]->index = next++;
