@@ -64,3 +64,5 @@ class constant_array(numpy.ndarray):
             r.value[...] = self.value[...]
             return r
 
+    def __array_wrap__(self, outarr, context):
+        return outarr.view(type=numpy.ndarray)
