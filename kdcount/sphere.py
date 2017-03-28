@@ -20,6 +20,24 @@ class points(models.points):
     def __getitem__(self, index):
         return points(self.ra[index], self.dec[index], self.weights[index], self.boxsize);
 
+class field(models.field):
+    def __init__(self, ra, dec, value, weights=None, boxsize=None):
+        self.ra = ra
+        self.dec = dec
+        ra = ra * (numpy.pi / 180.)
+        dec = dec * (numpy.pi / 180.)
+        dtype = numpy.dtype((ra.dtype, 3))
+        pos = numpy.empty(len(ra), dtype=dtype)
+        pos[:, 2] = numpy.sin(dec)
+        r = numpy.cos(dec)
+        pos[:, 0] = numpy.sin(ra) * r
+        pos[:, 1] = numpy.cos(ra) * r 
+
+        models.field.__init__(self, pos, value, weights, boxsize)
+
+    def __getitem__(self, index):
+        return fields(self.ra[index], self.dec[index], self.value[index], self.weights[index], self.boxsize)
+
 class AngularBinning(RBinning):
     def __init__(self, angbins, **kwargs):
         rbins = 2 * numpy.sin(0.5 * numpy.radians(angbins))

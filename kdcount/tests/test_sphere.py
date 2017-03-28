@@ -34,6 +34,18 @@ def test_cluster():
     r.sum1,
     numpy.diff(2 * numpy.pi * (1 - numpy.cos(numpy.radians(binning.angular_edges)))) / ( 4 * numpy.pi) * len(ra) ** 2, rtol=10e-2)
 
+def test_field():
+    numpy.random.seed(1234)
+    dec = numpy.arcsin(numpy.random.uniform(-1, 1, size=100000)) / numpy.pi * 180
+    ra = numpy.random.uniform(0, 2 * numpy.pi, size=100000) / numpy.pi * 180
+
+    dataset = sphere.field(ra, dec, value=numpy.ones_like(dec) * 0.5)
+    
+    binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
+    r = correlate.paircount(dataset, dataset, binning=binning)
+    print(r.sum1)
+    print(r.sum2)
+
 def test_bootstrap():
     numpy.random.seed(1234)
     dec = numpy.arcsin(numpy.random.uniform(-1, 1, size=10000)) / numpy.pi * 180
