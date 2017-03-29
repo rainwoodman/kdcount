@@ -8,7 +8,7 @@
  *
  * (visit) two vertices i, j connected by an edge.
  *         if splay(i) differ from splay(j), the components shall be
- *         merged, call merge(i, j)
+ *         visited, call merge(i, j)
  *
  * (merge) Join two trees if they are connected by adding the root
  *         of i as a child of root of j.
@@ -48,7 +48,7 @@ typedef struct TraverseData {
     double ll2;
 
     /* performance counters */
-    ptrdiff_t merged;
+    ptrdiff_t visited;
     ptrdiff_t connected;
     ptrdiff_t skipped;
     ptrdiff_t maxdepth;
@@ -59,7 +59,7 @@ typedef struct TraverseData {
 typedef struct{
     TraverseData * trav;
     int self_connected;
-    ptrdiff_t merged;
+    ptrdiff_t visited;
 } VisitEdgeData;
 
 static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
@@ -103,11 +103,9 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
     TraverseData * trav = (TraverseData*) data;
     VisitEdgeData vdata = {
         .trav = data,
-        .merged = 0,
+        .visited = 0,
     };
-    if(pair->nodes[0]->index > pair->nodes[1]->index) {
-        return 0;
-    }
+
     if(trav->node_connected[pair->nodes[0]->index]
     && trav->node_connected[pair->nodes[1]->index]
     )
@@ -115,15 +113,13 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
         /* two fully connected nodes are linked, simply link the first particle.  */
         vdata.self_connected = 1;   
 
-        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, &vdata);
-        /* update performance counters */
-        trav->skipped += pair->nodes[0]->size * pair->nodes[1]->size - vdata.merged;
-        trav->merged += vdata.merged;
     } else {
         vdata.self_connected = 0;   
-        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, &vdata);
-        trav->merged += vdata.merged;
     }
+
+    kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, &vdata);
+    /* update performance counters */
+    trav->visited += vdata.visited;
 
     return 0;
 }
@@ -137,7 +133,7 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
     ptrdiff_t i = pair->i;
     ptrdiff_t j = pair->j;
 
-    vdata->merged ++;
+    vdata->visited ++;
 
     ptrdiff_t root_i = splay(trav, i);
     ptrdiff_t root_j = splay(trav, j);
@@ -189,7 +185,7 @@ connect(TraverseData * trav, KDNode * node, int parent_connected)
     }
 }
 
-static TraverseData last_traverse;
+static TraverseData last_traverse = {0};
 
 int 
 kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
@@ -208,8 +204,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
         trav->head[i] = i;
     }
 
-    trav->merged = 0;
-    trav->skipped = 0;
+    trav->visited = 0;
     trav->maxdepth = 0;
     trav->totaldepth = 0;
     trav->nsplay = 0;
@@ -222,10 +217,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
-#ifdef KD_FOF_VERBOSE
-    printf("skipped = %td merged = %td connected = %td size = %td maxdepth = %td nsplay = %td meandepth = %g\n", 
-            trav->skipped, trav->merged, trav->connected, node->tree->size, trav->maxdepth, trav->nsplay, 1.0 * trav->totaldepth / trav->nsplay);
-#endif
+
     free(trav->node_connected);
 
     last_traverse = *trav;
@@ -233,8 +225,12 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 }
 
 void
-kd_fof_get_last_traverse_info(ptrdiff_t *merged, ptrdiff_t *connected, ptrdiff_t *skipped,
+kd_fof_get_last_traverse_info(ptrdiff_t *visited, ptrdiff_t *connected,
                               ptrdiff_t *maxdepth, ptrdiff_t *nsplay, ptrdiff_t *totaldepth)
 {
-
+    *visited = last_traverse.visited;
+    *connected = last_traverse.connected;
+    *maxdepth = last_traverse.maxdepth;
+    *nsplay = last_traverse.nsplay;
+    *totaldepth = last_traverse.totaldepth;
 }

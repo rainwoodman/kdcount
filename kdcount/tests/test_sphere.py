@@ -43,8 +43,7 @@ def test_field():
     
     binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
     r = correlate.paircount(dataset, dataset, binning=binning)
-    print(r.sum1)
-    print(r.sum2)
+    # FIXME: assert on correctness.
 
 def test_bootstrap():
     numpy.random.seed(1234)

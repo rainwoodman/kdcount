@@ -70,6 +70,8 @@ cdef extern from "kdtree.h":
             void * data) except -1
 
     int kd_fof(cKDNode * tree, double linklength, npy_intp * head) nogil
+    void kd_fof_get_last_traverse_info(npy_intp *visited, npy_intp *connected,
+                                  npy_intp *maxdepth, npy_intp *nsplay, npy_intp *totaldepth)
 
     void kd_attr_init(cKDAttr * attr, cKDNode * root) nogil
     void kd_count(cKDNode * nodes[2], 
@@ -475,3 +477,13 @@ cdef class KDTree:
         # no need to call kd_free !
         PyMem_Free(self.ref)
 
+def _get_last_fof_info():
+    cdef:
+         npy_intp visited
+         npy_intp connected 
+         npy_intp maxdepth
+         npy_intp nsplay
+         npy_intp totaldepth
+
+    kd_fof_get_last_traverse_info(&visited, &connected, &maxdepth, &nsplay, &totaldepth)
+    return (visited, connected, maxdepth, nsplay, totaldepth)

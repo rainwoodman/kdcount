@@ -140,7 +140,7 @@ kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit
         for (p1 = p1base, j = nodes[1]->start; 
              j < nodes[1]->start + nodes[1]->size; j++, p1 +=Nd) {
             pair.j = t1->ind[j];
-            if (skip_symmetric && pair.i <= pair.j) continue;
+            if (skip_symmetric && pair.i >= pair.j) continue;
             double r2 = 0.0;
             if (t0 != t1 || pair.i != pair.j) {
                 for (d = 0; d < Nd; d++){
