@@ -242,7 +242,7 @@ typedef struct KDEnumNodePair {
 typedef int (*kd_enum_visit_edge)(void * userdata, KDEnumPair * pair);
 typedef int (*kd_enum_check_nodes)(void * userdata, KDEnumNodePair * pair);
 int
-kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata);
+kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata);
 
 int
 kd_enum(KDNode * nodes[2], double maxr,

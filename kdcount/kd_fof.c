@@ -56,6 +56,12 @@ typedef struct TraverseData {
     ptrdiff_t totaldepth;
 } TraverseData;
 
+typedef struct{
+    TraverseData * trav;
+    int self_connected;
+    ptrdiff_t merged;
+} VisitEdgeData;
+
 static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
 {
     ptrdiff_t depth = 0;
@@ -95,37 +101,43 @@ static int
 _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
 {
     TraverseData * trav = (TraverseData*) data;
-
+    VisitEdgeData vdata = {
+        .trav = data,
+        .merged = 0,
+    };
+    if(pair->nodes[0]->index > pair->nodes[1]->index) {
+        return 0;
+    }
     if(trav->node_connected[pair->nodes[0]->index]
-    && trav->node_connected[pair->nodes[1]->index])
+    && trav->node_connected[pair->nodes[1]->index]
+    )
     {
         /* two fully connected nodes are linked, simply link the first particle.  */
-        KDEnumPair epair;
-        epair.r = sqrt(pair->distmin2);
-        epair.i = trav->ind[pair->nodes[0]->start];
-        epair.j = trav->ind[pair->nodes[1]->start];
+        vdata.self_connected = 1;   
 
+        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, &vdata);
         /* update performance counters */
-        trav->skipped += pair->nodes[0]->size * pair->nodes[1]->size;
-
-        return _kd_fof_visit_edge(data, &epair);
+        trav->skipped += pair->nodes[0]->size * pair->nodes[1]->size - vdata.merged;
+        trav->merged += vdata.merged;
     } else {
-        return kd_enum_check(pair->nodes, trav->ll2, _kd_fof_visit_edge, data);
+        vdata.self_connected = 0;   
+        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, &vdata);
+        trav->merged += vdata.merged;
     }
 
+    return 0;
 }
 
 static int
 _kd_fof_visit_edge(void * data, KDEnumPair * pair) 
 {
-    TraverseData * trav = (TraverseData*) data;
+    VisitEdgeData * vdata = (VisitEdgeData *) data;
+    TraverseData * trav = vdata->trav;
+
     ptrdiff_t i = pair->i;
     ptrdiff_t j = pair->j;
 
-    trav->merged ++;
-
-    /* do not visit the symmetric edges */
-    if(i >= j) return 0;
+    vdata->merged ++;
 
     ptrdiff_t root_i = splay(trav, i);
     ptrdiff_t root_j = splay(trav, j);
@@ -134,7 +146,12 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
     /* this is also correct if root_j == root_i */
     trav->head[root_j] = root_i;
 
-    return 0;
+    /* terminate immediately if two nodes are self-connected and
+     * we have linked a pair*/
+    if(vdata->self_connected)
+        return -1;
+    else
+        return 0;
 }
 static double kd_node_maxdist2(KDNode * node)
 {
@@ -172,6 +189,8 @@ connect(TraverseData * trav, KDNode * node, int parent_connected)
     }
 }
 
+static TraverseData last_traverse;
+
 int 
 kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 {
@@ -208,7 +227,14 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
             trav->skipped, trav->merged, trav->connected, node->tree->size, trav->maxdepth, trav->nsplay, 1.0 * trav->totaldepth / trav->nsplay);
 #endif
     free(trav->node_connected);
-    return 0;
 
+    last_traverse = *trav;
+    return 0;
 }
 
+void
+kd_fof_get_last_traverse_info(ptrdiff_t *merged, ptrdiff_t *connected, ptrdiff_t *skipped,
+                              ptrdiff_t *maxdepth, ptrdiff_t *nsplay, ptrdiff_t *totaldepth)
+{
+
+}

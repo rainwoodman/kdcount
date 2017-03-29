@@ -15,7 +15,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
 static int _kd_enum_check_nodes(void * data, KDEnumNodePair * pair)
 {
     struct TraverseData * trav = data;
-    return kd_enum_check(pair->nodes, trav->maxr2,
+    return kd_enum_check(pair->nodes, trav->maxr2, 0,
             trav->visit_edge, trav->userdata);
 }
 
@@ -114,7 +114,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
 
 
 int
-kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata)
+kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata)
 {
     int rt = 0;
     ptrdiff_t i, j;
@@ -135,10 +135,12 @@ kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, vo
     kd_collect(nodes[1], &t1->input, p1base);
 
     for (p0 = p0base, i = nodes[0]->start; 
-        i < nodes[0]->start + nodes[0]->size; i++) {
+        i < nodes[0]->start + nodes[0]->size; i++, p0 += Nd) {
         pair.i = t0->ind[i];
         for (p1 = p1base, j = nodes[1]->start; 
-             j < nodes[1]->start + nodes[1]->size; j++) {
+             j < nodes[1]->start + nodes[1]->size; j++, p1 +=Nd) {
+            pair.j = t1->ind[j];
+            if (skip_symmetric && pair.i <= pair.j) continue;
             double r2 = 0.0;
             for (d = 0; d < Nd; d++){
                 double dx = p1[d] - p0[d];
@@ -146,16 +148,13 @@ kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, vo
                 r2 += dx * dx;
             }
             if(r2 <= maxr2) {
-                pair.j = t1->ind[j];
                 pair.r = sqrt(r2);
                 if(0 != visit_edge(userdata, &pair)) {
                     rt = -1;
                     goto exit;
                 }
             }
-            p1 += Nd;
         }
-        p0 += Nd;
     }
 exit:
     free(p1base);
