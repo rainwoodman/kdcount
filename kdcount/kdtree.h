@@ -251,6 +251,12 @@ kd_enum(KDNode * nodes[2], double maxr,
         void * userdata);
 
 int
+kd_enum_always_open(KDNode * nodes[2], double maxr,
+        kd_enum_visit_edge visit_edge,
+        kd_enum_check_nodes check_nodes,
+        void * userdata);
+
+int
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);
 
 void

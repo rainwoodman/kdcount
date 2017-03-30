@@ -96,44 +96,43 @@ static ptrdiff_t splay(TraverseData * d, ptrdiff_t i)
 
 static int
 _kd_fof_visit_edge(void * data, KDEnumPair * pair);
+static int
+_kd_fof_visit_edge_first(void * data, KDEnumPair * pair);
 
 static int
 _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
 {
     TraverseData * trav = (TraverseData*) data;
-    VisitEdgeData vdata = {
-        .trav = data,
-        .visited = 0,
-    };
 
     if(trav->node_connected[pair->nodes[0]->index]
     && trav->node_connected[pair->nodes[1]->index]
     )
     {
         /* two fully connected nodes are linked, simply link the first particle.  */
-        vdata.self_connected = 1;   
-
+        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge_first, data);
     } else {
-        vdata.self_connected = 0;   
+        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, data);
     }
-
-    kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, &vdata);
-    /* update performance counters */
-    trav->visited += vdata.visited;
 
     return 0;
 }
 
 static int
+_kd_fof_visit_edge_first(void * data, KDEnumPair * pair) 
+{
+    _kd_fof_visit_edge_first(data, pair);
+    return -1;
+}
+
+static int
 _kd_fof_visit_edge(void * data, KDEnumPair * pair) 
 {
-    VisitEdgeData * vdata = (VisitEdgeData *) data;
-    TraverseData * trav = vdata->trav;
+    TraverseData * trav = (TraverseData *) data;
 
     ptrdiff_t i = pair->i;
     ptrdiff_t j = pair->j;
 
-    vdata->visited ++;
+    trav->visited ++;
 
     ptrdiff_t root_i = splay(trav, i);
     ptrdiff_t root_j = splay(trav, j);
@@ -144,11 +143,9 @@ _kd_fof_visit_edge(void * data, KDEnumPair * pair)
 
     /* terminate immediately if two nodes are self-connected and
      * we have linked a pair*/
-    if(vdata->self_connected)
-        return -1;
-    else
-        return 0;
+    return 0;
 }
+
 static double kd_node_maxdist2(KDNode * node)
 {
     int d;
@@ -212,7 +209,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 
     connect(trav, node, 0);
 
-    kd_enum(nodes, linking_length, NULL, _kd_fof_check_nodes, trav);
+    kd_enum_always_open(nodes, linking_length, NULL, _kd_fof_check_nodes, trav);
 
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
