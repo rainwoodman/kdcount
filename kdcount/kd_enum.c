@@ -4,9 +4,11 @@ struct TraverseData
 {
     double maxr;
     double maxr2;
+    double openr2;
     void * userdata;
     kd_enum_visit_edge visit_edge;
     kd_enum_check_nodes check_nodes;
+    kd_enum_visit_node visit_node;
     void * check_nodes_data;
     int always_open;
 };
@@ -29,10 +31,11 @@ kd_enum(KDNode * nodes[2], double maxr,
     struct TraverseData trav = {
         .maxr = maxr,
         .maxr2 = maxr * maxr,
+        .openr2 = maxr * maxr,
         .check_nodes = check_nodes,
         .visit_edge = visit_edge,
         .userdata = userdata,
-        .always_open = 0,
+        .visit_node = NULL,
     };
     if(check_nodes == NULL) {
         trav.check_nodes = _kd_enum_check_nodes;
@@ -44,9 +47,11 @@ kd_enum(KDNode * nodes[2], double maxr,
 }
 
 int
-kd_enum_always_open(KDNode * nodes[2], double maxr,
+kd_enum_full(KDNode * nodes[2], double maxr,
         kd_enum_visit_edge visit_edge,
         kd_enum_check_nodes check_nodes,
+        kd_enum_visit_node visit_node,
+        double opening_factor,
         void * userdata)
 {
     struct TraverseData trav = {
@@ -55,7 +60,8 @@ kd_enum_always_open(KDNode * nodes[2], double maxr,
         .check_nodes = check_nodes,
         .visit_edge = visit_edge,
         .userdata = userdata,
-        .always_open = 0,
+        .visit_node = visit_node,
+        .openr2 = maxr * maxr * opening_factor * opening_factor,
     };
     if(check_nodes == NULL) {
         trav.check_nodes = _kd_enum_check_nodes;
@@ -65,6 +71,12 @@ kd_enum_always_open(KDNode * nodes[2], double maxr,
     }
     return kd_enum_internal(&trav, nodes);
 
+}
+static int
+_kd_enum_visit_node(struct TraverseData * trav, KDNode * node)
+{
+    if (trav->visit_node == NULL) return 1;
+    return trav->visit_node(trav->userdata, node) != 0;
 }
 /*
  * enumerate two KDNode trees, up to radius max.
@@ -101,13 +113,15 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
         /* nodes are too far, skip them */
         return 0;
     }
-    if (trav->always_open || distmax >= trav->maxr2) {
+    if (distmax >= trav->openr2) {
         /* nodes may intersect, open them */
         int open = nodes[0]->size < nodes[1]->size;
-        if(nodes[open]->dim < 0) {
+        if(nodes[open]->dim < 0 || !_kd_enum_visit_node(trav, nodes[open])) {
             open = (open == 0);
         }
-        if(nodes[open]->dim >= 0) {
+        if(nodes[open]->dim < 0 || !_kd_enum_visit_node(trav, nodes[open])) {
+            /* can't open the nodes, need to enumerate */
+        } else {
             KDNode * save = nodes[open];
             nodes[open] = save->link[0];
             int rt;
@@ -120,8 +134,6 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
             rt = kd_enum_internal(trav, nodes);
             nodes[open] = save;
             return rt;
-        } else {
-            /* can't open the nodes, need to enumerate */
         }
     } else {
         /* fully inside, fall through,

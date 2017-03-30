@@ -239,8 +239,13 @@ typedef struct KDEnumNodePair {
     KDNode * nodes[2];
 } KDEnumNodePair;
 
+/* returns whether the edge enumeration between these two nodes shall be terminated */
 typedef int (*kd_enum_visit_edge)(void * userdata, KDEnumPair * pair);
+/* returns whether the edge enumeration shall be terminated */
 typedef int (*kd_enum_check_nodes)(void * userdata, KDEnumNodePair * pair);
+/* returns whether the child nodes, if exist, shall be opened. */
+typedef int (*kd_enum_visit_node)(void * userdata, KDNode * node);
+
 int
 kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata);
 
@@ -251,9 +256,11 @@ kd_enum(KDNode * nodes[2], double maxr,
         void * userdata);
 
 int
-kd_enum_always_open(KDNode * nodes[2], double maxr,
+kd_enum_full(KDNode * nodes[2], double maxr,
         kd_enum_visit_edge visit_edge,
         kd_enum_check_nodes check_nodes,
+        kd_enum_visit_node visit_node,
+        double opening_factor,
         void * userdata);
 
 int

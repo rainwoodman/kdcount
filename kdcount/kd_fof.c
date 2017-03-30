@@ -120,7 +120,7 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
 static int
 _kd_fof_visit_edge_first(void * data, KDEnumPair * pair) 
 {
-    _kd_fof_visit_edge_first(data, pair);
+    _kd_fof_visit_edge(data, pair);
     return -1;
 }
 
@@ -181,7 +181,13 @@ connect(TraverseData * trav, KDNode * node, int parent_connected)
         connect(trav, node->link[1], c);
     }
 }
-
+static int
+_kd_fof_visit_node(void * data, KDNode * node)
+{
+    TraverseData * trav = (TraverseData*) data;
+    /* if the nodes are very nearby and all connected, then there is no need to open */
+    return trav->node_connected[node->index] == 0;
+}
 static TraverseData last_traverse = {0};
 
 int 
@@ -209,7 +215,7 @@ kd_fof(KDNode * node, double linking_length, ptrdiff_t * head)
 
     connect(trav, node, 0);
 
-    kd_enum_always_open(nodes, linking_length, NULL, _kd_fof_check_nodes, trav);
+    kd_enum_full(nodes, linking_length, NULL, _kd_fof_check_nodes, _kd_fof_visit_node, 1.0, trav);
 
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
