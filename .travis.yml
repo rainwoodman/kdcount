@@ -23,6 +23,7 @@ install:
     - python setup.py build_ext --inplace
 
 script:
+    - pip install runtests
     - python ./runtests.py
     - bash check_tag.sh kdcount/version.py
 
