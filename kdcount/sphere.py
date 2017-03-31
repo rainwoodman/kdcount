@@ -36,7 +36,7 @@ class field(models.field):
         models.field.__init__(self, pos, value, weights, boxsize)
 
     def __getitem__(self, index):
-        return fields(self.ra[index], self.dec[index], self.value[index], self.weights[index], self.boxsize)
+        return field(self.ra[index], self.dec[index], self.value[index], self.weights[index], self.boxsize)
 
 class AngularBinning(RBinning):
     def __init__(self, angbins, **kwargs):
