@@ -194,8 +194,3 @@ def makeiter(feeder):
             if len(item) == 1: item = item[0]
             yield item
             q.task_done()
-
-from numpy.testing import Tester
-test = Tester().test
-bench = Tester().bench
-
