@@ -4,10 +4,14 @@ struct TraverseData
 {
     double maxr;
     double maxr2;
+    double openr2;
     void * userdata;
     kd_enum_visit_edge visit_edge;
     kd_enum_check_nodes check_nodes;
+    kd_enum_visit_node visit_node;
     void * check_nodes_data;
+    int always_open;
+    int skip_symmetric;
 };
 
 static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
@@ -15,7 +19,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
 static int _kd_enum_check_nodes(void * data, KDEnumNodePair * pair)
 {
     struct TraverseData * trav = data;
-    return kd_enum_check(pair->nodes, trav->maxr2,
+    return kd_enum_check(pair->nodes, trav->maxr2, trav->skip_symmetric,
             trav->visit_edge, trav->userdata);
 }
 
@@ -25,12 +29,27 @@ kd_enum(KDNode * nodes[2], double maxr,
         kd_enum_check_nodes check_nodes,
         void * userdata)
 {
+    return kd_enum_full(nodes, maxr, visit_edge, check_nodes, NULL, 1.0, 0, userdata);
+}
+
+int
+kd_enum_full(KDNode * nodes[2], double maxr,
+        kd_enum_visit_edge visit_edge,
+        kd_enum_check_nodes check_nodes,
+        kd_enum_visit_node visit_node,
+        double opening_factor,
+        int skip_symmetric,
+        void * userdata)
+{
     struct TraverseData trav = {
         .maxr = maxr,
         .maxr2 = maxr * maxr,
         .check_nodes = check_nodes,
         .visit_edge = visit_edge,
         .userdata = userdata,
+        .visit_node = visit_node,
+        .openr2 = maxr * maxr * opening_factor * opening_factor,
+        .skip_symmetric = skip_symmetric,
     };
     if(check_nodes == NULL) {
         trav.check_nodes = _kd_enum_check_nodes;
@@ -39,8 +58,14 @@ kd_enum(KDNode * nodes[2], double maxr,
         trav.check_nodes_data = userdata;
     }
     return kd_enum_internal(&trav, nodes);
-}
 
+}
+static int
+_kd_enum_visit_node(struct TraverseData * trav, KDNode * node)
+{
+    if (trav->visit_node == NULL) return 1;
+    return trav->visit_node(trav->userdata, node) != 0;
+}
 /*
  * enumerate two KDNode trees, up to radius max.
  *
@@ -76,13 +101,15 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
         /* nodes are too far, skip them */
         return 0;
     }
-    if (distmax >= trav->maxr2) {
+    if (distmax >= trav->openr2) {
         /* nodes may intersect, open them */
         int open = nodes[0]->size < nodes[1]->size;
-        if(nodes[open]->dim < 0) {
+        if(nodes[open]->dim < 0 || !_kd_enum_visit_node(trav, nodes[open])) {
             open = (open == 0);
         }
-        if(nodes[open]->dim >= 0) {
+        if(nodes[open]->dim < 0 || !_kd_enum_visit_node(trav, nodes[open])) {
+            /* can't open the nodes, need to enumerate */
+        } else {
             KDNode * save = nodes[open];
             nodes[open] = save->link[0];
             int rt;
@@ -95,8 +122,6 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
             rt = kd_enum_internal(trav, nodes);
             nodes[open] = save;
             return rt;
-        } else {
-            /* can't open the nodes, need to enumerate */
         }
     } else {
         /* fully inside, fall through,
@@ -114,7 +139,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
 
 
 int
-kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata)
+kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata)
 {
     int rt = 0;
     ptrdiff_t i, j;
@@ -135,27 +160,28 @@ kd_enum_check(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, vo
     kd_collect(nodes[1], &t1->input, p1base);
 
     for (p0 = p0base, i = nodes[0]->start; 
-        i < nodes[0]->start + nodes[0]->size; i++) {
+        i < nodes[0]->start + nodes[0]->size; i++, p0 += Nd) {
         pair.i = t0->ind[i];
         for (p1 = p1base, j = nodes[1]->start; 
-             j < nodes[1]->start + nodes[1]->size; j++) {
+             j < nodes[1]->start + nodes[1]->size; j++, p1 +=Nd) {
+            pair.j = t1->ind[j];
+            if (skip_symmetric && pair.i >= pair.j) continue;
             double r2 = 0.0;
-            for (d = 0; d < Nd; d++){
-                double dx = p1[d] - p0[d];
-                dx = kd_realdiff(nodes[0]->tree, dx, d);
-                r2 += dx * dx;
+            if (t0 != t1 || pair.i != pair.j) {
+                for (d = 0; d < Nd; d++){
+                    double dx = p1[d] - p0[d];
+                    dx = kd_realdiff(nodes[0]->tree, dx, d);
+                    r2 += dx * dx;
+                }
             }
             if(r2 <= maxr2) {
-                pair.j = t1->ind[j];
                 pair.r = sqrt(r2);
                 if(0 != visit_edge(userdata, &pair)) {
                     rt = -1;
                     goto exit;
                 }
             }
-            p1 += Nd;
         }
-        p0 += Nd;
     }
 exit:
     free(p1base);

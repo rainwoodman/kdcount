@@ -2,6 +2,7 @@ from kdcount import KDTree, KDAttr
 import numpy
 from numpy.testing import assert_equal, run_module_suite
 from kdcount.utils import constant_array
+from kdcount.pykdcount import _get_last_fof_info
 
 def test_build():
     numpy.random.seed(1000)
@@ -28,19 +29,38 @@ def test_dtype():
         assert True
     except TypeError:
         pass
-def test_enum_count_agree():
-    pos1 = numpy.random.uniform(size=(1000, 3)).astype('f4')
-    pos2 = numpy.random.uniform(size=(1000, 3)).astype('f4')
+
+def test_count():
+    numpy.random.seed(1234)
+    pos1 = numpy.random.uniform(size=(1000, 3)).astype('f8')
+    pos2 = numpy.random.uniform(size=(1000, 3)).astype('f8')
+
+    dist = ((pos1[:, None, :] - pos2[None, :, :]) ** 2).sum(axis=-1)
+    truth = (dist < 1).sum()
+
+    tree1 = KDTree(pos1).root
+    tree2 = KDTree(pos2).root
+    c = tree1.count(tree2, r=1.0)
+    assert_equal(c, truth)
+
+def test_enum():
+    numpy.random.seed(1234)
+    pos1 = numpy.random.uniform(size=(1000, 3)).astype('f8')
+    pos2 = numpy.random.uniform(size=(1000, 3)).astype('f8')
+    dist = ((pos1[:, None, :] - pos2[None, :, :]) ** 2).sum(axis=-1)
+    truth = (dist < 1).sum()
+
     tree1 = KDTree(pos1).root
     tree2 = KDTree(pos2).root
     N = [0]
     def process1(r, i, j):
-        N[0] += len(r)
+        N[0] += (r < 1.0).sum()
+
     tree1.enum(tree2, rmax=1.0, process=process1)
-    c = tree1.count(tree2, r=1.0)
-    assert_equal(N[0], c)
+    assert_equal(N[0], truth)
 
 def test_enum_count_weighted():
+    numpy.random.seed(1234)
     pos1 = numpy.random.uniform(size=(1000, 3)).astype('f4')
     pos2 = numpy.random.uniform(size=(1000, 3)).astype('f4')
     w1 = numpy.ones(len(pos1))
@@ -117,6 +137,17 @@ def test_constattr():
         assert_equal(attr.buffer.shape[0], tree.size)
         assert_equal(attr.buffer.shape[1:], shape)
         assert_equal(attr[tree.root], data.sum(axis=0))
+
+def test_fof():
+    numpy.random.seed(1000)
+    pos = numpy.linspace(0, 1, 10000, endpoint=False).reshape(-1, 1)
+    tree = KDTree(pos).root
+
+    label = tree.fof(1.1/ len(pos))
+    assert_equal(numpy.unique(label).size, 1)
+
+    label = tree.fof(0.8/ len(pos))
+    assert_equal(numpy.unique(label).size, len(pos))
 
 if __name__ == "__main__":
     run_module_suite()
