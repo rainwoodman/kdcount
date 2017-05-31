@@ -135,8 +135,7 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
             /* the enum function will count enumeration */
             _kd_enum_check_connected(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, data);
             return 0;
-        }
-        {
+        } else {
             kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge_connected, data);
             trav->enumerated += (pair->nodes[0]->size * pair->nodes[1]->size); /* this count is duplicated. shall divide by two */
             return 0;
