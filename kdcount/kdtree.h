@@ -261,10 +261,19 @@ kd_enum_full(KDNode * nodes[2], double maxr,
         kd_enum_check_nodes check_nodes,
         kd_enum_visit_node visit_node,
         double opening_factor,
+        int skip_symmetric,
         void * userdata);
 
 int
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);
+int
+kd_fof_linked_list(KDNode * tree, double linking_length, ptrdiff_t * head);
+int
+kd_fof_allpairs(KDNode * tree, double linking_length, ptrdiff_t * head);
+int 
+kd_fof_unsafe(KDNode * tree, double linking_length, ptrdiff_t * head);
+int 
+kd_fof_heuristics(KDNode * tree, double linking_length, ptrdiff_t * head);
 
 void
 kd_count(KDNode * nodes[2], KDAttr * attrs[2],

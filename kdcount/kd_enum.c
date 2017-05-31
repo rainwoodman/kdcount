@@ -11,6 +11,7 @@ struct TraverseData
     kd_enum_visit_node visit_node;
     void * check_nodes_data;
     int always_open;
+    int skip_symmetric;
 };
 
 static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
@@ -18,7 +19,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
 static int _kd_enum_check_nodes(void * data, KDEnumNodePair * pair)
 {
     struct TraverseData * trav = data;
-    return kd_enum_check(pair->nodes, trav->maxr2, 0,
+    return kd_enum_check(pair->nodes, trav->maxr2, trav->skip_symmetric,
             trav->visit_edge, trav->userdata);
 }
 
@@ -28,22 +29,7 @@ kd_enum(KDNode * nodes[2], double maxr,
         kd_enum_check_nodes check_nodes,
         void * userdata)
 {
-    struct TraverseData trav = {
-        .maxr = maxr,
-        .maxr2 = maxr * maxr,
-        .openr2 = maxr * maxr,
-        .check_nodes = check_nodes,
-        .visit_edge = visit_edge,
-        .userdata = userdata,
-        .visit_node = NULL,
-    };
-    if(check_nodes == NULL) {
-        trav.check_nodes = _kd_enum_check_nodes;
-        trav.check_nodes_data = &trav;
-    } else {
-        trav.check_nodes_data = userdata;
-    }
-    return kd_enum_internal(&trav, nodes);
+    return kd_enum_full(nodes, maxr, visit_edge, check_nodes, NULL, 1.0, 0, userdata);
 }
 
 int
@@ -52,6 +38,7 @@ kd_enum_full(KDNode * nodes[2], double maxr,
         kd_enum_check_nodes check_nodes,
         kd_enum_visit_node visit_node,
         double opening_factor,
+        int skip_symmetric,
         void * userdata)
 {
     struct TraverseData trav = {
@@ -62,6 +49,7 @@ kd_enum_full(KDNode * nodes[2], double maxr,
         .userdata = userdata,
         .visit_node = visit_node,
         .openr2 = maxr * maxr * opening_factor * opening_factor,
+        .skip_symmetric = skip_symmetric,
     };
     if(check_nodes == NULL) {
         trav.check_nodes = _kd_enum_check_nodes;

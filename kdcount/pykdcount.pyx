@@ -70,7 +70,13 @@ cdef extern from "kdtree.h":
             void * data) except -1
 
     int kd_fof(cKDNode * tree, double linklength, npy_intp * head) nogil
-    void kd_fof_get_last_traverse_info(npy_intp *visited, npy_intp *connected,
+    int kd_fof_unsafe(cKDNode * tree, double linklength, npy_intp * head) nogil
+    int kd_fof_allpairs(cKDNode * tree, double linklength, npy_intp * head) nogil
+    int kd_fof_prefernodes(cKDNode * tree, double linklength, npy_intp * head) nogil
+    int kd_fof_heuristics(cKDNode * tree, double linklength, npy_intp * head) nogil
+    int kd_fof_buggy(cKDNode * tree, double linklength, npy_intp * head) nogil
+    int kd_fof_linkedlist(cKDNode * tree, double linklength, npy_intp * head) nogil
+    void kd_fof_get_last_traverse_info(npy_intp *visited, npy_intp *enumerated, npy_intp *connected,
                                   npy_intp *maxdepth, npy_intp *nsplay, npy_intp *totaldepth)
 
     void kd_attr_init(cKDAttr * attr, cKDNode * root) nogil
@@ -221,11 +227,27 @@ cdef class KDNode:
 
             return count, weight
 
-    def fof(self, double linkinglength, numpy.ndarray out):
+    def fof(self, double linkinglength, numpy.ndarray out, method):
         assert out.dtype == numpy.dtype('intp')
 
-        if -1 == kd_fof(self.ref, linkinglength, <npy_intp*> out.data):
-            raise RuntimeError("Too many friend of friend iterations. This is likely a bug.")
+        if method == 'linkedlist':
+            rt = kd_fof_linkedlist(self.ref, linkinglength, <npy_intp*> out.data)
+        elif method == 'unsafe':
+            rt = kd_fof_unsafe(self.ref, linkinglength, <npy_intp*> out.data)
+        elif method == 'allpairs':
+            rt = kd_fof_allpairs(self.ref, linkinglength, <npy_intp*> out.data)
+        elif method == 'heuristics':
+            rt = kd_fof_heuristics(self.ref, linkinglength, <npy_intp*> out.data)
+        elif method == 'buggy':
+            rt = kd_fof_buggy(self.ref, linkinglength, <npy_intp*> out.data)
+        elif method == 'prefernodes':
+            rt = kd_fof_prefernodes(self.ref, linkinglength, <npy_intp*> out.data)
+        else:
+            rt = kd_fof(self.ref, linkinglength, <npy_intp*> out.data)
+
+        if rt == -1:
+            raise RuntimeError("Friend of Friend failed. This is likely a bug.")
+
         return out
 
     def integrate(self, numpy.ndarray min, numpy.ndarray max, KDAttr attr, info={}):
@@ -481,9 +503,10 @@ def _get_last_fof_info():
     cdef:
          npy_intp visited
          npy_intp connected 
+         npy_intp enumerated 
          npy_intp maxdepth
          npy_intp nsplay
          npy_intp totaldepth
 
-    kd_fof_get_last_traverse_info(&visited, &connected, &maxdepth, &nsplay, &totaldepth)
-    return (visited, connected, maxdepth, nsplay, totaldepth)
+    kd_fof_get_last_traverse_info(&visited, &enumerated, &connected, &maxdepth, &nsplay, &totaldepth)
+    return (visited, enumerated, connected, maxdepth, nsplay, totaldepth)

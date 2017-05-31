@@ -76,14 +76,14 @@ class KDNode(_core.KDNode):
 
         return _core.KDNode.count(self, other, r, attrs, info=info)
 
-    def fof(self, linkinglength, out=None):
+    def fof(self, linkinglength, out=None, method='splay'):
         """ Friend-of-Friend clustering with linking length.
 
             Returns: the label
         """
         if out is None:
             out = numpy.empty(self.size, dtype='intp')
-        return _core.KDNode.fof(self, linkinglength, out)
+        return _core.KDNode.fof(self, linkinglength, out, method)
 
     def integrate(self, min, max, attr=None, info={}):
         """ Calculate the total number of points between [min, max).
