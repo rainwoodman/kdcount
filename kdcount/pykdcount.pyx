@@ -264,6 +264,9 @@ cdef class KDNode:
             N = 1
         else:
             N = len(min)
+
+        brute_force = 0
+        node_node = 0
         info['brute_force'] = 0
         info['node_node'] = 0
 

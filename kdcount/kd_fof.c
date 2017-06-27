@@ -181,7 +181,7 @@ static double kd_node_maxdist2(KDNode * node)
 {
     int d;
     double dist = 0;
-    for(d = 0; d < 3; d ++) {
+    for(d = 0; d < node->tree->input.dims[1]; d ++) {
         double dx = kd_node_max(node)[d] - kd_node_min(node)[d];
         dist += dx * dx;
     }
