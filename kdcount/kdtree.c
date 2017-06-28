@@ -27,9 +27,16 @@ kd_build_update_min_max(KDNode * node, double min[3], double max[3])
     int Nd = node->tree->input.dims[1];
     int d;
     ptrdiff_t i;
-    for(d = 0; d < Nd; d++) {
-        max[d] = kd_input(node->tree, node->start + 0, d);
-        min[d] = max[d];
+    if(node->size > 0) {
+        for(d = 0; d < Nd; d++) {
+            max[d] = kd_input(node->tree, node->start + 0, d);
+            min[d] = max[d];
+        }
+    } else {
+        for(d = 0; d < Nd; d++) {
+            max[d] = 0;
+            min[d] = 0;
+        }
     }
     for(i = 0; i < node->size; i++) {
         for (d = 0; d < Nd; d++) {
@@ -214,11 +221,19 @@ kd_build(KDTree * tree)
     ptrdiff_t i;
     int Nd = tree->input.dims[1];
     double min[Nd];
-    double max[Nd];    
+    double max[Nd];
     int d;
-    for(d = 0; d < Nd; d++) {
-        min[d] = kd_input(tree, 0, d);
-        max[d] = kd_input(tree, 0, d);
+    if (tree->ind_size > 0) {
+        for(d = 0; d < Nd; d++) {
+            min[d] = kd_input(tree, 0, d);
+            max[d] = kd_input(tree, 0, d);
+        }
+    }
+    else {
+        for(d = 0; d < Nd; d++) {
+            min[d] = 0;
+            max[d] = 0;
+        }
     }
     for(i = 0; i < tree->ind_size; i++) {
         for(d = 0; d < Nd; d++) {

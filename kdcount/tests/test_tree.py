@@ -111,7 +111,16 @@ def test_integrate2d():
     assert_equal(root.integrate(-numpy.inf, numpy.inf), N)
 
     assert_equal(root.integrate(0, pos), numpy.arange(N))
-         
+
+def test_empty():
+    pos = numpy.arange(1000).astype('f4').reshape(-1, 1)
+    shape = ()
+
+    data = numpy.ones((len(pos)), dtype=('f4', shape))
+    tree = KDTree(pos, ind=[])
+    attr = KDAttr(tree, data)
+    assert_equal(attr[tree.root], 0)
+
 def test_attr():
     pos = numpy.arange(1000).astype('f4').reshape(-1, 1)
     shapes = [(), (1,), (2,)]
