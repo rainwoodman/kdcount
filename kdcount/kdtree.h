@@ -37,13 +37,14 @@ typedef struct KDTree {
 
 /* defining the input positions */
     KDArray input;
+    /* a permutation array for indexing input, required and will be modified */
+    ptrdiff_t * ind; 
+    size_t ind_size;
 
 /* the following defines how the tree is constructed */
 
     /* split thresh, required. 10 is good*/
     int thresh;
-    /* a permutation array for sorting, required*/
-    ptrdiff_t * ind; 
     /* the periodic boxsize per axis,
      * or NULL if there is no box  */
     double * boxsize;

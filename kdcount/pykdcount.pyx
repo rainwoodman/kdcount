@@ -37,6 +37,7 @@ cdef extern from "kdtree.h":
         cKDArray input
         int thresh
         npy_intp * ind
+        npy_intp ind_size
         double * boxsize
         double p
         kd_mallocfunc malloc
@@ -482,7 +483,8 @@ cdef class KDTree:
         self.ndims = self.input.shape[1]
 
         self.ref.thresh = thresh
-        self.ind = numpy.empty(self.ref.input.dims[0], dtype='intp')
+        self.ind = numpy.arange(self.ref.input.dims[0], dtype='intp')
+        self.ref.ind_size = len(self.ind)
         self.ref.ind = <npy_intp*> self.ind.data
         if boxsize is not None:
             self.boxsize = numpy.empty(self.ref.input.dims[1], dtype='f8')

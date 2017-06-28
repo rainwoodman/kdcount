@@ -216,13 +216,11 @@ kd_build(KDTree * tree)
     double min[Nd];
     double max[Nd];    
     int d;
-    tree->ind[0] = 0;
     for(d = 0; d < Nd; d++) {
         min[d] = kd_input(tree, 0, d);
         max[d] = kd_input(tree, 0, d);
     }
-    for(i = 0; i < tree->input.dims[0]; i++) {
-        tree->ind[i] = i;
+    for(i = 0; i < tree->ind_size; i++) {
         for(d = 0; d < Nd; d++) {
             double data = kd_input(tree, i, d);
             if(min[d] > data) { min[d] = data; }
@@ -232,7 +230,7 @@ kd_build(KDTree * tree)
     KDNode * root = kd_alloc(tree);
     root->start = 0;
     root->index = 0;
-    root->size = tree->input.dims[0];
+    root->size = tree->ind_size;
     tree->size = kd_build_split(root, min, max, 1);
     return root;
 }
