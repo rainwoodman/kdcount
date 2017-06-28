@@ -30,6 +30,12 @@ def test_dtype():
     except TypeError:
         pass
 
+def test_ind():
+    numpy.random.seed(1000)
+    pos = numpy.arange(10).reshape(-1, 1).astype('f4')
+    tree = KDTree(pos, ind=[0, 1, 2, 3])
+    assert tree.root.size == 4
+
 def test_count():
     numpy.random.seed(1234)
     pos1 = numpy.random.uniform(size=(1000, 3)).astype('f8')

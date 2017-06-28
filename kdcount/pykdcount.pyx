@@ -412,19 +412,22 @@ cdef class KDAttr:
             raise KeyError("Only node can be used.")
     def __dealloc__(self): 
         PyMem_Free(self.ref)
-        
+
 cdef class KDTree:
     cdef cKDTree * ref
-    cdef cKDNode * _root 
+    cdef cKDNode * _root
     cdef readonly numpy.ndarray input
     cdef readonly numpy.ndarray ind
     cdef readonly numpy.ndarray boxsize
     cdef readonly npy_intp ndims
- 
+
     __nodeclass__ = KDNode
 
     property root:
         def __get__(self):
+            if self._root == NULL:
+                return None
+
             cdef KDNode rt = type(self).__nodeclass__(self)
             rt.bind(self._root)
             return rt
@@ -460,13 +463,14 @@ cdef class KDTree:
 
     def __cinit__ (self):
         self.buffers = []
-    
-    def __init__(self, numpy.ndarray input, boxsize=None, thresh=10):
+        self.ref = <cKDTree*>PyMem_Malloc(sizeof(cKDTree))
+        self._root = NULL
+
+    def __init__(self, numpy.ndarray input, boxsize=None, thresh=10, ind=None):
         if input.ndim != 2:
             raise ValueError("input needs to be a 2 D array of (N, Nd)")
         self.input = input
         self.thresh = thresh
-        self.ref = <cKDTree*>PyMem_Malloc(sizeof(cKDTree))
         self.ref.input.buffer = input.data
         self.ref.input.dims[0] = input.shape[0]
         self.ref.input.dims[1] = input.shape[1]
@@ -483,9 +487,17 @@ cdef class KDTree:
         self.ndims = self.input.shape[1]
 
         self.ref.thresh = thresh
-        self.ind = numpy.arange(self.ref.input.dims[0], dtype='intp')
+        
+        if ind is None:
+            ind = numpy.arange(self.ref.input.dims[0], dtype='intp')
+        else:
+            # always make a copy to avoid overwritting the original
+            ind = numpy.array(ind, dtype='intp', copy=True)
+
+        self.ind = ind
         self.ref.ind_size = len(self.ind)
         self.ref.ind = <npy_intp*> self.ind.data
+
         if boxsize is not None:
             self.boxsize = numpy.empty(self.ref.input.dims[1], dtype='f8')
             self.boxsize[:] = boxsize
@@ -496,6 +508,7 @@ cdef class KDTree:
         self.ref.userdata = <void*> self
         self.ref.malloc = <kd_mallocfunc> self.malloc
         self.ref.free = <kd_freefunc> self.free
+
         with nogil:
             self._root = kd_build(self.ref)
 

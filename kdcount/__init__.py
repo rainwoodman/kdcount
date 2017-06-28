@@ -143,11 +143,12 @@ class KDTree(_core.KDTree):
             the size of the torus is given by boxsize.
         thresh : int
             minimal size of a leaf.
-
+        ind : array_like, or None
+            indices of rows in the input that are used in the tree.
     """
     __nodeclass__ = KDNode
-    def __init__(self, input, boxsize=None, thresh=10):
-        _core.KDTree.__init__(self, input, boxsize, thresh)
+    def __init__(self, input, boxsize=None, thresh=10, ind=None):
+        _core.KDTree.__init__(self, input, boxsize, thresh, ind)
 
     def __repr__(self):
         return ('KDTree(size=%d, thresh=%d, boxsize=%s, input=%s)' % 
