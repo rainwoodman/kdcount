@@ -295,7 +295,7 @@ class RmuBinning(Binning):
         mubins = numpy.linspace(mu_min, mu_max, Nmu+1)
         Binning.__init__(self, ['r', 'mu'], [rbins, mubins])
         self.observer = numpy.array(observer)
-        self.absmu = absmu and mu_min > 0
+        self.absmu = absmu and mu_min >= 0
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
 
@@ -599,7 +599,7 @@ class FlatSkyBinning(Binning):
         mubins = numpy.linspace(mu_min, mu_max, Nmu+1)
         Binning.__init__(self, ['r','mu'], [rbins, mubins])
         self.los = los
-        self.absmu = absmu and mu_min > 0.
+        self.absmu = absmu and mu_min >= 0.
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
         r1 = data1.pos[i]
