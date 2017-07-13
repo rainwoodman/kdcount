@@ -498,10 +498,11 @@ class FlatSkyMultipoleBinning(Binning):
         d_par = (r1-r2)[:,self.los]
         
         # enforce periodic boundary conditions
-        L = data1.boxsize[self.los]
-        d_par[d_par > L*0.5] -= L
-        d_par[d_par <= -L*0.5] += L
-        
+        if data1.boxsize is not None:
+            L = data1.boxsize[self.los]
+            d_par[d_par > L*0.5] -= L
+            d_par[d_par <= -L*0.5] += L
+
         # mu
         with numpy.errstate(invalid='ignore'):
             mu = d_par / r
@@ -580,10 +581,11 @@ class FlatSkyBinning(Binning):
         d_par = (r1-r2)[:,self.los]
         
         # enforce periodic boundary conditions
-        L = data1.boxsize[self.los]
-        d_par[d_par > L*0.5] -= L
-        d_par[d_par <= -L*0.5] += L
-        
+        if data1.boxsize is not None:
+            L = data1.boxsize[self.los]
+            d_par[d_par > L*0.5] -= L
+            d_par[d_par <= -L*0.5] += L
+
         # mu
         with numpy.errstate(invalid='ignore'):
             mu = d_par / r
