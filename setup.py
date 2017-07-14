@@ -11,6 +11,7 @@ extensions = [
             'kdcount/kd_fof.c',
             'kdcount/kd_fof_linkedlist.c',
             'kdcount/kd_enum.c', 
+            'kdcount/kd_force.c', 
             'kdcount/kd_count.c', 'kdcount/kd_integrate.c'],
             include_dirs=["kdcount/", numpy.get_include()],
             extra_compile_args=['-O3'],
