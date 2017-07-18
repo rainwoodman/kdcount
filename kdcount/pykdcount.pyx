@@ -277,8 +277,8 @@ cdef class KDNode:
                 kd_integrate(self.ref, cattr,
                     (<npy_uint64*> count.data) + i,
                     NULL,
-                    (<double*> min.data) + i * min.strides[0] // 8,
-                    (<double*> max.data) + i * max.strides[0] // 8,
+                    <double*> ((<char*> min.data) + i * min.strides[0]),
+                    <double*> ((<char*> max.data) + i * max.strides[0]),
                     &_brute_force, &_node_node)
                 brute_force += _brute_force
                 node_node += _node_node
@@ -293,8 +293,8 @@ cdef class KDNode:
                 kd_integrate(self.ref, cattr,
                         (<npy_uint64*> count.data) + i,
                         (<double*> weight.data) + i * attr.ndims,
-                        (<double*> min.data) + i * min.strides[0] // 8,
-                        (<double*> max.data) + i * max.strides[0] // 8,
+                        <double*> ((<char*> min.data) + i * min.strides[0]),
+                        <double*> ((<char*> max.data) + i * max.strides[0]),
                         &_brute_force, &_node_node)
                 brute_force += _brute_force
                 node_node += _node_node
