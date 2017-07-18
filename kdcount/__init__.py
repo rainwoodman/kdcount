@@ -195,3 +195,8 @@ def makeiter(feeder):
             if len(item) == 1: item = item[0]
             yield item
             q.task_done()
+
+force_kernels = {
+    'count': _core.KDForceCount(),
+    'plummer': _core.KDForcePlummer,
+}

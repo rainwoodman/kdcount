@@ -105,20 +105,36 @@ cdef extern from "kdtree.h":
             double r_cut, double eta, double * force,
             kd_force_func func, void * userdata)
 
-cdef void kd_force_func_simple(double r, double * dx, double * f, int ndims, void * userdata):
+cdef class KDForceKernel:
+    cdef kd_force_func func
+    cdef double parameters[10]
+
+cdef void kd_force_func_count(double r, double * dx, double * f, int ndims, void * userdata):
+    for i in range(ndims):
+        f[i] = 1
+
+cdef class KDForceCount(KDForceKernel):
+    def __init__(self):
+        self.func = kd_force_func_count
+
+cdef void kd_force_func_plummer(double r, double * dx, double * f, int ndims, void * userdata):
     cdef double ir3
-    
+    cdef double * parameters = <double*> userdata
+    cdef double a = parameters[0]
+
+    cdef double ra = r + a
     if r > 0:
-        ir3 = 1.0 / (r * r * r);
-    else:
+        ir3 = 1.0 / (ra * ra * r) # fix this
+    else :
         ir3 = 0
+
     for i in range(ndims):
         f[i] = dx[i] * ir3
 
-#    print('dx', [dx[i] for i in range(ndims)])
-
-    for i in range(ndims):
-        f[i] = 1
+cdef class KDForcePlummer(KDForceKernel):
+    def __init__(self, a):
+        self.func = kd_force_func_plummer
+        self.parameters[0] = a
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -328,7 +344,8 @@ cdef class KDNode:
 
         return result
 
-    def force(self, cython.floating[:, :] pos, KDAttr mass, KDAttr xmass, double r_cut, double eta=0.2, type='Plummer'):
+    def force(self, KDForceKernel kernel, cython.floating[:, :] pos, KDAttr mass, KDAttr xmass,
+                double r_cut, double eta=0.2):
         cdef npy_intp N, i, d
         cdef double x[32]
         cdef numpy.ndarray force
@@ -340,8 +357,10 @@ cdef class KDNode:
             for d in range(pos.shape[1]):
                 x[d] = pos[i, d]
 
-            kd_force(x, self.ref, mass.ref, xmass.ref, r_cut, eta, <double*> ((<char*> force.data) + force.strides[0] * i),
-                kd_force_func_simple, NULL)
+            kd_force(x, self.ref, mass.ref, xmass.ref,
+                r_cut, eta,
+                <double*> ((<char*> force.data) + force.strides[0] * i),
+                kernel.func, <void*> kernel.parameters)
 
         return force
 

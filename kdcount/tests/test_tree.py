@@ -165,12 +165,15 @@ def test_fof():
     assert_equal(numpy.unique(label).size, len(pos))
 
 def test_force():
-    pos = numpy.arange(0, 4, dtype='f8').reshape(-1, 1)
+    from kdcount import force_kernels
 
+    pos = numpy.arange(0, 4, dtype='f8').reshape(-1, 1)
     tree = KDTree(pos, thresh=1)
     mass = KDAttr(tree, numpy.ones(pos.shape[0]))
     xmass = KDAttr(tree, pos * mass.input)
-    force = tree.root.force(pos[:1, ], mass, xmass, 1, eta=0.1)
+
+    force = tree.root.force(force_kernels['count'], pos[:1, ], mass, xmass, 1, eta=0.1)
+    # FIXME: add more tests
     print(force)
 
 if __name__ == "__main__":

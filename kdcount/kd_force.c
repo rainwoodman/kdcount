@@ -1,7 +1,5 @@
 #include "kdtree.h"
 
-typedef void (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata);
-
 typedef struct TraverseData {
     KDAttr * xmass;
     KDAttr * mass;

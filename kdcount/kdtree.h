@@ -294,3 +294,25 @@ kd_integrate(KDNode * node, KDAttr * attr,
         uint64_t * brute_force,
         uint64_t * node_node
 );
+
+/* function called to compute the force between two center of masses;
+ * f is force / (m1 * m2). Thus it makes sense only for 'additive' force
+ * like gravity or pair counting.
+ * */
+
+typedef void (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata);
+
+/*
+ * compute the force between pos and all particles in a  tree node.
+ * mass and xmass are mass and mass weighted position of particles in the tree ndoe.
+ *
+ * r_cut is the cut-off scale.
+ * eta is the opening criteria for the tree force. set eta to 0 to use exact pair-wise force.
+ * force is an output array of size ndim.
+ *
+ * Currently the dimension of force and the dimension of position must be the same.
+ * */
+void
+kd_force(double * pos, KDNode * node, KDAttr * mass, KDAttr * xmass,
+        double r_cut, double eta, double * force,
+        kd_force_func func, void * userdata);
