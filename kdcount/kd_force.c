@@ -1,6 +1,6 @@
 #include "kdtree.h"
 
-typedef double (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata);
+typedef void (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata);
 
 typedef struct TraverseData {
     KDAttr * xmass;
@@ -23,7 +23,7 @@ distance(KDTree * tree, double * x, double * y, double * dx)
     int Nd = tree->input.dims[1];
     int d;
     for(d = 0; d < Nd; d++) {
-        dx[d] = kd_realdiff(tree, x[d], y[d]);
+        dx[d] = kd_realdiff(tree, x[d] - y[d], d);
         r2 += dx[d] * dx[d];
     }
     return r2;
@@ -63,6 +63,7 @@ kd_force_check(TraverseData * trav, KDNode * node)
         }
         if (r2min > trav->r_cut2) return;
 
+        // printf("ll %g r2min %g r2max %g\n", l * l, r2min, r2max);
         /* fully inside, check opening angle too */
         if (r2max < trav->r_cut2 && l * l < trav->eta2 * r2min) {
             double cm[node_ndims];

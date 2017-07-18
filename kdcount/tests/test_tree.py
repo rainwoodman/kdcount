@@ -164,5 +164,14 @@ def test_fof():
     label = tree.fof(0.8/ len(pos))
     assert_equal(numpy.unique(label).size, len(pos))
 
+def test_force():
+    pos = numpy.arange(0, 4, dtype='f8').reshape(-1, 1)
+
+    tree = KDTree(pos, thresh=1)
+    mass = KDAttr(tree, numpy.ones(pos.shape[0]))
+    xmass = KDAttr(tree, pos * mass.input)
+    force = tree.root.force(pos[:1, ], mass, xmass, 1, eta=0.1)
+    print(force)
+
 if __name__ == "__main__":
     run_module_suite()

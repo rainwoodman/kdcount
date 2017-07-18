@@ -3,6 +3,7 @@
 cimport numpy
 import numpy
 from cpython.mem cimport PyMem_Malloc, PyMem_Free, PyMem_Realloc
+cimport cython
 from numpy cimport npy_intp
 from numpy cimport npy_uint64
 numpy.import_array()
@@ -26,7 +27,7 @@ cdef extern from "kdtree.h":
     ctypedef int (*kd_node_node_cullmetric)(void * userdata, int ndims, double * min, double * max,
             double * distmin, double * distmax) nogil
 
-    ctypedef double (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata)
+    ctypedef void (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata)
 
     struct cKDArray "KDArray":
         char * buffer
@@ -103,6 +104,21 @@ cdef extern from "kdtree.h":
     void kd_force(double * pos, cKDNode * node, cKDAttr * mass, cKDAttr * xmass,
             double r_cut, double eta, double * force,
             kd_force_func func, void * userdata)
+
+cdef void kd_force_func_simple(double r, double * dx, double * f, int ndims, void * userdata):
+    cdef double ir3
+    
+    if r > 0:
+        ir3 = 1.0 / (r * r * r);
+    else:
+        ir3 = 0
+    for i in range(ndims):
+        f[i] = dx[i] * ir3
+
+#    print('dx', [dx[i] for i in range(ndims)])
+
+    for i in range(ndims):
+        f[i] = 1
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -312,13 +328,22 @@ cdef class KDNode:
 
         return result
 
-    def force(self, numpy.ndarray pos, KDAttr mass, KDAttr xmass, float r_cut, float eta=0.2, type='Plummer'):
-        #cdef npy_intp N
+    def force(self, cython.floating[:, :] pos, KDAttr mass, KDAttr xmass, double r_cut, double eta=0.2, type='Plummer'):
+        cdef npy_intp N, i, d
+        cdef double x[32]
+        cdef numpy.ndarray force
 
-        #N = pos.shape[0]
-        #for i in range(N):
-        #    kd_force(pos, self, mass.ref, xmass.ref, r_cut, eta, force[i], func, func_data)
-        pass
+        force = numpy.zeros((pos.shape[0], pos.shape[1]), dtype='f8')
+
+        N = pos.shape[0]
+        for i in range(N):
+            for d in range(pos.shape[1]):
+                x[d] = pos[i, d]
+
+            kd_force(x, self.ref, mass.ref, xmass.ref, r_cut, eta, <double*> ((<char*> force.data) + force.strides[0] * i),
+                kd_force_func_simple, NULL)
+
+        return force
 
     def enum(self, KDNode other, rmax, process, bunch, **kwargs):
         cdef:
