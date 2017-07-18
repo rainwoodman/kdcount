@@ -26,6 +26,8 @@ cdef extern from "kdtree.h":
     ctypedef int (*kd_node_node_cullmetric)(void * userdata, int ndims, double * min, double * max,
             double * distmin, double * distmax) nogil
 
+    ctypedef double (*kd_force_func)(double r, double * dx, double * f, int ndims, void * userdata)
+
     struct cKDArray "KDArray":
         char * buffer
         npy_intp dims[2]
@@ -97,6 +99,10 @@ cdef extern from "kdtree.h":
             double * min, double * max,
             npy_uint64 * brute_force,
             npy_uint64 * node_node) nogil
+
+    void kd_force(double * pos, cKDNode * node, cKDAttr * mass, cKDAttr * xmass,
+            double r_cut, double eta, double * force,
+            kd_force_func func, void * userdata)
 
 cdef class KDNode:
     cdef cKDNode * ref
@@ -305,6 +311,14 @@ cdef class KDNode:
         info['node_node'] = node_node
 
         return result
+
+    def force(self, numpy.ndarray pos, KDAttr mass, KDAttr xmass, float r_cut, float eta=0.2, type='Plummer'):
+        #cdef npy_intp N
+
+        #N = pos.shape[0]
+        #for i in range(N):
+        #    kd_force(pos, self, mass.ref, xmass.ref, r_cut, eta, force[i], func, func_data)
+        pass
 
     def enum(self, KDNode other, rmax, process, bunch, **kwargs):
         cdef:
