@@ -40,4 +40,4 @@ the smarter algorithm become very difficult to implement.
 
 The spatial complexity is a constant, as we make extensive use of callback functions
 
-
+   
