@@ -122,9 +122,8 @@ cdef void kd_force_func_plummer(double r, double * dx, double * f, int ndims, vo
     cdef double * parameters = <double*> userdata
     cdef double a = parameters[0]
 
-    cdef double ra = r + a
     if r > 0:
-        ir3 = 1.0 / (ra * ra * r) # fix this
+        ir3 = 1.0 / (r**2 + a**2)**1.5
     else :
         ir3 = 0
 
