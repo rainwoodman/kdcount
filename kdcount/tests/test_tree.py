@@ -167,12 +167,13 @@ def test_fof():
 def test_force():
     from kdcount import force_kernels
 
-    pos = numpy.arange(0, 4, dtype='f8').reshape(-1, 1)
+    pos = numpy.array([[0., 0., 0.], [1., 1., 1.], [2., 2., 2.], [3., 3., 3.]])
+    #pos = numpy.arange(0, 4, dtype='f8').reshape(-1, 1)
     tree = KDTree(pos, thresh=1)
     mass = KDAttr(tree, numpy.ones(pos.shape[0]))
     xmass = KDAttr(tree, pos * mass.input)
 
-    force = tree.root.force(force_kernels['count'], pos[:1, ], mass, xmass, 1, eta=0.1)
+    force = tree.root.force(force_kernels['plummer'](1), pos, mass, xmass, 2., eta=0.1)
     # FIXME: add more tests
     print(force)
 
