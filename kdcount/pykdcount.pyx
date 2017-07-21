@@ -453,7 +453,7 @@ cdef class KDAttr:
         if input.dtype.char == 'f':
             self.ref.input.cast = <kd_castfunc>fcast
         if input.dtype.char == 'd':
-            self.ref.input.cast = <kd_castfunc>dcast
+            self.ref.input.cast = NULL #<kd_castfunc>dcast
 
         self.ref.buffer = <double *> self.buffer.data 
 
@@ -537,7 +537,7 @@ cdef class KDTree:
         if input.dtype.char == 'f':
             self.ref.input.cast = <kd_castfunc>fcast
         elif input.dtype.char == 'd':
-            self.ref.input.cast = <kd_castfunc>dcast
+            self.ref.input.cast = NULL # <kd_castfunc>dcast
         else:
             raise TypeError("input type of %s is unsupported" % input.dtype)
 
