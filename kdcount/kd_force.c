@@ -11,6 +11,9 @@ typedef struct TraverseData {
     double * force;
     kd_force_func func;
     void * userdata;
+    int64_t node_probed;
+    int64_t node_computed;
+    int64_t pair_computed;
 } TraverseData;
 
 /* compute x - y*/
@@ -41,7 +44,8 @@ kd_force_check(TraverseData * trav, KDNode * node)
     double f[node_ndims];
     double dx[node_ndims];
 
-    if(node->dim >=0 && node->size > 1) {
+    if(node->dim >= 0 && node->size > 1) {
+        trav->node_probed ++;
         double *min = kd_node_min(node);
         double *max = kd_node_max(node);
 
@@ -55,9 +59,9 @@ kd_force_check(TraverseData * trav, KDNode * node)
             kd_realminmax(node->tree, realmin, realmax, &realmin, &realmax, d);
             r2min += realmin * realmin;
             r2max += realmax * realmax;
-        }
 
-        if (r2min > trav->r_cut2) return;
+            if (r2min > trav->r_cut2) return;
+        }
 
         double l = 0;
 
@@ -67,7 +71,8 @@ kd_force_check(TraverseData * trav, KDNode * node)
 
         // printf("ll %g r2min %g r2max %g\n", l * l, r2min, r2max);
         /* fully inside, check opening angle too */
-        if (r2max < trav->r_cut2 && l * l < trav->eta2 * r2min) {
+        if (r2max <= trav->r_cut2 && l * l < trav->eta2 * r2min) {
+            trav->node_computed ++;
             double cm[node_ndims];
 
             double *mx = kd_attr_get_node(trav->xmass, node);
@@ -78,6 +83,7 @@ kd_force_check(TraverseData * trav, KDNode * node)
             }
 
             double r2 = distance(node->tree, trav->pos, cm, dx);
+
             double r = sqrt(r2);
 
             /* direct add the force no need to open */
@@ -95,6 +101,7 @@ kd_force_check(TraverseData * trav, KDNode * node)
     }
 
     /* leaf node */
+    trav->pair_computed +=  node->size;
     double * pbase = alloca(node->size * sizeof(double) * trav->node_ndims);
     double * mbase = alloca(node->size * sizeof(double));
 
@@ -136,6 +143,9 @@ kd_force(double * pos, KDNode * node, KDAttr * mass, KDAttr * xmass,
         .force = force,
         .func = func,
         .userdata = userdata,
+        .node_probed = 0,
+        .node_computed = 0,
+        .pair_computed = 0,
     };
 
     int d;
@@ -144,4 +154,5 @@ kd_force(double * pos, KDNode * node, KDAttr * mass, KDAttr * xmass,
     }
 
     kd_force_check(&trav, node);
+    printf("Node probed = %ld, Node computed = %ld pair computed = %ld\n", trav.node_probed, trav.node_computed, trav.pair_computed);
 }

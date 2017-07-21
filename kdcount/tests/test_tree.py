@@ -177,5 +177,20 @@ def test_force():
     # FIXME: add more tests
     print(force)
 
+def test_force_slow():
+    from kdcount import force_kernels
+
+    numpy.random.seed(13)
+    pos = numpy.random.uniform(size=(64 * 64 * 64, 3)) 
+    tree = KDTree(pos, thresh=1)
+    mass = KDAttr(tree, numpy.ones(pos.shape[0]))
+    xmass = KDAttr(tree, pos * mass.input)
+
+    #force = tree.root.force(force_kernels['plummer'](1), pos, mass, xmass, 1.0 / len(pos) ** 0.3333 * 4, eta=0.1)
+    force = tree.root.force(force_kernels['count'], pos[:1], mass, xmass, 1.0 / len(pos) ** 0.3333 * 4, eta=0.1)
+
+    # FIXME: add more tests
+    print(force)
+
 if __name__ == "__main__":
     run_module_suite()

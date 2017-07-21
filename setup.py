@@ -14,8 +14,8 @@ extensions = [
             'kdcount/kd_force.c', 
             'kdcount/kd_count.c', 'kdcount/kd_integrate.c'],
             include_dirs=["kdcount/", numpy.get_include()],
-            extra_compile_args=['-O3'],
-            extra_link_args=['-O3'],
+            extra_compile_args=['-O3', '-g'],
+            extra_link_args=['-O3', '-g'],
             )
         ]
 
