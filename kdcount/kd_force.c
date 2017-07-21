@@ -41,31 +41,29 @@ kd_force_check(TraverseData * trav, KDNode * node)
     double f[node_ndims];
     double dx[node_ndims];
 
-    if(node->dim >=0 ) {
+    if(node->dim >=0 && node->size > 1) {
         double *min = kd_node_min(node);
         double *max = kd_node_max(node);
 
-        double realmin[node_ndims];
-        double realmax[node_ndims];
+        double r2min=0, r2max=0;
+
+        for(d = 0; d < node_ndims; d++) {
+            double realmin;
+            double realmax;
+            realmin = trav->pos[d] - max[d];
+            realmax = trav->pos[d] - min[d];
+            kd_realminmax(node->tree, realmin, realmax, &realmin, &realmax, d);
+            r2min += realmin * realmin;
+            r2max += realmax * realmax;
+        }
+
+        if (r2min > trav->r_cut2) return;
 
         double l = 0;
 
         for(d = 0; d < node_ndims; d++) {
             l += max[d] - min[d];
         }
-
-        for(d = 0; d < node_ndims; d++) {
-            realmin[d] = trav->pos[d] - max[d];
-            realmax[d] = trav->pos[d] - min[d];
-            kd_realminmax(node->tree, realmin[d], realmax[d], &realmin[d], &realmax[d], d);
-        }
-
-        double r2min=0, r2max=0;
-        for(d = 0; d < node_ndims; d++) {
-            r2min += realmin[d] * realmin[d];
-            r2max += realmax[d] * realmax[d];
-        }
-        if (r2min > trav->r_cut2) return;
 
         // printf("ll %g r2min %g r2max %g\n", l * l, r2min, r2max);
         /* fully inside, check opening angle too */
