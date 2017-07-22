@@ -1,6 +1,6 @@
 from kdcount import KDTree, KDAttr
 import numpy
-from numpy.testing import assert_equal, run_module_suite
+from numpy.testing import assert_equal, run_module_suite, assert_array_equal
 from kdcount.utils import constant_array
 from kdcount.pykdcount import _get_last_fof_info
 
@@ -181,16 +181,39 @@ def test_force_slow():
     from kdcount import force_kernels
 
     numpy.random.seed(13)
-    pos = numpy.random.uniform(size=(64 * 64 * 64, 3)) 
+    pos = numpy.random.uniform(size=(32 * 32 * 32, 3)) 
     tree = KDTree(pos, thresh=1)
     mass = KDAttr(tree, numpy.ones(pos.shape[0]))
     xmass = KDAttr(tree, pos * mass.input)
 
     #force = tree.root.force(force_kernels['plummer'](1), pos, mass, xmass, 1.0 / len(pos) ** 0.3333 * 4, eta=0.1)
-    force = tree.root.force(force_kernels['count'], pos[:1], mass, xmass, 1.0 / len(pos) ** 0.3333 * 4, eta=0.1)
+    force = tree.root.force(force_kernels['count'], pos, mass, xmass, 1.0 / len(pos) ** 0.3333 * 4, eta=0.1)
 
     # FIXME: add more tests
     print(force)
+
+def test_force2_slow():
+    from kdcount import force_kernels
+    from time import time
+    numpy.random.seed(13)
+    pos = numpy.random.uniform(size=(32 * 32 * 32 * 8, 3)) 
+    tt = KDTree(pos[:1], thresh=1)
+    tree = KDTree(pos, thresh=1)
+    mass = KDAttr(tree, numpy.ones(pos.shape[0]))
+    xmass = KDAttr(tree, pos * mass.input)
+    print(tt.root, tt.root.min, tt.root.max)
+
+    t0 = time()
+    force2 = tree.root.force2(force_kernels['count'], tt.root, mass, xmass, 1.0 / len(pos) ** 0.3333 * 8, eta=1.)
+    t2 = time() - t0
+    print('time', t2)
+    t0 = time()
+    force1 = tree.root.force(force_kernels['count'], pos[:1], mass, xmass, 1.0 / len(pos) ** 0.3333 * 8, eta=1.)
+    t1 = time() - t0
+    print('time', t1)
+    # FIXME: add more tests
+    assert_array_equal(force1, force2)
+
 
 if __name__ == "__main__":
     run_module_suite()

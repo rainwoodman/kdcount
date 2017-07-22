@@ -101,7 +101,11 @@ cdef extern from "kdtree.h":
             npy_uint64 * brute_force,
             npy_uint64 * node_node) nogil
 
-    void kd_force(double * pos, cKDNode * node, cKDAttr * mass, cKDAttr * xmass,
+    void kd_forcea(double * pos, ptrdiff_t n, cKDNode * node, cKDAttr * mass, cKDAttr * xmass,
+            double r_cut, double eta, double * force,
+            kd_force_func func, void * userdata)
+
+    void kd_force2(cKDNode * target, cKDNode * node, cKDAttr * mass, cKDAttr * xmass,
             double r_cut, double eta, double * force,
             kd_force_func func, void * userdata)
 
@@ -343,23 +347,38 @@ cdef class KDNode:
 
         return result
 
-    def force(self, KDForceKernel kernel, cython.floating[:, :] pos, KDAttr mass, KDAttr xmass,
+    def force(self, KDForceKernel kernel, cython.floating [:, ::1] pos, KDAttr mass, KDAttr xmass,
                 double r_cut, double eta=0.2):
         cdef npy_intp N, i, d
-        cdef double x[32]
         cdef numpy.ndarray force
+        double x[32]
 
         force = numpy.zeros((pos.shape[0], pos.shape[1]), dtype='f8')
 
-        N = pos.shape[0]
-        for i in range(N):
+        for i in range(pos.shape[0]):
             for d in range(pos.shape[1]):
                 x[d] = pos[i, d]
 
-            kd_force(x, self.ref, mass.ref, xmass.ref,
-                r_cut, eta,
-                <double*> ((<char*> force.data) + force.strides[0] * i),
-                kernel.func, <void*> kernel.parameters)
+                kd_forcea(&x[0], 1, self.ref, mass.ref, xmass.ref,
+                    r_cut, eta,
+                    <double*> ((<char*> force.data) + force.strides[0] * i),
+                    kernel.func, <void*> kernel.parameters)
+
+        return force
+
+    def force2(self, KDForceKernel kernel, KDNode target, KDAttr mass, KDAttr xmass,
+                double r_cut, double eta=0.2, out=None):
+        if out is None:
+            out = numpy.zeros((target.tree.input.shape[0], target.tree.input.shape[1]), dtype='f8')
+
+        assert out.dtype == numpy.dtype('f8')
+
+        cdef numpy.ndarray force = out
+
+        kd_force2(target.ref, self.ref, mass.ref, xmass.ref,
+            r_cut, eta,
+            <double*> force.data,
+            kernel.func, <void*> kernel.parameters)
 
         return force
 
