@@ -351,7 +351,7 @@ cdef class KDNode:
                 double r_cut, double eta=0.2):
         cdef npy_intp N, i, d
         cdef numpy.ndarray force
-        double x[32]
+        cdef double x[32]
 
         force = numpy.zeros((pos.shape[0], pos.shape[1]), dtype='f8')
 
