@@ -17,4 +17,13 @@ def test_cluster():
     assert_array_equal(r.sum(), len(pos))
 
 
+def test_cluster_empty():
+
+    pos = numpy.empty((0, 3))
+    dataset = cluster.dataset(pos, boxsize=1.0)
+
+    # no error shall be raised
+    r = cluster.fof(dataset, 0.8)
+
+
 
