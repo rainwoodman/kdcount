@@ -55,7 +55,10 @@ class fof(object):
 
         u, labels = numpy.unique(head, return_inverse=True)
         self.N = len(u)
-        length = utils.bincount(labels, 1, self.N)
+        if len(labels) > 0:
+            length = utils.bincount(labels, 1, self.N)
+        else:
+            length = numpy.empty_like(labels)
         # for example old labels == 5 is the longest halo
         # then a[0] == 5
         # we want to replace in labels 5 to 0
@@ -68,7 +71,7 @@ class fof(object):
         self.labels = inv[labels]
         self.length = length
         self.offset = numpy.empty_like(length)
-        if len(length) > 0: # if there is no particles length will be []!
+        if len(labels) > 0: # if there is no particles length will be []!
             self.offset[0] = 0
             self.offset[1:] = length.cumsum()[:-1]
         self.indices = self.labels.argsort()
