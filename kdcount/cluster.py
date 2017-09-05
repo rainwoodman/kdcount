@@ -47,8 +47,6 @@ class fof(object):
         self.data = data
         self.linking_length = linking_length
 
-        # iterations
-        self.iterations = 0
         head = utils.empty(len(data), dtype='intp')
 
         # this will set the head to a particle index 
@@ -70,9 +68,10 @@ class fof(object):
         self.labels = inv[labels]
         self.length = length
         self.offset = numpy.empty_like(length)
-        self.offset[0] = 0
-        self.offset[1:] = length.cumsum()[:-1]
-        self.indices = self.labels.argsort() 
+        if len(length) > 0: # if there is no particles length will be []!
+            self.offset[0] = 0
+            self.offset[1:] = length.cumsum()[:-1]
+        self.indices = self.labels.argsort()
 
     def find(self, groupid):
         """ return all of the indices of particles of groupid """
