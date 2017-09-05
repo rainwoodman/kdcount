@@ -24,7 +24,7 @@ install:
 
 script:
     - pip install runtests
-    - python ./runtests.py
+    - python ./run-tests.py
     - bash check_tag.sh kdcount/version.py
 
 deploy:
