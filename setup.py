@@ -16,6 +16,7 @@ extensions = [
             include_dirs=["kdcount/", numpy.get_include()],
             extra_compile_args=['-O3', '-g'],
             extra_link_args=['-O3', '-g'],
+            libraries = ['m']
             )
         ]
 
