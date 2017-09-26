@@ -13,7 +13,7 @@ class points(models.points):
         pos[:, 2] = numpy.sin(dec)
         r = numpy.cos(dec)
         pos[:, 0] = numpy.sin(ra) * r
-        pos[:, 1] = numpy.cos(ra) * r 
+        pos[:, 1] = numpy.cos(ra) * r
 
         models.points.__init__(self, pos, weights, boxsize)
 
@@ -31,7 +31,7 @@ class field(models.field):
         pos[:, 2] = numpy.sin(dec)
         r = numpy.cos(dec)
         pos[:, 0] = numpy.sin(ra) * r
-        pos[:, 1] = numpy.cos(ra) * r 
+        pos[:, 1] = numpy.cos(ra) * r
 
         models.field.__init__(self, pos, value, weights, boxsize)
 
@@ -48,6 +48,18 @@ class AngularBinning(RBinning):
     @property
     def angular_edges(self):
         return 2 * numpy.arcsin(self.edges * 0.5) * (180. / numpy.pi)
+
+    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
+
+        # linear bins
+        dig = self.linear(r=r)
+
+        # update the mean coords
+        if N is not None and centers_sum is not None:
+            theta = 2 * numpy.arcsin(r * 0.5) * (180. / numpy.pi)
+            self.update_mean_coords(dig, N, centers_sum, r=theta)
+
+        return dig
 
 import heapq
 def bootstrap(nside, rand, nbar, *data):
@@ -76,7 +88,7 @@ def bootstrap(nside, rand, nbar, *data):
     """
 
     def split(data, indices, axis):
-        """ This function splits array. It fixes the bug 
+        """ This function splits array. It fixes the bug
             in numpy that zero length array are improperly handled.
 
             In the future this will be fixed.
@@ -148,7 +160,7 @@ def radec2pix(nside, ra, dec):
     phi = numpy.radians(ra)
     theta = numpy.radians(90 - dec)
     return ang2pix(nside, theta, phi)
- 
+
 def nside2npix(nside):
     return nside * nside * 12
 
@@ -159,20 +171,20 @@ def ang2pix(nside, theta, phi):
         http://adsabs.harvard.edu/abs/2005ApJ...622..759G
     """
     nside, theta, phi = numpy.lib.stride_tricks.broadcast_arrays(nside, theta, phi)
-    
+
     def equatorial(nside, tt, z):
         t1 = nside * (0.5 + tt)
         t2 = nside * z * 0.75
         jp = (t1 - t2).astype('i8')
         jm = (t1 + t2).astype('i8')
         ir = nside + 1 + jp - jm # in {1, 2n + 1}
-        kshift = 1 - (ir & 1) # kshift=1 if ir even, 0 odd 
- 
+        kshift = 1 - (ir & 1) # kshift=1 if ir even, 0 odd
+
         ip = (jp + jm - nside + kshift + 1) // 2 # in {0, 4n - 1}
-        
+
         ip = ip % (4 * nside)
         return nside * (nside - 1) * 2 + (ir - 1) * 4 * nside + ip
-        
+
     def polecaps(nside, tt, z, s):
         tp = tt - numpy.floor(tt)
         za = numpy.abs(z)
@@ -185,27 +197,27 @@ def ang2pix(nside, theta, phi):
         ip = (tt * ir).astype('i8')
         ip = ip % (4 * ir)
 
-        r1 = 2 * ir * (ir - 1) 
+        r1 = 2 * ir * (ir - 1)
         r2 = 2 * ir * (ir + 1)
- 
+
         r = numpy.empty_like(r1)
-        
+
         r[z > 0] = r1[z > 0] + ip[z > 0]
         r[z < 0] = 12 * nside[z < 0] * nside[z < 0] - r2[z < 0] + ip[z < 0]
         return r
-    
+
     z = numpy.cos(theta)
     s = numpy.sin(theta)
-    
+
     tt = (phi / (0.5 * numpy.pi) ) % 4 # in [0, 4]
-    
+
     result = numpy.zeros(z.shape, dtype='i8')
     mask = (z < 2. / 3) & (z > -2. / 3)
-  
+
     result[mask] = equatorial(nside[mask], tt[mask], z[mask])
     result[~mask] = polecaps(nside[~mask], tt[~mask], z[~mask], s[~mask])
     return result
-    
+
 def pix2ang(nside, pix):
     r"""Convert pixel to angle :math:`\theta` :math:`\phi`.
 
@@ -217,17 +229,17 @@ def pix2ang(nside, pix):
         http://adsabs.harvard.edu/abs/2005ApJ...622..759G
     """
     nside, pix = numpy.lib.stride_tricks.broadcast_arrays(nside, pix)
-    
+
     ncap = nside * (nside - 1) * 2
     npix = 12 * nside * nside
-    
+
     def northpole(pix, npix):
         iring = (1 + ((1 + 2 * pix) ** 0.5)).astype('i8') // 2
         iphi = (pix + 1) - 2 * iring * (iring - 1)
         z = 1.0 - (iring*iring) * 4. / npix
         phi = (iphi - 0.5) * 0.5 * numpy.pi / iring
         return z, phi
-    
+
     def equatorial(pix, nside, npix, ncap):
         ip = pix - ncap
         iring = ip // (4 * nside) + nside
@@ -236,7 +248,7 @@ def pix2ang(nside, pix):
         z = (2 * nside - iring) * nside * 8.0 / npix
         phi = (iphi - fodd) * (0.5 * numpy.pi) / nside
         return z, phi
-    
+
     def southpole(pix, npix):
         ip = npix - pix
         iring = (1 + ((2 * ip - 1)**0.5).astype('i8')) // 2
@@ -244,9 +256,9 @@ def pix2ang(nside, pix):
         z = -1 + (iring * iring) * 4. / npix
         phi = (iphi - 0.5 ) * 0.5 * numpy.pi / iring
         return z, phi
-    
+
     mask1 = pix < ncap
-    
+
     mask2 = (~mask1) & (pix < npix - ncap)
     mask3 = pix >= npix - ncap
 
@@ -256,4 +268,3 @@ def pix2ang(nside, pix):
     z[mask2], phi[mask2] = equatorial(pix[mask2], nside[mask2], npix[mask2], ncap[mask2])
     z[mask3], phi[mask3] = southpole(pix[mask3], npix[mask3])
     return numpy.arccos(z), phi
-
