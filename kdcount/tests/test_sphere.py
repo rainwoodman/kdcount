@@ -10,7 +10,7 @@ def test_cluster():
     dec = numpy.arcsin(numpy.random.uniform(-1, 1, size=100000)) / numpy.pi * 180
     ra = numpy.random.uniform(0, 2 * numpy.pi, size=100000) / numpy.pi * 180
 
-    # testing bootstrap 
+    # testing bootstrap
     for area, rand, in sphere.bootstrap(4, (ra, dec), 41252.96 / len(dec)):
         pass
 
@@ -24,10 +24,13 @@ def test_cluster():
     binningR = correlate.RBinning(binning.edges)
 
     r = correlate.paircount(dataset, dataset, binning=binning, usefast=True)
-    r1 = correlate.paircount(dataset, dataset, binning=binning, usefast=False)
+    r1 = correlate.paircount(dataset, dataset, binning=binning, usefast=False, compute_mean_coords=True)
 
     r2 = correlate.paircount(dataset, dataset, binning=binningR, usefast=True)
 
+    # make sure mean_centers compute angular centers
+    for i, val in enumerate(r1.mean_centers):
+        assert binning.angular_edges[i] < val < binning.angular_edges[i+1]
     assert_equal(r1.sum1, r2.sum1)
     assert_equal(r1.sum1, r.sum1)
     assert_allclose(
@@ -40,7 +43,7 @@ def test_field():
     ra = numpy.random.uniform(0, 2 * numpy.pi, size=100000) / numpy.pi * 180
 
     dataset = sphere.field(ra, dec, value=numpy.ones_like(dec) * 0.5)
-    
+
     binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
     r = correlate.paircount(dataset, dataset, binning=binning)
     # FIXME: assert on correctness.
