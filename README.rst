@@ -10,6 +10,11 @@ function is called; the user-defined callback function does the actual counting.
     :alt: Build Status
     :target: https://travis-ci.org/rainwoodman/kdcount/
 
+To cite kdcount, use the DOI via Zenodo
+
+.. image:: https://zenodo.org/badge/34348490.svg
+   :target: https://zenodo.org/badge/latestdoi/34348490
+
 Periodic boundary is supported, and it is non-trivial.
 
 The python interface is more complicated, and powerful:
