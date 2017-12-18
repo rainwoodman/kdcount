@@ -258,11 +258,8 @@ kd_build(KDTree * tree)
 
     return root;
 }
-/**
- * free a tree
- * this is recursive
- * */
-void 
+
+static void
 kd_free0(KDTree * tree, size_t size, void * ptr) 
 {
     if(tree->free == NULL) {
@@ -271,6 +268,11 @@ kd_free0(KDTree * tree, size_t size, void * ptr)
         tree->free(tree->userdata, size, ptr);
     }
 }
+
+/**
+ * free a tree from a node.
+ * this is recursive
+ * */
 void 
 kd_free(KDNode * node) 
 {

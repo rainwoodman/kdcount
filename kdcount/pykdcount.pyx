@@ -66,7 +66,6 @@ cdef extern from "kdtree.h":
     double * kd_node_max(cKDNode * node) nogil
     double * kd_node_min(cKDNode * node) nogil
     void kd_free(cKDNode * node) nogil
-    void kd_free0(cKDTree * tree, npy_intp size, void * ptr) nogil
 
     int kd_enum(cKDNode * nodes[2], double maxr,
             kd_enum_visit_edge visit_edge,

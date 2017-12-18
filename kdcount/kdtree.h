@@ -39,6 +39,7 @@ typedef struct KDTree {
     KDArray input;
     /* a permutation array for indexing input, required and will be modified */
     ptrdiff_t * ind; 
+    /* length of ind_size*/
     size_t ind_size;
 
 /* the following defines how the tree is constructed */
@@ -215,13 +216,10 @@ static inline void kd_collect(KDNode * node, KDArray * input, double * ptr) {
     }
 }
 
-KDNode * 
+KDNode *
 kd_build(KDTree * tree);
 
-void 
-kd_free0(KDTree * tree, size_t size, void * ptr);
-
-void 
+void
 kd_free(KDNode * node);
 
 void 
