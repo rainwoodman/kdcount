@@ -12,8 +12,8 @@ function is called; the user-defined callback function does the actual counting.
 
 To cite kdcount, use the DOI via Zenodo
 
-.. image:: https://zenodo.org/badge/34348490.svg
-   :target: https://zenodo.org/badge/latestdoi/34348490
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1051242.svg
+   :target: https://doi.org/10.5281/zenodo.1051242
 
 Periodic boundary is supported, and it is non-trivial.
 
