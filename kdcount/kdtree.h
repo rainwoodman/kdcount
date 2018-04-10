@@ -118,7 +118,7 @@ static inline double kd_attr_get(KDAttr * attr, ptrdiff_t i, ptrdiff_t d) {
     return kd_array_get(&attr->input, attr->tree->ind[i], d);
 }
 
-static void 
+static inline void
 kd_realminmax(KDTree * tree, double min, double max, double * realmin, double * realmax, int d) 
 {
     if(tree->boxsize) {
