@@ -719,23 +719,24 @@ class paircount(object):
                 raise ValueError("fast node based paircount cannot count for mean coordinates of a bin")
 
         # run the work, using a context manager
-        kws = {'np':np, 'compute_mean_coords':compute_mean_coords, 'pts_only' : pts_only}
-        with paircount_worker(self, binning, [data1, data2], 
-                np=np,
+        with paircount_queue(self, binning, [data1, data2], 
+                size_hint=np,
                 compute_mean_coords=compute_mean_coords,
                 pts_only=pts_only,
-                ) as worker:
-            with utils.MapReduce(np=worker.np) as pool:
-                pool.map(worker.work, range(worker.size), reduce=worker.reduce)
+                ) as queue:
+
+            with utils.MapReduce(np=np) as pool:
+                pool.map(queue.work, range(queue.size), reduce=queue.reduce)
 
         self.weight = data1.norm * data2.norm
 
-class paircount_worker(object):
+class paircount_queue(object):
     """
-    Context that runs the actual pair counting, attaching the appropriate
-    attributes to the parent `paircount`
+    A queue of paircount jobs. roughly size_hint jobs are created, and they are
+    reduced to the paircount objects when the queue is joined.
+
     """
-    def __init__(self, pc, binning, data, np, compute_mean_coords, pts_only):
+    def __init__(self, pc, binning, data, size_hint, compute_mean_coords, pts_only):
         """
         Parameters
         ----------
@@ -745,15 +746,15 @@ class paircount_worker(object):
             the binning instance
         data : tuple
             tuple of the two data trees that we are correlating
-        np : int, optional
-            the number of parallel processors
+        size_hint : int, optional
+            the number of jobs to create, as an hint. None or zero to create 1 job.
         compute_mean_coords : bool, optional
             whether to compute the average coordinate value of each pair per bin
         """
         self.pc      = pc
         self.bins    = binning
         self.data    = data
-        self.np      = np
+        self.size_hint      = size_hint
         self.compute_mean_coords = compute_mean_coords
         self.pts_only = pts_only
 
@@ -812,7 +813,10 @@ class paircount_worker(object):
             for i in range(self.bins.Ndim):
                 self.centers[i][...] += centers_sum[i]
 
-    def _partition(self, tree1, tree2, np=128):
+    def _partition(self, tree1, tree2, size_hint=128):
+        if size_hint is None or size_hint == 0: # serial mode
+            return [(tree1, tree2)]
+
         import heapq
         def makeitem(n1, n2):
             if n1.size > n2.size:
@@ -821,7 +825,7 @@ class paircount_worker(object):
                 return (-n2.size, 1, (n1, n2))
         heap = []
         heapq.heappush(heap, makeitem(tree1, tree2))
-        while len(heap) < np:
+        while len(heap) < size_hint:
             junk, split, n = heapq.heappop(heap)
             if n[split].less is None:
                 # put it back!
@@ -845,10 +849,7 @@ class paircount_worker(object):
         tree1 = self.data[0].tree.root
         tree2 = self.data[1].tree.root
 
-        if self.np != 0:
-            self.p = self._partition(tree1, tree2)
-        else:
-            self.p = [(tree1, tree2)]
+        self.p = self._partition(tree1, tree2, self.size_hint)
         self.size = len(self.p)
 
         # initialize arrays to hold total sum1 and sum2
