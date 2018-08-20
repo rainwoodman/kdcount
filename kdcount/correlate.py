@@ -864,12 +864,12 @@ class paircount_worker(object):
         `pair_counts`, `mean_centers_sum`, `mean_centers`
         """
         self.pc.fullsum1 = self.sum1g.reshape(self.fullshape).copy()
-        self.pc.sum1 = self.pc.fullsum1[[Ellipsis] + [slice(1, -1)] * self.bins.Ndim]
+        self.pc.sum1 = self.pc.fullsum1[tuple([Ellipsis] + [slice(1, -1)] * self.bins.Ndim)]
 
         self.pc.fullsum2 = None; self.pc.sum2 = None
         if not self.pts_only:
             self.pc.fullsum2 = self.sum2g.reshape(self.bins.shape).copy()
-            self.pc.sum2 = self.pc.fullsum2[[slice(1, -1)] * self.bins.Ndim]
+            self.pc.sum2 = self.pc.fullsum2[tuple([slice(1, -1)] * self.bins.Ndim)]
 
         self.pc.binning = self.bins
         self.pc.edges = self.bins.edges
@@ -879,7 +879,7 @@ class paircount_worker(object):
         if self.compute_mean_coords:
 
             # store the full sum too
-            sl = [slice(1, -1)] * self.bins.Ndim
+            sl = tuple([slice(1, -1)] * self.bins.Ndim)
             self.pc.pair_counts = self.N[sl]
             self.pc.mean_centers_sum = []
 
