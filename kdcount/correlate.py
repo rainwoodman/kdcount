@@ -711,9 +711,20 @@ class paircount(object):
                           "to the node counting implementation with `enable_fast_node_count=True` as a class attribute",
                             DeprecationWarning)
 
+        pts_only = isinstance(data1, points) and isinstance(data2, points)
+        if binning.enable_fast_node_count:
+            if not pts_only:
+                raise ValueError("fast node based paircount only works with points")
+            if compute_mean_coords:
+                raise ValueError("fast node based paircount cannot count for mean coordinates of a bin")
+
         # run the work, using a context manager
-        kws = {'np':np, 'compute_mean_coords':compute_mean_coords}
-        with paircount_worker(self, binning, [data1, data2], **kws) as worker:
+        kws = {'np':np, 'compute_mean_coords':compute_mean_coords, 'pts_only' : pts_only}
+        with paircount_worker(self, binning, [data1, data2], 
+                np=np,
+                compute_mean_coords=compute_mean_coords,
+                pts_only=pts_only,
+                ) as worker:
             with utils.MapReduce(np=worker.np) as pool:
                 pool.map(worker.work, range(worker.size), reduce=worker.reduce)
 
@@ -724,7 +735,7 @@ class paircount_worker(object):
     Context that runs the actual pair counting, attaching the appropriate
     attributes to the parent `paircount`
     """
-    def __init__(self, pc, binning, data, np=None, compute_mean_coords=False):
+    def __init__(self, pc, binning, data, np, compute_mean_coords, pts_only):
         """
         Parameters
         ----------
@@ -744,12 +755,9 @@ class paircount_worker(object):
         self.data    = data
         self.np      = np
         self.compute_mean_coords = compute_mean_coords
+        self.pts_only = pts_only
 
-        # set the wrapped callables that do the work
-        self.work = lambda i: self.__work__(i)
-        self.reduce = lambda *args: self.__reduce__(*args)
-
-    def __work__(self, i):
+    def work(self, i):
         """
         Internal function that performs the pair-counting
         """
@@ -772,7 +780,7 @@ class paircount_worker(object):
             # sum arrays to fill in
             self.bins(r, i, j, self.data[0], self.data[1], sum1, sum2, N=N, centers_sum=centers_sum)
 
-        if self.dofast:
+        if self.bins.enable_fast_node_count:
             # field x points is not supported.
             # because it is more likely need to deal
             # with broadcasting
@@ -790,7 +798,7 @@ class paircount_worker(object):
         else:
             return sum1, sum2, N, centers_sum
 
-    def __reduce__(self, sum1, sum2, *args):
+    def reduce(self, sum1, sum2, *args):
         """
         The internal reduce function that sums the results from various
         processors
@@ -842,9 +850,6 @@ class paircount_worker(object):
         else:
             self.p = [(tree1, tree2)]
         self.size = len(self.p)
-
-        self.pts_only = isinstance(self.data[0], points) and isinstance(self.data[1], points)
-        self.dofast = self.bins.enable_fast_node_count and self.pts_only and not self.compute_mean_coords
 
         # initialize arrays to hold total sum1 and sum2
         # grabbing the desired shapes from the binning instance
