@@ -89,7 +89,7 @@ class Binning(object):
         edges of bins per dimension
     """
 
-    enable_fast_node_count = False # allow using the C implementation of node-node pair counting on point datasets.
+    enable_fast_node_count = False # if True, allow using the C implementation of node-node pair counting on point datasets.
 
     def __init__(self, dims, edges):
         """
@@ -379,7 +379,6 @@ class RBinning(Binning):
     """
     def __init__(self, rbins):
         Binning.__init__(self, ['r'], [rbins])
-        self.enable_fast_node_counting = False
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
 
@@ -401,8 +400,6 @@ class FastRBinning(RBinning):
         the R bin edges
     """
     enable_fast_node_counting = True
-    def __init__(self, rbins):
-        Binning.__init__(self, ['r'], [rbins])
 
 
 class MultipoleBinning(Binning):
@@ -711,7 +708,7 @@ class paircount(object):
         """
         if usefast is not None:
             warnings.warn("usefast is no longer supported. Declare a binning class is compatible"
-                          "to the node counting implementation with the decorator.",
+                          "to the node counting implementation with `enable_fast_node_count=True` as a class attribute",
                             DeprecationWarning)
 
         # run the work, using a context manager
