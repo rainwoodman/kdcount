@@ -42,7 +42,6 @@ class AngularBinning(RBinning):
     def __init__(self, angbins, **kwargs):
         rbins = 2 * numpy.sin(0.5 * numpy.radians(angbins))
         RBinning.__init__(self, rbins, **kwargs)
-        self.enable_fast_node_counting = True
 
     @property
     def angular_centers(self):
@@ -62,6 +61,9 @@ class AngularBinning(RBinning):
             self.update_mean_coords(dig, N, centers_sum, r=theta)
 
         return dig
+
+class FastAngularBinning(AngularBinning):
+    enable_fast_node_counting = True
 
 import heapq
 def bootstrap(nside, rand, nbar, *data):

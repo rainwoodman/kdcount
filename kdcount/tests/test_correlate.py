@@ -8,13 +8,11 @@ def test_simple():
     pos = numpy.random.uniform(size=(10, 3))
     dataset = correlate.points(pos, boxsize=1.0)
 
-    # use the C node node counting
-    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    binning.enable_fast_node_counting = False
-
     # use the python point point counting
-    binning1 = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    binning1.enable_fast_node_counting = True
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
+
+    # use the C node node counting
+    binning1 = correlate.FastRBinning(numpy.linspace(0, 0.5, 10))
 
     r = correlate.paircount(dataset, dataset, binning, np=0)
     r1 = correlate.paircount(dataset, dataset, binning1, np=0)
@@ -32,13 +30,11 @@ def test_unweighted():
 
     dataset = correlate.points(pos, boxsize=1.0)
 
-    # use the C node node counting
-    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    binning.enable_fast_node_counting = False
-
     # use the python point point counting
-    binning1 = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    binning1.enable_fast_node_counting = True
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
+
+    # use the C node node counting
+    binning1 = correlate.FastRBinning(numpy.linspace(0, 0.5, 10))
 
 
     dig = binning.edges.searchsorted(dist.flat, side='left')
@@ -57,13 +53,11 @@ def test_cross():
     dataset1 = correlate.points(pos1, boxsize=None)
     dataset2 = correlate.points(pos2, boxsize=None)
 
-    # use the C node node counting
-    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    binning.enable_fast_node_counting = False
-
     # use the python point point counting
-    binning1 = correlate.RBinning(numpy.linspace(0, 0.5, 10))
-    binning1.enable_fast_node_counting = True
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
+
+    # use the C node node counting
+    binning1 = correlate.FastRBinning(numpy.linspace(0, 0.5, 10))
 
     r1 = correlate.paircount(dataset1, dataset2, binning, np=0)
     r2 = correlate.paircount(dataset1, dataset2, binning1, np=0)

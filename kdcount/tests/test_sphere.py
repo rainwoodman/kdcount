@@ -20,12 +20,9 @@ def test_cluster():
 
     assert r.N == len(dataset)
 
-    binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
-    binning.enable_fast_node_counting = True
+    binning = sphere.FastAngularBinning(numpy.linspace(0, 1.0, 10))
     binning1 = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
-    binning1.enable_fast_node_counting = False
     binningR = correlate.RBinning(binning.edges)
-    binning1.enable_fast_node_counting = True
 
     r = correlate.paircount(dataset, dataset, binning=binning)
     r1 = correlate.paircount(dataset, dataset, binning=binning1, compute_mean_coords=True)

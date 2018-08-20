@@ -379,7 +379,7 @@ class RBinning(Binning):
     """
     def __init__(self, rbins):
         Binning.__init__(self, ['r'], [rbins])
-        self.enable_fast_node_counting = True
+        self.enable_fast_node_counting = False
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
 
@@ -390,6 +390,19 @@ class RBinning(Binning):
         self.update_mean_coords(dig, N, centers_sum, r=r)
 
         return dig
+
+class FastRBinning(RBinning):
+    """
+    Binning along radial direction, use the fast node count algorithm when possible.
+
+    Parameters
+    ----------
+    rbins : array_like
+        the R bin edges
+    """
+    enable_fast_node_counting = True
+    def __init__(self, rbins):
+        Binning.__init__(self, ['r'], [rbins])
 
 
 class MultipoleBinning(Binning):
