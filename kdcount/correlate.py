@@ -36,6 +36,7 @@ see :py:class:`RmuBinning`.
 
 """
 import numpy
+import warnings
 
 # local imports
 from .models import points, field
@@ -87,6 +88,9 @@ class Binning(object):
     edges   :  array_like
         edges of bins per dimension
     """
+
+    enable_fast_node_count = False # allow using the C implementation of node-node pair counting on point datasets.
+
     def __init__(self, dims, edges):
         """
         Parameters
@@ -375,6 +379,7 @@ class RBinning(Binning):
     """
     def __init__(self, rbins):
         Binning.__init__(self, ['r'], [rbins])
+        self.enable_fast_node_counting = True
 
     def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
 
@@ -680,7 +685,7 @@ class paircount(object):
         with r = sum(wD) / sum(wR)
 
     """
-    def __init__(self, data1, data2, binning, compute_mean_coords=False, usefast=True, np=None):
+    def __init__(self, data1, data2, binning, compute_mean_coords=False, usefast=None, np=None):
         """
         binning is an instance of Binning, (eg, RBinning, RmuBinning)
 
@@ -689,14 +694,15 @@ class paircount(object):
         *   if the value has multiple components, return counts with be 'tuple',
             one item for each component
         *   if `compute_mean_coords` is `True`, then `meancenters` will hold
-            the mean coordinate value in each bin. Cannot have `usefast = True`
-            and `compute_mean_coords = True`
+            the mean coordinate value in each bin. 
         """
-        if usefast and compute_mean_coords:
-            raise NotImplementedError("cannot currently compute bin centers and use the `fast` algorithm")
+        if usefast is not None:
+            warnings.warn("usefast is no longer supported. Declare a binning class is compatible"
+                          "to the node counting implementation with the decorator.",
+                            DeprecationWarning)
 
         # run the work, using a context manager
-        kws = {'np':np, 'usefast':usefast, 'compute_mean_coords':compute_mean_coords}
+        kws = {'np':np, 'compute_mean_coords':compute_mean_coords}
         with paircount_worker(self, binning, [data1, data2], **kws) as worker:
             with utils.MapReduce(np=worker.np) as pool:
                 pool.map(worker.work, range(worker.size), reduce=worker.reduce)
@@ -708,7 +714,7 @@ class paircount_worker(object):
     Context that runs the actual pair counting, attaching the appropriate
     attributes to the parent `paircount`
     """
-    def __init__(self, pc, binning, data, np=None, usefast=True, compute_mean_coords=False):
+    def __init__(self, pc, binning, data, np=None, compute_mean_coords=False):
         """
         Parameters
         ----------
@@ -720,8 +726,6 @@ class paircount_worker(object):
             tuple of the two data trees that we are correlating
         np : int, optional
             the number of parallel processors
-        usefast : bool, optional
-            whether to use the fast algorithm
         compute_mean_coords : bool, optional
             whether to compute the average coordinate value of each pair per bin
         """
@@ -729,7 +733,6 @@ class paircount_worker(object):
         self.bins    = binning
         self.data    = data
         self.np      = np
-        self.usefast = usefast
         self.compute_mean_coords = compute_mean_coords
 
         # set the wrapped callables that do the work
@@ -831,7 +834,7 @@ class paircount_worker(object):
         self.size = len(self.p)
 
         self.pts_only = isinstance(self.data[0], points) and isinstance(self.data[1], points)
-        self.dofast = self.usefast and isinstance(self.bins, RBinning) and self.pts_only
+        self.dofast = self.bins.enable_fast_node_count and self.pts_only and not self.compute_mean_coords
 
         # initialize arrays to hold total sum1 and sum2
         # grabbing the desired shapes from the binning instance

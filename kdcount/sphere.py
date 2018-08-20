@@ -42,6 +42,8 @@ class AngularBinning(RBinning):
     def __init__(self, angbins, **kwargs):
         rbins = 2 * numpy.sin(0.5 * numpy.radians(angbins))
         RBinning.__init__(self, rbins, **kwargs)
+        self.enable_fast_node_counting = True
+
     @property
     def angular_centers(self):
         return 2 * numpy.arcsin(self.centers * 0.5) * (180. / numpy.pi)
