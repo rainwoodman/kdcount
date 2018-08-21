@@ -20,13 +20,14 @@ def test_cluster():
 
     assert r.N == len(dataset)
 
-    binning = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
+    binning = sphere.FastAngularBinning(numpy.linspace(0, 1.0, 10))
+    binning1 = sphere.AngularBinning(numpy.linspace(0, 1.0, 10))
     binningR = correlate.RBinning(binning.edges)
 
-    r = correlate.paircount(dataset, dataset, binning=binning, usefast=True)
-    r1 = correlate.paircount(dataset, dataset, binning=binning, usefast=False, compute_mean_coords=True)
+    r = correlate.paircount(dataset, dataset, binning=binning)
+    r1 = correlate.paircount(dataset, dataset, binning=binning1, compute_mean_coords=True)
 
-    r2 = correlate.paircount(dataset, dataset, binning=binningR, usefast=True)
+    r2 = correlate.paircount(dataset, dataset, binning=binningR)
 
     # make sure mean_centers compute angular centers
     for i, val in enumerate(r1.mean_centers):

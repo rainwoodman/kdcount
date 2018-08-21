@@ -9,6 +9,7 @@ except ImportError:
     class MapReduce(object):
         def __init__(self, np=None):
             self.critical = self
+            self.np = 0
             pass
         def __enter__(self):
             return self
