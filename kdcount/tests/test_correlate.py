@@ -89,4 +89,19 @@ def test_field():
 
     assert_allclose(r.sum1, r.sum2)
 
+def test_channels():
+    numpy.random.seed(1234)
+    pos = numpy.random.uniform(size=(1000, 3))
+    datasetw = correlate.points(pos, boxsize=1.0, weights=numpy.ones(len(pos)))
+    dataset = correlate.points(pos, boxsize=1.0)
 
+    binning_mc1 = correlate.FlatSkyMultipoleBinning(numpy.linspace(0, 0.5, 10), ells=[0, 0, 0], los=0)
+    binning_mc2 = correlate.MultipoleBinning(numpy.linspace(0, 0.5, 10), ells=[0, 0, 0])
+    binning = correlate.RBinning(numpy.linspace(0, 0.5, 10))
+
+    r_mc1 = correlate.paircount(datasetw, datasetw, binning_mc1, np=0)
+    r_mc2 = correlate.paircount(datasetw, datasetw, binning_mc2, np=0)
+    r1 = correlate.paircount(dataset, dataset, binning, np=0)
+
+    assert_equal( r_mc1.sum1[0], r1.sum1)
+    assert_equal( r_mc2.sum1[0], r1.sum1)
