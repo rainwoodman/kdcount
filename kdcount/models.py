@@ -30,8 +30,8 @@ class dataset(object):
             boxsize will be broadcasted to the dimension of points. 
         """
         self.pos = pos
-        self.boxsize = boxsize
         self.tree = kdcount.KDTree(self.pos, boxsize=boxsize)
+        self.boxsize = self.tree.boxsize
 
         if weights is None:
             weights = constant_array(len(self.pos))
