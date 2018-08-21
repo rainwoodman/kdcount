@@ -50,7 +50,7 @@ def compute_sum_values(i, j, data1, data2):
 
     Notes
     -----
-    This is called in `Binning.__call__` to compute
+    This is called in `Binning.update_sums` to compute
     the `sum1` and `sum2` contributions for indices `(i,j)`
 
     Parameters
@@ -235,11 +235,14 @@ class Binning(object):
         """
         raise NotImplementedError()
 
-    def __call__(self, r, i, j, data1, data2, sum1, sum2, N=None, centers_sum=None):
+    def update_sums(self, r, i, j, data1, data2, sum1, sum2, N=None, centers_sum=None):
         """
         The main function that digitizes the pair counts,
         calls bincount for the appropriate `sum1` and `sum2`
-        values, and adds them to the input arrays
+        values, and adds them to the input arrays,
+
+        will modify sum1, sum2, N, and centers_sum inplace.
+
         """
         # the summation values for this (r,i,j)
         sum1_ij, sum2_ij = compute_sum_values(i, j, data1, data2)
@@ -285,7 +288,7 @@ class Binning(object):
             if not paircoords:
                 raise RuntimeError("Bin center is requested but not returned by digitize")
             # update the mean coords
-            self.update_mean_coords(dig, N, centers_sum, **paircoords)
+            self._update_mean_coords(dig, N, centers_sum, **paircoords)
 
     def sum_shapes(self, data1, data2):
         """
@@ -311,7 +314,7 @@ class Binning(object):
 
         return linearshape, fullshape
 
-    def update_mean_coords(self, dig, N, centers_sum, **paircoords):
+    def _update_mean_coords(self, dig, N, centers_sum, **paircoords):
         """
         Update the mean coordinate sums
         """
@@ -746,12 +749,6 @@ class paircount_queue(object):
         else:
             N = None; centers_sum = None
 
-        def callback(r, i, j):
-
-            # just call the binning function, passing the
-            # sum arrays to fill in
-            self.bins(r, i, j, self.data[0], self.data[1], sum1, sum2, N=N, centers_sum=centers_sum)
-
         if self.bins.enable_fast_node_count:
             # field x points is not supported.
             # because it is more likely need to deal
@@ -763,6 +760,12 @@ class paircount_queue(object):
             sum1[..., :-1] = sum1c
             sum1[..., -1] = 0
         else:
+
+            def callback(r, i, j):
+                # just call the binning function, passing the
+                # sum arrays to fill in
+                self.bins.update_sums(r, i, j, self.data[0], self.data[1], sum1, sum2, N=N, centers_sum=centers_sum)
+
             n1.enum(n2, self.bins.Rmax, process=callback)
 
         if not self.compute_mean_coords:
