@@ -50,17 +50,13 @@ class AngularBinning(RBinning):
     def angular_edges(self):
         return 2 * numpy.arcsin(self.edges * 0.5) * (180. / numpy.pi)
 
-    def digitize(self, r, i, j, data1, data2, N=None, centers_sum=None):
+    def digitize(self, r, i, j, data1, data2):
 
         # linear bins
         dig = self.linear(r=r)
 
-        # update the mean coords
-        if N is not None and centers_sum is not None:
-            theta = 2 * numpy.arcsin(r * 0.5) * (180. / numpy.pi)
-            self.update_mean_coords(dig, N, centers_sum, r=theta)
-
-        return dig
+        theta = 2 * numpy.arcsin(r * 0.5) * (180. / numpy.pi)
+        return dig, dict(r=theta)
 
 class FastAngularBinning(AngularBinning):
     enable_fast_node_counting = True
