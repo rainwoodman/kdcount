@@ -718,14 +718,17 @@ class paircount(object):
             if compute_mean_coords:
                 raise ValueError("fast node based paircount cannot count for mean coordinates of a bin")
 
-        # run the work, using a context manager
-        with paircount_queue(self, binning, [data1, data2], 
-                size_hint=np,
+        with utils.MapReduce(np=np) as pool:
+
+            size_hint = pool.np * 2
+
+            # run the work, using a context manager
+            with paircount_queue(self, binning, [data1, data2], 
+                size_hint=size_hint,
                 compute_mean_coords=compute_mean_coords,
                 pts_only=pts_only,
                 ) as queue:
 
-            with utils.MapReduce(np=np) as pool:
                 pool.map(queue.work, range(queue.size), reduce=queue.reduce)
 
         self.weight = data1.norm * data2.norm
