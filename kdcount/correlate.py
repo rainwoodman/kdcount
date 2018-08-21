@@ -325,6 +325,10 @@ class Binning(object):
             size = centers_sum[i].size
             centers_sum[i].flat[:] += utils.bincount(dig, paircoords[dim], minlength=size)
 
+    def update_mean_coords(self, dig, N, centers_sum, **paircoords):
+        warnings.warn("update_mean_coords is deprecated. Return a dictionary of paircoords in digitize function instead.", DeprecationWarning)
+        self._update_mean_coords(dig, N, centers_sum, **paircoords)
+
 class RmuBinning(Binning):
     """
     Binning in R and mu (angular along line of sight)
