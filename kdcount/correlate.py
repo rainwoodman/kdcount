@@ -326,7 +326,7 @@ class Binning(object):
             centers_sum[i].flat[:] += utils.bincount(dig, paircoords[dim], minlength=size)
 
     def update_mean_coords(self, dig, N, centers_sum, **paircoords):
-        warnings.warn("update_mean_coords is deprecated. Return a dictionary of paircoords in digitize function instead.", DeprecationWarning)
+        warnings.warn("update_mean_coords is deprecated. Return a dictionary of paircoords in digitize function instead.", DeprecationWarning, stacklevel=2)
         self._update_mean_coords(dig, N, centers_sum, **paircoords)
 
 class RmuBinning(Binning):
@@ -684,7 +684,7 @@ class paircount(object):
         if usefast is not None:
             warnings.warn("usefast is no longer supported. Declare a binning class is compatible"
                           "to the node counting implementation with `enable_fast_node_count=True` as a class attribute",
-                            DeprecationWarning)
+                            DeprecationWarning, stacklevel=2)
 
         pts_only = isinstance(data1, points) and isinstance(data2, points)
         if binning.enable_fast_node_count:
