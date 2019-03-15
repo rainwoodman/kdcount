@@ -69,20 +69,28 @@ class policy(object):
         self.sizes = N
         self.size = N.sum()
 
-    def bootstrap(self, rng=None):
-        """ create a bootstrap (of strap ids), that goes to self.resample"""
+    def bootstrap(self, straps=None, rng=None):
+        """ create a bootstrap (of strap ids), that goes to self.resample.
+
+            if straps is given only use those straps.
+        """
         if rng is None:
             rng = numpy.random
         p = 1.0 * self.sizes / self.size
+        if straps is None:
+            straps = self.active_straps
+
+        size = self.sizes[straps].sum()
+
         def inner():
-            Nremain = self.size
+            Nremain = size
             # XXX: is this fair?
             # XXX: the distribution of the total length is not well understood
             #     but mean is OK.
             while Nremain > 0:
-                ch = rng.choice(len(self.active_straps), size=1, replace=True)
+                ch = rng.choice(len(straps), size=1, replace=True)
                 accept = rng.uniform() <= Nremain / (1.0 * self.sizes[ch])
-                sid = self.active_straps[ch]
+                sid = straps[ch]
                 if accept:
                     Nremain -= self.sizes[sid]
                     yield sid
