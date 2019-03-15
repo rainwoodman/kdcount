@@ -64,14 +64,13 @@ class policy(object):
         sid = strapfunc(dataset)
         N = numpy.bincount(sid)
         active_straps = N.nonzero()[0]
-        N = N[active_straps]
 
         self.active_straps = active_straps
         self.sizes = N
         self.size = N.sum()
 
     def bootstrap(self, rng=None):
-        """ create a bootstrap (of internal strap ids), that goes to self.resample"""
+        """ create a bootstrap (of strap ids), that goes to self.resample"""
         if rng is None:
             rng = numpy.random
         p = 1.0 * self.sizes / self.size
@@ -83,9 +82,10 @@ class policy(object):
             while Nremain > 0:
                 ch = rng.choice(len(self.active_straps), size=1, replace=True)
                 accept = rng.uniform() <= Nremain / (1.0 * self.sizes[ch])
+                sid = self.active_straps[ch]
                 if accept:
-                    Nremain -= self.sizes[ch]
-                    yield ch
+                    Nremain -= self.sizes[sid]
+                    yield sid
                 else:
                     # in this case Nremain is less than the size of the chosen chunk.
                     break
@@ -114,7 +114,7 @@ class policy(object):
             def reduce(ind, r):
                 cache[ind] = r
 
-            items = [(ind, var) for ind, var in zip(outer(*([range(len(self.active_straps))]*len(args))),
+            items = [(ind, var) for ind, var in zip(outer(*([[int(i) for i in  self.active_straps]]*len(args))),
                                 outer(*vars))]
             pool.map(work, items, reduce=reduce)
 
