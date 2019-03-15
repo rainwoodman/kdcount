@@ -89,8 +89,8 @@ class policy(object):
             #     but mean is OK.
             while Nremain > 0:
                 ch = rng.choice(len(straps), size=1, replace=True)
-                accept = rng.uniform() <= Nremain / (1.0 * self.sizes[ch])
                 sid = straps[ch]
+                accept = rng.uniform() <= Nremain / (1.0 * self.sizes[sid])
                 if accept:
                     Nremain -= self.sizes[sid]
                     yield sid
