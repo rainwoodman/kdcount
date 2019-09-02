@@ -3,6 +3,7 @@ import numpy
 from numpy.testing import assert_equal, run_module_suite, assert_array_equal
 from kdcount.utils import constant_array
 from kdcount.pykdcount import _get_last_fof_info
+import pytest
 
 def test_build():
     numpy.random.seed(1000)
@@ -213,6 +214,45 @@ def test_force2_slow():
     print('time', t1)
     # FIXME: add more tests
     assert_array_equal(force1, force2)
+
+@pytest.mark.parametrize(
+    "method", ['linkedlist', 'unsafe', 'allpairs', 'heuristics', 'splay']
+)
+def test_fof_ind(method):
+    numpy.random.seed(1000)
+    pos = numpy.arange(100000).reshape(-1, 1).astype('f4')
+    ind = numpy.arange(len(pos))[::-2]
+    tree = KDTree(pos, ind=ind).root
+
+    label = tree.fof(2.1, method=method)
+    assert len(label) == len(pos)
+    correct_label = numpy.arange(len(pos))
+    correct_label[::-2] = label[1]
+    assert_equal(label, correct_label)
+
+    label = tree.fof(0.8, method=method)
+    correct_label = numpy.arange(len(pos))  # one group per active particle.
+    assert_equal(label, correct_label)
+
+@pytest.mark.parametrize(
+    "method", ['linkedlist', 'unsafe', 'allpairs', 'heuristics', 'splay']
+)
+def test_fof_nonroot(method):
+    numpy.random.seed(1000)
+    pos = numpy.arange(100000).reshape(-1, 1).astype('f4')
+    ind = numpy.arange(len(pos))[::-2]
+    tree = KDTree(pos, ind=ind).root.less
+
+    label = tree.fof(2.1, method=method)
+    assert len(label) == len(pos)
+    correct_label = numpy.arange(len(pos))
+    assert tree.size == 25000
+    correct_label[::-2][tree.size:] = label[1]
+    assert_equal(label, correct_label)
+
+    label = tree.fof(0.8, method=method)
+    correct_label = numpy.arange(len(pos))  # one group per active partile.
+    assert_equal(label, correct_label)
 
 
 if __name__ == "__main__":
