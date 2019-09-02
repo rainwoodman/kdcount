@@ -18,9 +18,9 @@ from . import utils
 import numpy
 
 class StrappedResults(object):
-    def __init__(self, cache, sizes):
+    def __init__(self, cache, sizes_per_var):
         self.cache = cache
-        self.sizes = sizes
+        self.sizes_per_var = sizes_per_var
 
 class policy(object):
     """
@@ -112,22 +112,25 @@ class policy(object):
             np : number of processes to use
         """
         np = kwargs.pop('np', None)
-        vars = [self.create_straps(v) for v in args]
+        varstraps = [self.create_straps(v) for v in args]
+        indstraps = [[int(i) for i in  self.active_straps]]*len(args)
         cache = {}
+        sizes_per_var = [{} for i in range(len(args))]
 
         with utils.MapReduce(np=np) as pool:
             def work(p):
-                ind, var = p
-                return ind, estimator(*var)
-            def reduce(ind, r):
+                ind, vars = p
+                n = [len(var) for var in vars]
+                return ind, estimator(*vars), n
+            def reduce(ind, r, n):
                 cache[ind] = r
+                for i, (ind1, n1) in enumerate(zip(ind, n)):
+                    sizes_per_var[i][ind1] = n1
 
-            items = [(ind, var) for ind, var in zip(outer(*([[int(i) for i in  self.active_straps]]*len(args))),
-                                outer(*vars))]
+            items = [(ind, var) for ind, var in zip(outer(*indstraps), outer(*varstraps))]
             pool.map(work, items, reduce=reduce)
 
-        sizes = [numpy.array([len(s) for s in v], dtype='intp') for v in vars]
-        result = StrappedResults(cache, sizes)
+        result = StrappedResults(cache, sizes_per_var)
         return result
 
     def resample(self, result, bootstrap=None, operator=lambda x, y : x + y):
@@ -138,9 +141,9 @@ class policy(object):
             of the function does not support the `+` operator.
 
         """
-        Nargs = len(result.sizes)
+        Nargs = len(result.sizes_per_var)
         # length for each bootstrapped resample dataset
-        L = [sum(s[bootstrap]) for s in result.sizes]
+        L = [sum([sizes_per_strap[i] for i in bootstrap]) for sizes_per_strap in result.sizes_per_var]
         # result is the sum of the submatrix
         R = reduce(operator, [result.cache[ind] for ind in outer(*([bootstrap] * Nargs))])
         return L, R
