@@ -266,7 +266,7 @@ kd_enum_full(KDNode * nodes[2], double maxr,
 int
 kd_fof(KDNode * tree, double linking_length, ptrdiff_t * head);
 int
-kd_fof_linked_list(KDNode * tree, double linking_length, ptrdiff_t * head);
+kd_fof_linkedlist(KDNode * tree, double linking_length, ptrdiff_t * head);
 int
 kd_fof_allpairs(KDNode * tree, double linking_length, ptrdiff_t * head);
 int 
