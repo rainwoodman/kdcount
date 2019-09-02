@@ -82,7 +82,7 @@ class KDNode(_core.KDNode):
             Returns: the label
         """
         if out is None:
-            out = numpy.empty(self.size, dtype='intp')
+            out = numpy.arange(len(self.tree.input), dtype='intp')
         return _core.KDNode.fof(self, linkinglength, out, method)
 
     def integrate(self, min, max, attr=None, info={}):

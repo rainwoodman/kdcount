@@ -270,6 +270,7 @@ cdef class KDNode:
 
     def fof(self, double linkinglength, numpy.ndarray out, method):
         assert out.dtype == numpy.dtype('intp')
+        assert len(out) == len(self.tree.input)
 
         if method == 'linkedlist':
             rt = kd_fof_linkedlist(self.ref, linkinglength, <npy_intp*> out.data)
