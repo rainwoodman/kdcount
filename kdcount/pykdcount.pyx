@@ -268,23 +268,23 @@ cdef class KDNode:
 
             return count, weight
 
-    def fof(self, double linkinglength, numpy.ndarray out, method):
+    def fof(self, double linkinglength, numpy.ndarray out, method, bool indirect):
         assert out.dtype == numpy.dtype('intp')
 
         if method == 'linkedlist':
-            rt = kd_fof_linkedlist(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof_linkedlist(self.ref, linkinglength, <npy_intp*> out.data, indirect)
         elif method == 'unsafe':
-            rt = kd_fof_unsafe(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof_unsafe(self.ref, linkinglength, <npy_intp*> out.data, indirect)
         elif method == 'allpairs':
-            rt = kd_fof_allpairs(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof_allpairs(self.ref, linkinglength, <npy_intp*> out.data, indirect)
         elif method == 'heuristics':
-            rt = kd_fof_heuristics(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof_heuristics(self.ref, linkinglength, <npy_intp*> out.data, indirect)
         elif method == 'buggy':
-            rt = kd_fof_buggy(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof_buggy(self.ref, linkinglength, <npy_intp*> out.data, indirect)
         elif method == 'prefernodes':
-            rt = kd_fof_prefernodes(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof_prefernodes(self.ref, linkinglength, <npy_intp*> out.data, indirect)
         else:
-            rt = kd_fof(self.ref, linkinglength, <npy_intp*> out.data)
+            rt = kd_fof(self.ref, linkinglength, <npy_intp*> out.data, indirect)
 
         if rt == -1:
             raise RuntimeError("Friend of Friend failed. This is likely a bug.")

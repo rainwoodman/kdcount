@@ -49,7 +49,7 @@ class fof(object):
 
         head = utils.empty(len(data), dtype='intp')
 
-        # this will set the head to a particle index 
+        # this will set the head to a particle index
         # need to convert this to a feature id with unique.
         data.tree.root.fof(linking_length, head)
 
