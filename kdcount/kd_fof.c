@@ -239,7 +239,7 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
     KDNode * nodes[2] = {node, node};
     TraverseData * trav = & (TraverseData) {};
 
-    trav->head = head;
+    trav->head = head - node->start;
     trav->ll = linking_length;
     trav->ll2 = linking_length * linking_length;
     trav->node_connected = calloc(node->tree->size, 1);
@@ -249,7 +249,7 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
     trav->heuristics = heuristics;
     trav->buggy = buggy;
     ptrdiff_t i;
-    for(i = 0; i < node->size; i ++) {
+    for(i = node->start; i < node->start + node->size; i ++) {
         trav->head[i] = i;
     }
 
@@ -264,7 +264,7 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
 
     kd_enum_full(nodes, linking_length, NULL, _kd_fof_check_nodes, _kd_fof_visit_node, 1.0, 1, 1, trav);
 
-    for(i = 0; i < node->size; i ++) {
+    for(i = node->start; i < node->start + node->size; i ++) {
         trav->head[i] = splay(trav, i);
     }
 

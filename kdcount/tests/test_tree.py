@@ -222,13 +222,25 @@ def test_fof_ind():
 
     label = tree.fof(2.1)
     assert len(label) == len(ind)
-
     assert_equal(numpy.unique(label).size, 1)
 
     label = tree.fof(0.8)
-    assert_equal(numpy.unique(label).size, len(ind))
     assert len(label) == len(ind)
+    assert_equal(numpy.unique(label).size, len(ind))
 
+def test_fof_nonroot():
+    numpy.random.seed(1000)
+    pos = numpy.arange(100000).reshape(-1, 1).astype('f4')
+    ind = numpy.arange(len(pos))[::2]
+    tree = KDTree(pos, ind=ind).root.less
+
+    label = tree.fof(2.1)
+    assert len(label) == tree.size
+    assert_equal(numpy.unique(label).size, 1)
+
+    label = tree.fof(0.8)
+    assert len(label) == tree.size
+    assert_equal(numpy.unique(label).size, tree.size)
 
 if __name__ == "__main__":
     run_module_suite()

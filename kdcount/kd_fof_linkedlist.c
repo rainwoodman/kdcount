@@ -71,13 +71,13 @@ kd_fof_linkedlist(KDNode * tree, double linking_length, ptrdiff_t * head)
     KDNode * nodes[2] = {tree, tree};
     TraverseData * trav = & (TraverseData) {};
 
-    trav->head = head;
+    trav->head = head - tree->start;
     trav->next = malloc(sizeof(trav->next[0]) * tree->size);
     trav->len = malloc(sizeof(trav->len[0]) * tree->size);
     trav->ll = linking_length;
 
     ptrdiff_t i;
-    for(i = 0; i < tree->size; i ++) {
+    for(i = tree->start; i < tree->start + tree->size; i ++) {
         trav->head[i] = i;
         trav->next[i] = -1;
         trav->len[i] = 1;
