@@ -91,6 +91,9 @@ kd_fof_linkedlist(KDNode * tree, double linking_length, ptrdiff_t * head)
     trav->connected = 0;
 
     kd_enum_full(nodes, linking_length, _kd_fof_callback, NULL, NULL, 1.0, 1, 1, trav);
+    for(i = tree->start; i < tree->start + tree->size; i ++) {
+        trav->head[i] = tree->tree->ind[i];
+    }
 
     last_traverse.visited = trav->visited;
     last_traverse.enumerated = trav->enumerated;

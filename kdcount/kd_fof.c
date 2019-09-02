@@ -239,6 +239,10 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
     KDNode * nodes[2] = {node, node};
     TraverseData * trav = & (TraverseData) {};
 
+    /* offset head to compensate for the node offset.
+     * during fof head stores the indirect indices.
+     * Before returning head will be resolved to the direct indices.
+     * */
     trav->head = head - node->start;
     trav->ll = linking_length;
     trav->ll2 = linking_length * linking_length;
@@ -265,7 +269,7 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
     kd_enum_full(nodes, linking_length, NULL, _kd_fof_check_nodes, _kd_fof_visit_node, 1.0, 1, 1, trav);
 
     for(i = node->start; i < node->start + node->size; i ++) {
-        trav->head[i] = splay(trav, i);
+        trav->head[i] = node->tree->ind[splay(trav, i)];
     }
 
     free(trav->node_connected);
