@@ -43,7 +43,6 @@
 
 typedef struct TraverseData {
     ptrdiff_t * head;
-    ptrdiff_t * ind; /* tree->ind */
     char * node_connected;
     double ll;
     double ll2;
@@ -107,7 +106,7 @@ static int
 _kd_fof_visit_edge_connected(void * data, KDEnumPair * pair);
 
 static int
-_kd_enum_check_connected(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata);
+_kd_enum_check_connected(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata);
 
 static int
 _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
@@ -123,9 +122,10 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
         if(trav->buggy) {
             /*this was the older buggy implemention that uses arbitary pair. */
             KDEnumPair epair;
+            /* use_indirect_ind = 1 */
             epair.r = sqrt(pair->distmin2);
-            epair.i = trav->ind[pair->nodes[0]->start];
-            epair.j = trav->ind[pair->nodes[1]->start];
+            epair.i = pair->nodes[0]->start;
+            epair.j = pair->nodes[1]->start;
 
             _kd_fof_visit_edge(data, &epair);
             trav->enumerated += 1;
@@ -134,15 +134,15 @@ _kd_fof_check_nodes(void * data, KDEnumNodePair * pair)
         /* two fully connected nodes are linked, simply link the first particle.  */
         if(trav->heuristics) {
             /* the enum function will count enumeration */
-            _kd_enum_check_connected(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, data);
+            _kd_enum_check_connected(pair->nodes, trav->ll2, _kd_fof_visit_edge, data);
             return 0;
         } else {
-            kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge_connected, data);
+            kd_enum_check(pair->nodes, trav->ll2, 1, 1, _kd_fof_visit_edge_connected, data);
             trav->enumerated += (pair->nodes[0]->size * pair->nodes[1]->size); /* this count is duplicated. shall divide by two */
             return 0;
         }
     } else {
-        kd_enum_check(pair->nodes, trav->ll2, 1, _kd_fof_visit_edge, data);
+        kd_enum_check(pair->nodes, trav->ll2, 1, 1, _kd_fof_visit_edge, data);
         trav->enumerated += (pair->nodes[0]->size * pair->nodes[1]->size); /* this count is duplicated. shall divide by two */
     }
 
@@ -198,9 +198,9 @@ connect(TraverseData * trav, KDNode * node, int parent_connected)
     } else {
         if(kd_node_maxdist2(node) <= trav->ll2) {
             ptrdiff_t i;
-            ptrdiff_t r = trav->ind[node->start];
+            ptrdiff_t r = node->start;
             for(i = node->start + 1; i < node->size + node->start; i ++) {
-                trav->head[trav->ind[i]] = r;
+                trav->head[i] = r;
             }
             c = 1;
         }
@@ -243,7 +243,6 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
     trav->ll = linking_length;
     trav->ll2 = linking_length * linking_length;
     trav->node_connected = calloc(node->tree->size, 1);
-    trav->ind = node->tree->ind;
     trav->safe = safe;
     trav->allpairs = allpairs;
     trav->prefernodes = prefernodes;
@@ -263,7 +262,7 @@ kd_fof_internal(KDNode * node, double linking_length, ptrdiff_t * head, int safe
 
     connect(trav, node, 0);
 
-    kd_enum_full(nodes, linking_length, NULL, _kd_fof_check_nodes, _kd_fof_visit_node, 1.0, 1, trav);
+    kd_enum_full(nodes, linking_length, NULL, _kd_fof_check_nodes, _kd_fof_visit_node, 1.0, 1, 1, trav);
 
     for(i = 0; i < node->size; i ++) {
         trav->head[i] = splay(trav, i);
@@ -340,7 +339,7 @@ _kd_fof_guess_closest(KDNode * node, double * p0, ptrdiff_t size, int Nd)
     double * min = kd_node_min(node);
     double * max = kd_node_max(node);
     double * center = alloca(sizeof(double) * Nd);
-    
+
     ptrdiff_t i;
     int d;
     for (d = 0; d < Nd; d ++) {
@@ -362,7 +361,7 @@ _kd_fof_guess_closest(KDNode * node, double * p0, ptrdiff_t size, int Nd)
     return i_min;
 }
 static int
-_kd_enum_check_connected(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata)
+_kd_enum_check_connected(KDNode * nodes[2], double maxr2, kd_enum_visit_edge visit_edge, void * userdata)
 {
     TraverseData * trav = (TraverseData*) userdata;
 
@@ -395,9 +394,6 @@ _kd_enum_check_connected(KDNode * nodes[2], double maxr2, int skip_symmetric, kd
     trav->enumerated += nodes[0]->size;
     trav->enumerated += nodes[1]->size;
 
-    pair.i = t0->ind[nodes[0]->start + i];
-    pair.j = t1->ind[nodes[1]->start + j];
-
     double r2 = 0.0;
     for (d = 0; d < Nd; d++){
         double dx = p1base[Nd * j + d] - p0base[Nd * i + d];
@@ -405,6 +401,9 @@ _kd_enum_check_connected(KDNode * nodes[2], double maxr2, int skip_symmetric, kd
         r2 += dx * dx;
     }
     if(r2 <= maxr2) {
+        /* use_indirect_ind */
+        pair.i = nodes[0]->start + i;
+        pair.j = nodes[1]->start + j;
         pair.r = sqrt(r2);
         visit_edge(userdata, &pair);
         goto exit;
@@ -412,10 +411,10 @@ _kd_enum_check_connected(KDNode * nodes[2], double maxr2, int skip_symmetric, kd
 
     for (p0 = p0base, i = nodes[0]->start; 
         i < nodes[0]->start + nodes[0]->size; i++, p0 += Nd) {
-        pair.i = t0->ind[i];
+        pair.i = i;
         for (p1 = p1base, j = nodes[1]->start; 
              j < nodes[1]->start + nodes[1]->size; j++, p1 +=Nd) {
-            pair.j = t1->ind[j];
+            pair.j = j;
             trav->enumerated ++;
             if (pair.i >= pair.j) continue;
             double r2 = 0.0;

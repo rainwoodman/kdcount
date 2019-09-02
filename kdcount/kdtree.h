@@ -246,7 +246,7 @@ typedef int (*kd_enum_check_nodes)(void * userdata, KDEnumNodePair * pair);
 typedef int (*kd_enum_visit_node)(void * userdata, KDNode * node);
 
 int
-kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata);
+kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, int use_indirect_ind, kd_enum_visit_edge visit_edge, void * userdata);
 
 int
 kd_enum(KDNode * nodes[2], double maxr,
@@ -261,6 +261,7 @@ kd_enum_full(KDNode * nodes[2], double maxr,
         kd_enum_visit_node visit_node,
         double opening_factor,
         int skip_symmetric,
+        int use_indirect_ind,
         void * userdata);
 
 int

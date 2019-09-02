@@ -12,6 +12,7 @@ struct TraverseData
     void * check_nodes_data;
     int always_open;
     int skip_symmetric;
+    int use_indirect_ind;  /* Pair will use the indirect index, not the true index in data. */
 };
 
 static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
@@ -19,7 +20,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2]);
 static int _kd_enum_check_nodes(void * data, KDEnumNodePair * pair)
 {
     struct TraverseData * trav = data;
-    return kd_enum_check(pair->nodes, trav->maxr2, trav->skip_symmetric,
+    return kd_enum_check(pair->nodes, trav->maxr2, trav->skip_symmetric, trav->use_indirect_ind,
             trav->visit_edge, trav->userdata);
 }
 
@@ -29,7 +30,7 @@ kd_enum(KDNode * nodes[2], double maxr,
         kd_enum_check_nodes check_nodes,
         void * userdata)
 {
-    return kd_enum_full(nodes, maxr, visit_edge, check_nodes, NULL, 1.0, 0, userdata);
+    return kd_enum_full(nodes, maxr, visit_edge, check_nodes, NULL, 1.0, 0, 0, userdata);
 }
 
 int
@@ -39,6 +40,7 @@ kd_enum_full(KDNode * nodes[2], double maxr,
         kd_enum_visit_node visit_node,
         double opening_factor,
         int skip_symmetric,
+        int use_indirect_ind,
         void * userdata)
 {
     struct TraverseData trav = {
@@ -50,6 +52,7 @@ kd_enum_full(KDNode * nodes[2], double maxr,
         .visit_node = visit_node,
         .openr2 = maxr * maxr * opening_factor * opening_factor,
         .skip_symmetric = skip_symmetric,
+        .use_indirect_ind = use_indirect_ind,
     };
     if(check_nodes == NULL) {
         trav.check_nodes = _kd_enum_check_nodes;
@@ -139,7 +142,7 @@ static int kd_enum_internal(struct TraverseData * trav, KDNode * nodes[2])
 
 
 int
-kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit_edge visit_edge, void * userdata)
+kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, int use_indirect_ind, kd_enum_visit_edge visit_edge, void * userdata)
 {
     int rt = 0;
     ptrdiff_t i, j;
@@ -161,10 +164,16 @@ kd_enum_check(KDNode * nodes[2], double maxr2, int skip_symmetric, kd_enum_visit
 
     for (p0 = p0base, i = nodes[0]->start; 
         i < nodes[0]->start + nodes[0]->size; i++, p0 += Nd) {
-        pair.i = t0->ind[i];
+        pair.i = i;
+        if(!use_indirect_ind) {
+            pair.i = t0->ind[i];
+        }
         for (p1 = p1base, j = nodes[1]->start; 
              j < nodes[1]->start + nodes[1]->size; j++, p1 +=Nd) {
-            pair.j = t1->ind[j];
+            pair.j = j;
+            if(!use_indirect_ind) {
+                pair.j = t1->ind[j];
+            }
             if (skip_symmetric && pair.i >= pair.j) continue;
             double r2 = 0.0;
             if (t0 != t1 || pair.i != pair.j) {

@@ -214,6 +214,21 @@ def test_force2_slow():
     # FIXME: add more tests
     assert_array_equal(force1, force2)
 
+def test_fof_ind():
+    numpy.random.seed(1000)
+    pos = numpy.arange(100000).reshape(-1, 1).astype('f4')
+    ind = numpy.arange(len(pos))[::2]
+    tree = KDTree(pos, ind=ind).root
+
+    label = tree.fof(2.1)
+    assert len(label) == len(ind)
+
+    assert_equal(numpy.unique(label).size, 1)
+
+    label = tree.fof(0.8)
+    assert_equal(numpy.unique(label).size, len(ind))
+    assert len(label) == len(ind)
+
 
 if __name__ == "__main__":
     run_module_suite()
